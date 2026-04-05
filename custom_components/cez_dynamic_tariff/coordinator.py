@@ -284,9 +284,9 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         now = dt_util.as_local(dt_util.utcnow())
         current_window = self._current_window(now)
 
-        season = "summer" if self._is_summer(now.date()) else "winter"
+        season = "Letní" if self._is_summer(now.date()) else "Zimní"
         is_holiday = self._is_holiday(now.date())
-        day_type = "weekend_or_holiday" if self._is_offday(now.date()) else "workday"
+        day_type = "Víkend nebo Svátek" if self._is_offday(now.date()) else "Pracovní den"
         schedule = self._schedule_for_day(now.date())
 
         cheap_threshold = int(self._option(CONF_CHEAP_THRESHOLD, DEFAULT_CHEAP_THRESHOLD))
@@ -315,7 +315,15 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             cheap_threshold,
         )
 
-        today_map_code = f"{season}_{day_type}"
+        today_map_code = (
+            "summer_workday"
+            if self._is_summer(now.date()) and not self._is_offday(now.date())
+            else "summer_weekend_or_holiday"
+            if self._is_summer(now.date())
+            else "winter_workday"
+            if not self._is_offday(now.date())
+            else "winter_weekend_or_holiday"
+        )
 
         return TariffSnapshot(
             current_modifier_percent=current_modifier_percent,

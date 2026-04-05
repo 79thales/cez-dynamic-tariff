@@ -32,7 +32,7 @@ class CezDynamicTariffSensorDescription(SensorEntityDescription):
 SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
     CezDynamicTariffSensorDescription(
         key="current_modifier",
-        name="Current modifier",
+        name="Změna ceny o",
         native_unit_of_measurement="%",
         value_fn=lambda data: data.current_modifier_percent,
     ),

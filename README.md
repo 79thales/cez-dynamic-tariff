@@ -11,52 +11,13 @@ Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ D
 
 ## Co integrace umí
 
-- vypočítá aktuální cenový modifier podle pevně daného rozpisu ČEZ
+- vypočítá aktuální změnu ceny podle pevně daného rozpisu ČEZ
 - vystaví aktuální tarifní pásmo, sezónu, typ dne a nejbližší další levné okno
 - vystaví pomocné entity:
   - práh levného pásma v %
   - práh super levného pásma v %
   - informaci, zda je právě drahé pásmo
 - umí zohlednit české státní svátky jako nepracovní dny
-
-## Struktura repozitáře
-
-Repozitář je připravený pro:
-
-- otevření jako složka ve Visual Studiu
-- publikaci na GitHub
-- ruční instalaci do Home Assistantu
-- instalaci přes HACS jako vlastní repozitář
-
-## Otevření ve Visual Studiu
-
-Použij:
-
-- **Soubor -> Otevřít -> Složku**
-- vyber root repozitáře
-
-Visual Studio umí s Python projektem pracovat přímo ze složky, takže není potřeba samostatný `.sln` nebo `.pyproj`.
-
-## Publikace na GitHub
-
-Pokud chceš integraci publikovat na GitHub:
-
-```bash
-git init
-git add .
-git commit -m "Initial version of CEZ Dynamic Tariff integration"
-git branch -M main
-git remote add origin https://github.com/YOUR_GITHUB_USER/cez_dynamic_tariff.git
-git push -u origin main
-```
-
-Před publikací uprav v `custom_components/cez_dynamic_tariff/manifest.json`:
-
-- `documentation`
-- `issue_tracker`
-- `codeowners`
-
-Případně uprav i `hacs.json`, pokud chceš jiný zobrazovaný název nebo minimální verzi Home Assistantu.
 
 ## Instalace do Home Assistantu
 
@@ -182,7 +143,7 @@ type: entities
 title: ČEZ Dynamic Tariff
 entities:
   - entity: sensor.cez_dynamic_tariff_current_modifier
-    name: Aktuální modifier
+    name: Změna ceny o
   - entity: sensor.cez_dynamic_tariff_effective_price
     name: Aktuální cena
   - entity: sensor.cez_dynamic_tariff_current_band
@@ -218,7 +179,7 @@ cards:
     title: Aktuální stav
     entities:
       - entity: sensor.cez_dynamic_tariff_current_modifier
-        name: Aktuální modifier
+        name: Změna ceny o
       - entity: sensor.cez_dynamic_tariff_effective_price
         name: Aktuální cena
       - entity: sensor.cez_dynamic_tariff_current_band
@@ -240,9 +201,9 @@ cards:
   - type: conditional
     conditions:
       - entity: sensor.cez_dynamic_tariff_season
-        state: summer
+        state: Letní
       - entity: sensor.cez_dynamic_tariff_day_type
-        state: workday
+        state: Pracovní den
     card:
       type: markdown
       title: Mapa tarifu dnes
@@ -257,9 +218,9 @@ cards:
   - type: conditional
     conditions:
       - entity: sensor.cez_dynamic_tariff_season
-        state: summer
+        state: Letní
       - entity: sensor.cez_dynamic_tariff_day_type
-        state: weekend_or_holiday
+        state: Víkend nebo Svátek
     card:
       type: markdown
       title: Mapa tarifu dnes
@@ -273,9 +234,9 @@ cards:
   - type: conditional
     conditions:
       - entity: sensor.cez_dynamic_tariff_season
-        state: winter
+        state: Zimní
       - entity: sensor.cez_dynamic_tariff_day_type
-        state: workday
+        state: Pracovní den
     card:
       type: markdown
       title: Mapa tarifu dnes
@@ -290,9 +251,9 @@ cards:
   - type: conditional
     conditions:
       - entity: sensor.cez_dynamic_tariff_season
-        state: winter
+        state: Zimní
       - entity: sensor.cez_dynamic_tariff_day_type
-        state: weekend_or_holiday
+        state: Víkend nebo Svátek
     card:
       type: markdown
       title: Mapa tarifu dnes
