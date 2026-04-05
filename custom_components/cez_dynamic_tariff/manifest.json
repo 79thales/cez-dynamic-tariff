@@ -1,7 +1,7 @@
 {
   "domain": "cez_dynamic_tariff",
   "name": "ČEZ Dynamic Tariff",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "codeowners": [
     "@79thales"
   ],

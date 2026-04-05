@@ -1,5 +1,8 @@
 # ČEZ Dynamic Tariff pro Home Assistant
 
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-41BDF5?logo=home-assistant-community-store&logoColor=white)](https://hacs.xyz/)
+
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor.
 
 ## Co integrace umí
