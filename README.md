@@ -103,6 +103,7 @@ Senzory:
 - `sensor.cez_dynamic_tariff_next_cheap_start`
 - `sensor.cez_dynamic_tariff_next_cheap_end`
 - `sensor.cez_dynamic_tariff_next_cheap_modifier`
+- `sensor.cez_dynamic_tariff_today_tariff_map`
 
 Binární senzory:
 
@@ -292,3 +293,26 @@ cards:
 ```
 
 Pokud upravuješ pouze jednu kartu a ne celý pohled, použij jen sekci jedné karty, ne celý blok s `title:` a `cards:`.
+
+## Jednodušší grafická mapa z nového senzoru
+
+Integrace nově vystavuje i senzor:
+
+- `sensor.cez_dynamic_tariff_today_tariff_map`
+
+Ten má v atributech připraveno:
+
+- `display_map` pro přímé vložení do Markdown karty
+- `schedule` jako seznam všech dnešních oken
+- `legend` s významem barev
+
+Příklad jednoduché Markdown karty:
+
+```yaml
+type: markdown
+title: Dnešní mapa tarifu
+content: |
+  **{{ states('sensor.cez_dynamic_tariff_today_tariff_map') }}**
+
+  {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
+```

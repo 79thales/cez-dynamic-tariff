@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Final
+from typing import Any, Final
 import logging
 
 import holidays
@@ -59,6 +59,10 @@ class TariffSnapshot:
     next_cheap_start: datetime | None
     next_cheap_end: datetime | None
     next_cheap_modifier_percent: int | None
+    today_map_code: str
+    today_schedule: list[dict[str, Any]]
+    today_display_map: str
+    legend: list[dict[str, str]]
 
 
 WINTER_WORKDAY: Final[tuple[TariffWindow, ...]] = (
@@ -200,6 +204,48 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
         return start_dt, end_dt
 
+    @staticmethod
+    def _modifier_style(modifier_percent: int) -> tuple[str, str]:
+        """Return display token and semantic level for a modifier."""
+        if modifier_percent <= -50:
+            return "🟢", "super_cheap"
+        if modifier_percent <= -10:
+            return "🟩", "cheap"
+        if modifier_percent >= 25:
+            return "◻️", "very_expensive"
+        return "⬜", "expensive"
+
+    def _serialize_schedule(self, schedule: tuple[TariffWindow, ...]) -> list[dict[str, Any]]:
+        """Convert a daily schedule into Lovelace-friendly dictionaries."""
+        items: list[dict[str, Any]] = []
+
+        for window in schedule:
+            token, level = self._modifier_style(window.modifier_percent)
+            items.append(
+                {
+                    "start": self._format_minute(window.start_minute),
+                    "end": self._format_minute(window.end_minute),
+                    "modifier_percent": window.modifier_percent,
+                    "level": level,
+                    "token": token,
+                    "label": f"{token} {self._format_minute(window.start_minute)}-{self._format_minute(window.end_minute)}",
+                }
+            )
+
+        return items
+
+    def _display_map(self, schedule: tuple[TariffWindow, ...]) -> str:
+        """Render a compact one-line map for Markdown cards."""
+        parts: list[str] = []
+
+        for window in schedule:
+            token, _ = self._modifier_style(window.modifier_percent)
+            parts.append(
+                f"`{token} {self._format_minute(window.start_minute)}-{self._format_minute(window.end_minute)}`"
+            )
+
+        return " ".join(parts)
+
     def _current_window(self, when: datetime) -> TariffWindow:
         """Return the currently active tariff window."""
         minute = self._minute_of_day(when)
@@ -241,6 +287,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         season = "summer" if self._is_summer(now.date()) else "winter"
         is_holiday = self._is_holiday(now.date())
         day_type = "weekend_or_holiday" if self._is_offday(now.date()) else "workday"
+        schedule = self._schedule_for_day(now.date())
 
         cheap_threshold = int(self._option(CONF_CHEAP_THRESHOLD, DEFAULT_CHEAP_THRESHOLD))
         super_cheap_threshold = int(
@@ -268,6 +315,8 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             cheap_threshold,
         )
 
+        today_map_code = f"{season}_{day_type}"
+
         return TariffSnapshot(
             current_modifier_percent=current_modifier_percent,
             current_band=current_band,
@@ -284,6 +333,15 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             next_cheap_start=next_cheap_start,
             next_cheap_end=next_cheap_end,
             next_cheap_modifier_percent=next_cheap_modifier_percent,
+            today_map_code=today_map_code,
+            today_schedule=self._serialize_schedule(schedule),
+            today_display_map=self._display_map(schedule),
+            legend=[
+                {"token": "🟢", "label": "super cheap", "modifier_percent": "-50"},
+                {"token": "🟩", "label": "cheap", "modifier_percent": "-10"},
+                {"token": "⬜", "label": "expensive", "modifier_percent": "+10"},
+                {"token": "◻️", "label": "very expensive", "modifier_percent": "+25"},
+            ],
         )
 
     @property

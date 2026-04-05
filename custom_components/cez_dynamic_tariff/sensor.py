@@ -11,8 +11,11 @@ from .const import (
     ATTR_CURRENT_WINDOW_END,
     ATTR_CURRENT_WINDOW_START,
     ATTR_DAY_TYPE,
+    ATTR_DISPLAY_MAP,
     ATTR_IS_HOLIDAY,
+    ATTR_LEGEND,
     ATTR_NEXT_CHEAP_MODIFIER_PERCENT,
+    ATTR_SCHEDULE,
     ATTR_SEASON,
     DOMAIN,
 )
@@ -84,6 +87,11 @@ SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
         native_unit_of_measurement="%",
         value_fn=lambda data: data.next_cheap_modifier_percent,
     ),
+    CezDynamicTariffSensorDescription(
+        key="today_tariff_map",
+        name="Today tariff map",
+        value_fn=lambda data: data.today_map_code,
+    ),
 )
 
 
@@ -128,7 +136,17 @@ class CezDynamicTariffSensor(
             return None
 
         if self.entity_description.key != "current_modifier":
-            return None
+            if self.entity_description.key != "today_tariff_map":
+                return None
+
+            data = self.coordinator.data
+            return {
+                ATTR_DAY_TYPE: data.day_type,
+                ATTR_DISPLAY_MAP: data.today_display_map,
+                ATTR_LEGEND: data.legend,
+                ATTR_SCHEDULE: data.today_schedule,
+                ATTR_SEASON: data.season,
+            }
 
         data = self.coordinator.data
 
