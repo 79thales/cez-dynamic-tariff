@@ -289,3 +289,51 @@ content: |
 
   {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
 ```
+
+## Vzor dashboardu
+
+Níže je ukázka jednoduchého dashboardu ve stylu přehledu, který zobrazuje:
+
+- aktuální stav
+- legendu tarifních úrovní
+- dnešní mapu tarifu
+
+Tento YAML patří do nastavení celého pohledu:
+
+```yaml
+title: ČEZ Dynamic Tariff
+cards:
+  - type: grid
+    columns: 3
+    square: false
+    cards:
+      - type: entities
+        title: Aktuální stav
+        entities:
+          - entity: sensor.cez_dynamic_tariff_current_modifier
+            name: Změna ceny o
+          - entity: sensor.cez_dynamic_tariff_effective_price
+            name: Aktuální cena
+          - entity: sensor.cez_dynamic_tariff_current_band
+            name: Aktuální pásmo
+          - entity: sensor.cez_dynamic_tariff_day_type
+            name: Typ dne
+          - entity: sensor.cez_dynamic_tariff_season
+            name: Sezóna
+          - entity: sensor.cez_dynamic_tariff_next_cheap_start
+            name: Další levné od
+          - entity: sensor.cez_dynamic_tariff_next_cheap_end
+            name: Další levné do
+
+      - type: markdown
+        title: Legenda
+        content: |
+          `🟩 -10 %` `🟢 -50 %` `⬜ +10 %` `◻️ +25 %`
+
+      - type: markdown
+        title: Mapa tarifu dnes
+        content: |
+          **{% if states('sensor.cez_dynamic_tariff_season') == 'Letní' %}Duben až září{% else %}Říjen až březen{% endif %} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
+
+          {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
+```
