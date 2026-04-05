@@ -1,0 +1,45 @@
+{
+  "title": "ČEZ Dynamický tarif",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ČEZ Dynamický tarif",
+        "description": "Vytvoří senzory Home Assistantu z pevně daného rozvrhu Dynamického tarifu ČEZ.",
+        "data": {
+          "name": "Název",
+          "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
+          "include_holidays": "Brát české státní svátky jako víkend/svátek"
+        },
+        "data_description": {
+          "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Integrace už je nakonfigurovaná."
+    },
+    "error": {
+      "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",
+      "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti ČEZ Dynamický tarif",
+        "data": {
+          "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
+          "include_holidays": "Brát české státní svátky jako víkend/svátek",
+          "cheap_threshold": "Práh levného pásma (%)",
+          "super_cheap_threshold": "Práh super levného pásma (%)",
+          "expensive_threshold": "Práh drahého pásma (%)"
+        },
+        "data_description": {
+          "cheap_threshold": "Výchozí -10 znamená, že levné je pásmo -10 % i -50 %.",
+          "super_cheap_threshold": "Výchozí -50 znamená, že super levné je jen pásmo -50 %.",
+          "expensive_threshold": "Výchozí 10 znamená, že drahé je pásmo +10 % i +25 %."
+        }
+      }
+    }
+  }
+}

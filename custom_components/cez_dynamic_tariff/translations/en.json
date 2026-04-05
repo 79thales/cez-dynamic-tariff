@@ -1,0 +1,45 @@
+{
+  "title": "ČEZ Dynamic Tariff",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ČEZ Dynamic Tariff",
+        "description": "Creates Home Assistant sensors from the fixed ČEZ dynamic tariff schedule.",
+        "data": {
+          "name": "Name",
+          "base_price_kwh": "Base trading price (CZK/kWh)",
+          "include_holidays": "Treat Czech public holidays as weekend/holiday"
+        },
+        "data_description": {
+          "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "The integration is already configured."
+    },
+    "error": {
+      "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
+      "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ČEZ Dynamic Tariff options",
+        "data": {
+          "base_price_kwh": "Base trading price (CZK/kWh)",
+          "include_holidays": "Treat Czech public holidays as weekend/holiday",
+          "cheap_threshold": "Cheap threshold (%)",
+          "super_cheap_threshold": "Super cheap threshold (%)",
+          "expensive_threshold": "Expensive threshold (%)"
+        },
+        "data_description": {
+          "cheap_threshold": "Default -10 means both -10 % and -50 % windows are considered cheap.",
+          "super_cheap_threshold": "Default -50 means only the -50 % window is considered super cheap.",
+          "expensive_threshold": "Default 10 means both +10 % and +25 % windows are considered expensive."
+        }
+      }
+    }
+  }
+}
