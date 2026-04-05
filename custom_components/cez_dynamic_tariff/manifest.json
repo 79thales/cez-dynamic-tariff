@@ -1,10 +1,10 @@
 {
   "domain": "cez_dynamic_tariff",
   "name": "ČEZ Dynamic Tariff",
-  "config_flow": true,
   "codeowners": [
     "@79thales"
   ],
+  "config_flow": true,
   "documentation": "https://github.com/79thales/cez_dynamic_tariff#readme",
   "integration_type": "helper",
   "iot_class": "calculated",
