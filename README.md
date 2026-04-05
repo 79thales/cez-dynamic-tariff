@@ -80,6 +80,8 @@ Po restartu:
 
 ### Varianta 2: instalace přes HACS
 
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
+
 1. Publikuj repozitář na GitHub jako veřejný
 2. V Home Assistantu otevři **HACS**
 3. Otevři menu **tři tečky**
@@ -91,6 +93,9 @@ Po restartu:
 9. Restartuj Home Assistant
 10. Otevři **Nastavení -> Zařízení a služby**
 11. Přidej integraci **ČEZ Dynamic Tariff**
+
+[![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff)
+[![Open your Home Assistant instance and show your integrations.](https://my.home-assistant.io/badges/configuration.svg)](https://my.home-assistant.io/redirect/config/)
 
 ## Vytvořené entity
 
