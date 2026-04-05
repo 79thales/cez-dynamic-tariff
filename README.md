@@ -1,98 +1,98 @@
-# ČEZ Dynamic Tariff for Home Assistant
+# ČEZ Dynamic Tariff pro Home Assistant
 
-Custom Home Assistant integration that exposes the current ČEZ dynamic tariff window as sensors and binary sensors.
+Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor.
 
-## What it does
+## Co integrace umí
 
-- Calculates the current ČEZ dynamic tariff modifier from the published fixed schedule
-- Exposes the current tariff band, season, day type, and the next cheap window
-- Exposes helper entities:
-  - cheap threshold (%)
-  - super cheap threshold (%)
-  - expensive now
-- Supports Czech public holidays as off-days
+- vypočítá aktuální cenový modifier podle pevně daného rozpisu ČEZ
+- vystaví aktuální tarifní pásmo, sezónu, typ dne a nejbližší další levné okno
+- vystaví pomocné entity:
+  - práh levného pásma v %
+  - práh super levného pásma v %
+  - informaci, zda je právě drahé pásmo
+- umí zohlednit české státní svátky jako nepracovní dny
 
-## Repository structure
+## Struktura repozitáře
 
-This repository is ready to:
-- open directly in Visual Studio 2026 as a folder
-- initialize as a Git repository
-- push to GitHub
-- install into Home Assistant manually
-- install into Home Assistant through HACS custom repository after you publish it to GitHub
+Repozitář je připravený pro:
 
-## Open in Visual Studio 2026
+- otevření jako složka ve Visual Studiu
+- publikaci na GitHub
+- ruční instalaci do Home Assistantu
+- instalaci přes HACS jako vlastní repozitář
 
-Use:
-- **File -> Open -> Folder**
-- select this repository root
+## Otevření ve Visual Studiu
 
-Visual Studio can work with Python code directly from a folder, so you do not need a separate `.sln` or `.pyproj` file.
+Použij:
 
-## Initialize Git
+- **Soubor -> Otevřít -> Složku**
+- vyber root repozitáře
+
+Visual Studio umí s Python projektem pracovat přímo ze složky, takže není potřeba samostatný `.sln` nebo `.pyproj`.
+
+## Publikace na GitHub
+
+Pokud chceš integraci publikovat na GitHub:
 
 ```bash
 git init
 git add .
 git commit -m "Initial version of CEZ Dynamic Tariff integration"
-```
-
-If you want to publish to GitHub:
-
-```bash
 git branch -M main
-git remote add origin https://github.com/YOUR_GITHUB_USER/cez-dynamic-tariff.git
+git remote add origin https://github.com/YOUR_GITHUB_USER/cez_dynamic_tariff.git
 git push -u origin main
 ```
 
-## Before publishing to GitHub
-
-Update these URLs in `custom_components/cez_dynamic_tariff/manifest.json`:
+Před publikací uprav v `custom_components/cez_dynamic_tariff/manifest.json`:
 
 - `documentation`
 - `issue_tracker`
 - `codeowners`
 
-and also adjust `hacs.json` if you want a different display name or minimum Home Assistant version.
+Případně uprav i `hacs.json`, pokud chceš jiný zobrazovaný název nebo minimální verzi Home Assistantu.
 
-## Install into Home Assistant
+## Instalace do Home Assistantu
 
-### Option 1: Manual install
+### Varianta 1: ruční instalace
 
-Copy this folder:
+Zkopíruj složku:
 
 ```text
 custom_components/cez_dynamic_tariff
 ```
 
-into your Home Assistant config directory:
+do konfigurační složky Home Assistantu:
 
 ```text
 /config/custom_components/cez_dynamic_tariff
 ```
 
-Then restart Home Assistant.
+Pak restartuj Home Assistant.
 
-After restart:
-- go to **Settings -> Devices & services**
-- click **Add integration**
-- find **ČEZ Dynamic Tariff**
+Po restartu:
 
-### Option 2: Install from Git repository with HACS
+- otevři **Nastavení -> Zařízení a služby**
+- klikni na **Přidat integraci**
+- najdi **ČEZ Dynamic Tariff**
 
-1. Publish this repository to GitHub
-2. In Home Assistant open **HACS**
-3. Open the **3 dots menu**
-4. Select **Custom repositories**
-5. Add your GitHub repository URL
-6. Select type **Integration**
-7. Add it
-8. Find the repository in HACS and install it
-9. Restart Home Assistant
+### Varianta 2: instalace přes HACS
 
-## Entities created
+1. Publikuj repozitář na GitHub jako veřejný
+2. V Home Assistantu otevři **HACS**
+3. Otevři menu **tři tečky**
+4. Vyber **Vlastní repozitáře**
+5. Vlož URL GitHub repozitáře
+6. Vyber typ **Integrace**
+7. Přidej repozitář
+8. Najdi integraci v HACS a nainstaluj ji
+9. Restartuj Home Assistant
+10. Otevři **Nastavení -> Zařízení a služby**
+11. Přidej integraci **ČEZ Dynamic Tariff**
 
-Sensors:
+## Vytvořené entity
+
+Senzory:
+
 - `sensor.cez_dynamic_tariff_current_modifier`
 - `sensor.cez_dynamic_tariff_current_band`
 - `sensor.cez_dynamic_tariff_cheap_threshold`
@@ -104,11 +104,191 @@ Sensors:
 - `sensor.cez_dynamic_tariff_next_cheap_end`
 - `sensor.cez_dynamic_tariff_next_cheap_modifier`
 
-Binary sensors:
+Binární senzory:
+
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 
-## Notes
+## Poznámky
 
-- `base_price_kwh` is only the trading component of the electricity price
-- distribution fees, taxes, fixed monthly fees, and regulated components are not included
-- holiday detection uses the Python `holidays` package
+- `base_price_kwh` je pouze obchodní složka ceny elektřiny
+- distribuce, daně, měsíční fixní poplatky a regulované složky se do výpočtu nezapočítávají
+- detekce svátků používá Python balíček `holidays`
+
+## Příklad automatizace v Home Assistantu
+
+Tento příklad zapne bojler přes Shelly vždy, když je aktuální tarif na nebo pod nastaveným prahem levného pásma.
+
+```yaml
+automation:
+  - alias: "Boiler zapnout v levném tarifu"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+    conditions:
+      - condition: template
+        value_template: >
+          {{
+            states('sensor.cez_dynamic_tariff_current_modifier') | float(999) <=
+            states('sensor.cez_dynamic_tariff_cheap_threshold') | float(-10)
+          }}
+    actions:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.bojler_nahore_1pm_switch_0
+```
+
+Příklad vypnutí po skončení levného pásma:
+
+```yaml
+automation:
+  - alias: "Boiler vypnout po skončení levného tarifu"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+    conditions:
+      - condition: template
+        value_template: >
+          {{
+            states('sensor.cez_dynamic_tariff_current_modifier') | float(999) >
+            states('sensor.cez_dynamic_tariff_cheap_threshold') | float(-10)
+          }}
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.bojler_nahore_1pm_switch_0
+```
+
+## Příklad Lovelace karty
+
+Pokud chceš jednoduchou přehledovou kartu, vlož do ručně upravované karty tento YAML:
+
+```yaml
+type: entities
+title: ČEZ Dynamic Tariff
+entities:
+  - entity: sensor.cez_dynamic_tariff_current_modifier
+    name: Aktuální modifier
+  - entity: sensor.cez_dynamic_tariff_effective_price
+    name: Aktuální cena
+  - entity: sensor.cez_dynamic_tariff_current_band
+    name: Aktuální pásmo
+  - entity: sensor.cez_dynamic_tariff_day_type
+    name: Typ dne
+  - entity: sensor.cez_dynamic_tariff_season
+    name: Sezóna
+  - entity: sensor.cez_dynamic_tariff_next_cheap_start
+    name: Další levné od
+  - entity: sensor.cez_dynamic_tariff_next_cheap_end
+    name: Další levné do
+  - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
+    name: Další levný modifier
+  - entity: sensor.cez_dynamic_tariff_cheap_threshold
+    name: Práh levného pásma
+  - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
+    name: Práh super levného pásma
+  - entity: binary_sensor.cez_dynamic_tariff_expensive_now
+    name: Drahé pásmo právě teď
+```
+
+## Příklad grafického zobrazení v Lovelace
+
+Pokud chceš grafičtější zobrazení, můžeš použít podmíněné Markdown karty, které se automaticky přepínají podle sezóny a typu dne.
+
+Tento YAML patří do nastavení celého pohledu, kde se upravuje `title` a `cards`:
+
+```yaml
+title: ČEZ Dynamic Tariff
+cards:
+  - type: entities
+    title: Aktuální stav
+    entities:
+      - entity: sensor.cez_dynamic_tariff_current_modifier
+        name: Aktuální modifier
+      - entity: sensor.cez_dynamic_tariff_effective_price
+        name: Aktuální cena
+      - entity: sensor.cez_dynamic_tariff_current_band
+        name: Aktuální pásmo
+      - entity: sensor.cez_dynamic_tariff_day_type
+        name: Typ dne
+      - entity: sensor.cez_dynamic_tariff_season
+        name: Sezóna
+      - entity: sensor.cez_dynamic_tariff_next_cheap_start
+        name: Další levné od
+      - entity: sensor.cez_dynamic_tariff_next_cheap_end
+        name: Další levné do
+
+  - type: markdown
+    title: Legenda
+    content: |
+      `🟩 -10 %`  `🟢 -50 %`  `⬜ +10 %`  `◻️ +25 %`
+
+  - type: conditional
+    conditions:
+      - entity: sensor.cez_dynamic_tariff_season
+        state: summer
+      - entity: sensor.cez_dynamic_tariff_day_type
+        state: workday
+    card:
+      type: markdown
+      title: Mapa tarifu dnes
+      content: |
+        **Duben až září / pracovní den**
+
+        `🟩 00:00-02:59` `🟢 03:00-04:59` `◻️ 05:00-07:59`  
+        `⬜ 08:00-10:59` `🟢 11:00-13:59` `⬜ 14:00-15:59`  
+        `🟩 16:00-17:59` `◻️ 18:00-19:59` `⬜ 20:00-22:59`  
+        `🟩 23:00-23:59`
+
+  - type: conditional
+    conditions:
+      - entity: sensor.cez_dynamic_tariff_season
+        state: summer
+      - entity: sensor.cez_dynamic_tariff_day_type
+        state: weekend_or_holiday
+    card:
+      type: markdown
+      title: Mapa tarifu dnes
+      content: |
+        **Duben až září / víkend nebo svátek**
+
+        `🟩 00:00-02:59` `🟢 03:00-04:59` `⬜ 05:00-10:59`  
+        `🟢 11:00-13:59` `⬜ 14:00-15:59` `🟩 16:00-17:59`  
+        `⬜ 18:00-22:59` `🟩 23:00-23:59`
+
+  - type: conditional
+    conditions:
+      - entity: sensor.cez_dynamic_tariff_season
+        state: winter
+      - entity: sensor.cez_dynamic_tariff_day_type
+        state: workday
+    card:
+      type: markdown
+      title: Mapa tarifu dnes
+      content: |
+        **Říjen až březen / pracovní den**
+
+        `🟩 00:00-02:59` `🟢 03:00-04:59` `◻️ 05:00-07:59`  
+        `⬜ 08:00-10:59` `🟩 11:00-13:59` `⬜ 14:00-15:59`  
+        `🟩 16:00-17:59` `◻️ 18:00-19:59` `⬜ 20:00-22:59`  
+        `🟩 23:00-23:59`
+
+  - type: conditional
+    conditions:
+      - entity: sensor.cez_dynamic_tariff_season
+        state: winter
+      - entity: sensor.cez_dynamic_tariff_day_type
+        state: weekend_or_holiday
+    card:
+      type: markdown
+      title: Mapa tarifu dnes
+      content: |
+        **Říjen až březen / víkend nebo svátek**
+
+        `🟩 00:00-02:59` `🟢 03:00-04:59` `⬜ 05:00-10:59`  
+        `🟩 11:00-13:59` `⬜ 14:00-17:59` `🟩 18:00-19:59`  
+        `⬜ 20:00-22:59` `🟩 23:00-23:59`
+```
+
+Pokud upravuješ pouze jednu kartu a ne celý pohled, použij jen sekci jedné karty, ne celý blok s `title:` a `cards:`.
