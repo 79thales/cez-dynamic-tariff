@@ -1,6 +1,6 @@
 {
-  "domain": "cez_dynamic_tarif",
-  "name": "ČEZ Dynamic Tarif",
+  "domain": "cez_dynamic_tariff",
+  "name": "ČEZ Dynamic Tariff",
   "codeowners": [
     "@79thales"
   ],
