@@ -1,6 +1,6 @@
 {
-  "domain": "cez_dynamic_tariff",
-  "name": "ČEZ Dynamic Tariff",
+  "domain": "cez_dynamic_tarif",
+  "name": "ČEZ Dynamic Tarif",
   "codeowners": [
     "@79thales"
   ],
@@ -13,5 +13,5 @@
     "holidays==0.93"
   ],
   "single_config_entry": true,
-  "version": "0.1.2"
+  "version": "0.1.3"
 }
