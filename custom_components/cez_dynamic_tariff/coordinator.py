@@ -281,7 +281,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
     async def _async_update_data(self) -> TariffSnapshot:
         """Calculate the current tariff state."""
-        now = dt_util.as_local(dt_util.utcnow())
+        now = dt_util.now()
         current_window = self._current_window(now)
 
         season = "Letní" if self._is_summer(now.date()) else "Zimní"

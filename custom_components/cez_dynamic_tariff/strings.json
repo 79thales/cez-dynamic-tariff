@@ -41,5 +41,23 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "current_modifier": {"name": "Price change"},
+      "current_band": {"name": "Current band"},
+      "cheap_threshold": {"name": "Cheap threshold"},
+      "super_cheap_threshold": {"name": "Super cheap threshold"},
+      "season": {"name": "Season"},
+      "day_type": {"name": "Day type"},
+      "effective_price": {"name": "Effective price"},
+      "next_cheap_start": {"name": "Next cheap start"},
+      "next_cheap_end": {"name": "Next cheap end"},
+      "next_cheap_modifier": {"name": "Next cheap modifier"},
+      "today_tariff_map": {"name": "Today tariff map"}
+    },
+    "binary_sensor": {
+      "expensive_now": {"name": "Expensive now"}
+    }
   }
 }

@@ -41,5 +41,23 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "current_modifier": {"name": "Změna ceny"},
+      "current_band": {"name": "Aktuální pásmo"},
+      "cheap_threshold": {"name": "Práh levného pásma"},
+      "super_cheap_threshold": {"name": "Práh super levného pásma"},
+      "season": {"name": "Sezóna"},
+      "day_type": {"name": "Typ dne"},
+      "effective_price": {"name": "Efektivní cena"},
+      "next_cheap_start": {"name": "Začátek dalšího levného pásma"},
+      "next_cheap_end": {"name": "Konec dalšího levného pásma"},
+      "next_cheap_modifier": {"name": "Změna ceny v dalším levném pásmu"},
+      "today_tariff_map": {"name": "Dnešní mapa tarifu"}
+    },
+    "binary_sensor": {
+      "expensive_now": {"name": "Právě probíhá drahé pásmo"}
+    }
   }
 }

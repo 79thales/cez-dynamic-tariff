@@ -49,7 +49,7 @@ def _options_schema(config_entry) -> vol.Schema:
                         config_entry.data.get(CONF_BASE_PRICE_KWH, DEFAULT_BASE_PRICE_KWH),
                     )
                 ),
-            ): vol.Coerce(float),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0)),
             vol.Required(
                 CONF_INCLUDE_HOLIDAYS,
                 default=bool(
@@ -127,7 +127,7 @@ class CezDynamicTariffConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(
                     CONF_BASE_PRICE_KWH,
                     default=DEFAULT_BASE_PRICE_KWH,
-                ): vol.Coerce(float),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0)),
                 vol.Required(
                     CONF_INCLUDE_HOLIDAYS,
                     default=DEFAULT_INCLUDE_HOLIDAYS,

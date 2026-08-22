@@ -20,7 +20,7 @@ class CezDynamicTariffBinarySensorDescription(BinarySensorEntityDescription):
 BINARY_SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffBinarySensorDescription, ...] = (
     CezDynamicTariffBinarySensorDescription(
         key="expensive_now",
-        name="Expensive now",
+        translation_key="expensive_now",
         value_fn=lambda data: data.expensive_now,
     ),
 )
