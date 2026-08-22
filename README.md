@@ -1,13 +1,24 @@
 # ČEZ Dynamic Tariff pro Home Assistant
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Custom%20Repository-41BDF5?logo=home-assistant-community-store&logoColor=white)](https://hacs.xyz/)
+[![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white)](https://hacs.xyz/)
+[![HACS validation](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hacs.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hacs.yaml)
+[![Hassfest](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hassfest.yaml)
+[![Quality](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/quality.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/quality.yaml)
 
 <p align="center">
   <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
-Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor.
+Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Rozvrh je pevně definovaný podle sezóny a typu dne; integrace nestahuje aktuální ceny z internetu.
+
+Aktuální verze: `0.1.5`
+
+## Požadavky
+
+- Home Assistant `2025.1.0` nebo novější
+- HACS (při instalaci přes HACS)
+- připojení k internetu pouze při instalaci/aktualizaci závislosti `holidays`
 
 ## Co integrace umí
 
@@ -45,19 +56,20 @@ Po restartu:
 
 ### Varianta 2: instalace přes HACS
 
-[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez_dynamic_tariff&category=integration)
 
-1. Publikuj repozitář na GitHub jako veřejný
-2. V Home Assistantu otevři **HACS**
-3. Otevři menu **tři tečky**
-4. Vyber **Vlastní repozitáře**
-5. Vlož URL GitHub repozitáře
-6. Vyber typ **Integrace**
-7. Přidej repozitář
-8. Najdi integraci v HACS a nainstaluj ji
-9. Restartuj Home Assistant
-10. Otevři **Nastavení -> Zařízení a služby**
-11. Přidej integraci **ČEZ Dynamic Tariff**
+Pokud repozitář ještě není ve výchozím katalogu HACS, přidej jej jako vlastní repozitář:
+
+1. Otevři **HACS**.
+2. Otevři nabídku **tři tečky**.
+3. Vyber **Vlastní repozitáře**.
+4. Vlož `https://github.com/79thales/cez_dynamic_tariff`.
+5. Vyber typ **Integrace** a repozitář přidej.
+6. Integraci nainstaluj a restartuj Home Assistant.
+7. Otevři **Nastavení → Zařízení a služby → Přidat integraci**.
+8. Vyhledej **ČEZ Dynamic Tariff**.
+
+Po zařazení do výchozího katalogu HACS bude možné přeskočit krok s vlastním repozitářem.
 
 [![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff)
 [![Open your Home Assistant instance and show your integrations.](https://my.home-assistant.io/badges/configuration.svg)](https://my.home-assistant.io/redirect/config/)
@@ -87,6 +99,35 @@ Binární senzory:
 - `base_price_kwh` je pouze obchodní složka ceny elektřiny
 - distribuce, daně, měsíční fixní poplatky a regulované složky se do výpočtu nezapočítávají
 - detekce svátků používá Python balíček `holidays`
+- základní cena `0` znamená, že se efektivní cena nevypočítává
+- prahy levného a drahého pásma lze změnit v nastavení integrace
+- tarifní rozvrh je pevný a je potřeba ověřit, že odpovídá aktuálním podmínkám vašeho produktu
+
+## Vydání nové verze
+
+Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json`. Pro vydání nové verze:
+
+1. Změň verzi v `manifest.json`.
+2. Nech projít workflow HACS validation, Hassfest a Quality.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.1.5`.
+
+Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
+
+## Vývoj a kontrola
+
+Lokální kontrola syntaxe:
+
+```bash
+python -m compileall -q custom_components
+```
+
+Kontrola Ruff:
+
+```bash
+ruff check custom_components
+```
+
+Pull requesty a vydání automaticky kontrolují HACS, Hassfest a Ruff přes GitHub Actions.
 
 ## Příklad automatizace v Home Assistantu
 

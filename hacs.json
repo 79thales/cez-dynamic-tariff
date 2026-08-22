@@ -2,5 +2,6 @@
   "name": "ČEZ Dynamic Tariff",
   "country": "CZ",
   "homeassistant": "2025.1.0",
-  "render_readme": true
+  "render_readme": true,
+  "hide_default_branch": false
 }
