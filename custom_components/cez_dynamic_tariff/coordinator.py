@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any, Final
-import logging
 
 import holidays
 from homeassistant.config_entries import ConfigEntry
@@ -263,7 +263,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         threshold: int,
     ) -> tuple[datetime | None, datetime | None, int | None]:
         """Find current or next tariff window matching the threshold."""
-        for offset in range(0, 8):
+        for offset in range(8):
             day = when.date() + timedelta(days=offset)
             schedule = self._schedule_for_day(day)
 
