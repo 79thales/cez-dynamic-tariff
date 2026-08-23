@@ -27,7 +27,9 @@ Aktuální verze: `0.2.0`
 - vystaví pomocné entity:
   - práh levného pásma v %
   - práh super levného pásma v %
-  - informaci, zda je právě drahé pásmo
+  - práh drahého pásma v %
+  - práh velmi drahého pásma v %
+  - informaci, zda je právě drahé nebo velmi drahé pásmo
 - umí zohlednit české státní svátky jako nepracovní dny
 - umožňuje přidávat, odebírat a upravovat tarifní pásma včetně časů a procentních změn ceny
 
@@ -117,6 +119,7 @@ Starší uložený formát obsahující jen časy je nadále podporovaný. Při 
 - **Práh levného pásma** určuje, které změny se mají považovat za levné a hledat jako další levné okno.
 - **Práh super levného pásma** určuje hranici super levného pásma.
 - **Práh drahého pásma** řídí binární senzor „Právě probíhá drahé pásmo“.
+- **Práh velmi drahého pásma** má výchozí hodnotu `+25 %` a řídí samostatný binární senzor „Právě probíhá velmi drahé pásmo“.
 
 Změna prahu nemění cenu ani časový rozvrh; mění pouze klasifikaci pásem pro senzory, barvy a automatizace.
 
@@ -128,6 +131,8 @@ Senzory:
 - `sensor.cez_dynamic_tariff_current_band`
 - `sensor.cez_dynamic_tariff_cheap_threshold`
 - `sensor.cez_dynamic_tariff_super_cheap_threshold`
+- `sensor.cez_dynamic_tariff_expensive_threshold`
+- `sensor.cez_dynamic_tariff_very_expensive_threshold`
 - `sensor.cez_dynamic_tariff_season`
 - `sensor.cez_dynamic_tariff_day_type`
 - `sensor.cez_dynamic_tariff_effective_price`
@@ -139,6 +144,7 @@ Senzory:
 Binární senzory:
 
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
+- `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
 ## Poznámky
 
@@ -146,7 +152,7 @@ Binární senzory:
 - distribuce, daně, měsíční fixní poplatky a regulované složky se do výpočtu nezapočítávají
 - detekce svátků používá Python balíček `holidays`
 - základní cena `0` znamená, že se efektivní cena nevypočítává
-- prahy levného a drahého pásma lze změnit v nastavení integrace
+- všechny čtyři prahy `-50/-10/+10/+25 %` lze změnit v nastavení integrace
 - časová pásma a jejich změny ceny lze změnit v **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**
 - zaškrtnutím **Obnovit výchozí rozvrhy z projektu** se vlastní časy i změny ceny zahodí
 
@@ -250,8 +256,14 @@ entities:
     name: Práh levného pásma
   - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
     name: Práh super levného pásma
+  - entity: sensor.cez_dynamic_tariff_expensive_threshold
+    name: Práh drahého pásma
+  - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
+    name: Práh velmi drahého pásma
   - entity: binary_sensor.cez_dynamic_tariff_expensive_now
     name: Drahé pásmo právě teď
+  - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
+    name: Velmi drahé pásmo právě teď
 ```
 
 ## Grafická mapa pásem v Lovelace

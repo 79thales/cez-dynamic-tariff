@@ -74,6 +74,25 @@ class ScheduleTests(unittest.TestCase):
             schedule.SUMMER_WORKDAY,
         )
 
+    def test_modifier_classification_uses_all_four_thresholds(self) -> None:
+        """The +25 percent level remains distinct from the +10 percent level."""
+        thresholds = (-50, -10, 10, 25)
+        cases = {
+            -50: "super_cheap",
+            -10: "cheap",
+            0: "normal",
+            10: "expensive",
+            24: "expensive",
+            25: "very_expensive",
+        }
+
+        for modifier, expected in cases.items():
+            with self.subTest(modifier=modifier):
+                self.assertEqual(
+                    schedule.classify_modifier(modifier, *thresholds),
+                    expected,
+                )
+
     def test_legacy_starts_only_schedule_keeps_default_modifiers(self) -> None:
         """Schedules saved by version 0.1.7 remain valid."""
         legacy_value = ", ".join(

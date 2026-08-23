@@ -14,6 +14,7 @@ from .const import (
     CONF_SUMMER_OFFDAY_SCHEDULE,
     CONF_SUMMER_WORKDAY_SCHEDULE,
     CONF_SUPER_CHEAP_THRESHOLD,
+    CONF_VERY_EXPENSIVE_THRESHOLD,
     CONF_WINTER_OFFDAY_SCHEDULE,
     CONF_WINTER_WORKDAY_SCHEDULE,
     DEFAULT_BASE_PRICE_KWH,
@@ -22,6 +23,7 @@ from .const import (
     DEFAULT_INCLUDE_HOLIDAYS,
     DEFAULT_NAME,
     DEFAULT_SUPER_CHEAP_THRESHOLD,
+    DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
@@ -39,12 +41,16 @@ def _validate_thresholds(user_input) -> dict[str, str]:
     cheap_threshold = int(user_input[CONF_CHEAP_THRESHOLD])
     super_cheap_threshold = int(user_input[CONF_SUPER_CHEAP_THRESHOLD])
     expensive_threshold = int(user_input[CONF_EXPENSIVE_THRESHOLD])
+    very_expensive_threshold = int(user_input[CONF_VERY_EXPENSIVE_THRESHOLD])
 
     if super_cheap_threshold > cheap_threshold:
         return {"base": "super_cheap_above_cheap"}
 
     if cheap_threshold >= expensive_threshold:
         return {"base": "cheap_not_below_expensive"}
+
+    if expensive_threshold >= very_expensive_threshold:
+        return {"base": "expensive_not_below_very_expensive"}
 
     return {}
 
@@ -149,6 +155,17 @@ def _options_schema(config_entry, user_input=None) -> vol.Schema:
                 ),
             ): vol.Coerce(int),
             vol.Required(
+                CONF_VERY_EXPENSIVE_THRESHOLD,
+                default=int(
+                    _option_default(
+                        config_entry,
+                        user_input,
+                        CONF_VERY_EXPENSIVE_THRESHOLD,
+                        DEFAULT_VERY_EXPENSIVE_THRESHOLD,
+                    )
+                ),
+            ): vol.Coerce(int),
+            vol.Required(
                 CONF_RESET_SCHEDULES,
                 default=bool(
                     user_input.get(CONF_RESET_SCHEDULES, False)
@@ -215,6 +232,7 @@ class CezDynamicTariffConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_CHEAP_THRESHOLD: DEFAULT_CHEAP_THRESHOLD,
                 CONF_SUPER_CHEAP_THRESHOLD: DEFAULT_SUPER_CHEAP_THRESHOLD,
                 CONF_EXPENSIVE_THRESHOLD: DEFAULT_EXPENSIVE_THRESHOLD,
+                CONF_VERY_EXPENSIVE_THRESHOLD: DEFAULT_VERY_EXPENSIVE_THRESHOLD,
             }
 
             return self.async_create_entry(
@@ -271,6 +289,9 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 CONF_CHEAP_THRESHOLD: int(user_input[CONF_CHEAP_THRESHOLD]),
                 CONF_SUPER_CHEAP_THRESHOLD: int(user_input[CONF_SUPER_CHEAP_THRESHOLD]),
                 CONF_EXPENSIVE_THRESHOLD: int(user_input[CONF_EXPENSIVE_THRESHOLD]),
+                CONF_VERY_EXPENSIVE_THRESHOLD: int(
+                    user_input[CONF_VERY_EXPENSIVE_THRESHOLD]
+                ),
             }
 
             if not user_input[CONF_RESET_SCHEDULES]:

@@ -6,6 +6,7 @@
 - zachovaná kompatibilita se starším uloženým formátem obsahujícím pouze začátky oken,
 - nápověda v Home Assistantu i README vysvětluje pásma, prahy, validaci a obnovení výchozího rozvrhu,
 - mapa a legenda tarifu se automaticky přizpůsobí libovolným procentním změnám a novým pásmům,
+- doplněný samostatný práh velmi drahého pásma `+25 %`, jeho senzor a binární senzor,
 - chybové hlášky možností integrace mají vlastní české a anglické překlady,
 - při chybě ve formuláři zůstane zachovaný rozepsaný uživatelský vstup.
 

@@ -20,6 +20,7 @@ from .const import (
     CONF_SUMMER_OFFDAY_SCHEDULE,
     CONF_SUMMER_WORKDAY_SCHEDULE,
     CONF_SUPER_CHEAP_THRESHOLD,
+    CONF_VERY_EXPENSIVE_THRESHOLD,
     CONF_WINTER_OFFDAY_SCHEDULE,
     CONF_WINTER_WORKDAY_SCHEDULE,
     DEFAULT_BASE_PRICE_KWH,
@@ -29,9 +30,10 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_SUPER_CHEAP_THRESHOLD,
     DEFAULT_UPDATE_INTERVAL_SECONDS,
+    DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
-from .schedule import DEFAULT_SCHEDULES, TariffWindow, parse_schedule
+from .schedule import DEFAULT_SCHEDULES, TariffWindow, classify_modifier, parse_schedule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,7 +51,10 @@ class TariffSnapshot:
     is_holiday: bool
     cheap_threshold_percent: int
     super_cheap_threshold_percent: int
+    expensive_threshold_percent: int
+    very_expensive_threshold_percent: int
     expensive_now: bool
+    very_expensive_now: bool
     base_price_kwh: float
     effective_price_kwh: float | None
     next_cheap_start: datetime | None
@@ -186,17 +191,24 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         super_cheap_threshold: int,
         cheap_threshold: int,
         expensive_threshold: int,
+        very_expensive_threshold: int,
     ) -> tuple[str, str]:
         """Return display token and semantic level for a modifier."""
-        if modifier_percent <= super_cheap_threshold:
-            return "🟢", "super_cheap"
-        if modifier_percent <= cheap_threshold:
-            return "🟩", "cheap"
-        if modifier_percent < expensive_threshold:
-            return "▫️", "normal"
-        if modifier_percent == expensive_threshold:
-            return "⬜", "expensive"
-        return "◻️", "very_expensive"
+        level = classify_modifier(
+            modifier_percent,
+            super_cheap_threshold,
+            cheap_threshold,
+            expensive_threshold,
+            very_expensive_threshold,
+        )
+        token = {
+            "super_cheap": "🟢",
+            "cheap": "🟩",
+            "normal": "▫️",
+            "expensive": "⬜",
+            "very_expensive": "◻️",
+        }[level]
+        return token, level
 
     def _serialize_schedule(
         self,
@@ -204,6 +216,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         super_cheap_threshold: int,
         cheap_threshold: int,
         expensive_threshold: int,
+        very_expensive_threshold: int,
     ) -> list[dict[str, Any]]:
         """Convert a daily schedule into Lovelace-friendly dictionaries."""
         items: list[dict[str, Any]] = []
@@ -214,6 +227,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             )
             modifier_label = f"{window.modifier_percent:+d} %"
             items.append(
@@ -238,6 +252,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         super_cheap_threshold: int,
         cheap_threshold: int,
         expensive_threshold: int,
+        very_expensive_threshold: int,
     ) -> str:
         """Render a compact one-line map for Markdown cards."""
         parts: list[str] = []
@@ -248,6 +263,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             )
             parts.append(
                 f"`{token} {self._format_minute(window.start_minute)}-"
@@ -263,6 +279,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         super_cheap_threshold: int,
         cheap_threshold: int,
         expensive_threshold: int,
+        very_expensive_threshold: int,
     ) -> list[dict[str, str]]:
         """Build a legend from all modifiers present in today's schedule."""
         legend: list[dict[str, str]] = []
@@ -272,6 +289,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             )
             legend.append(
                 {
@@ -339,6 +357,12 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         expensive_threshold = int(
             self._option(CONF_EXPENSIVE_THRESHOLD, DEFAULT_EXPENSIVE_THRESHOLD)
         )
+        very_expensive_threshold = int(
+            self._option(
+                CONF_VERY_EXPENSIVE_THRESHOLD,
+                DEFAULT_VERY_EXPENSIVE_THRESHOLD,
+            )
+        )
         base_price_kwh = float(self._option(CONF_BASE_PRICE_KWH, DEFAULT_BASE_PRICE_KWH))
 
         current_modifier_percent = current_window.modifier_percent
@@ -378,7 +402,10 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             is_holiday=is_holiday,
             cheap_threshold_percent=cheap_threshold,
             super_cheap_threshold_percent=super_cheap_threshold,
+            expensive_threshold_percent=expensive_threshold,
+            very_expensive_threshold_percent=very_expensive_threshold,
             expensive_now=current_modifier_percent >= expensive_threshold,
+            very_expensive_now=current_modifier_percent >= very_expensive_threshold,
             base_price_kwh=base_price_kwh,
             effective_price_kwh=effective_price_kwh,
             next_cheap_start=next_cheap_start,
@@ -390,18 +417,21 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             ),
             today_display_map=self._display_map(
                 schedule,
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             ),
             legend=self._legend(
                 schedule,
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
+                very_expensive_threshold,
             ),
         )
 

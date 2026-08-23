@@ -26,6 +26,11 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffBinarySensorDescription, ...] 
         translation_key="expensive_now",
         value_fn=lambda data: data.expensive_now,
     ),
+    CezDynamicTariffBinarySensorDescription(
+        key="very_expensive_now",
+        translation_key="very_expensive_now",
+        value_fn=lambda data: data.very_expensive_now,
+    ),
 )
 
 

@@ -22,6 +22,7 @@
     "error": {
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
+      "expensive_not_below_very_expensive": "Expensive threshold must be lower than very expensive threshold.",
       "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number."
     }
   },
@@ -29,13 +30,14 @@
     "step": {
       "init": {
         "title": "ČEZ Dynamic Tariff options",
-        "description": "Each schedule is a comma-separated list of `HH:MM=price change in %` items. The first item must start at `00:00`; adding or removing an item adds or removes a tariff band. Thresholds only classify modifiers as cheap or expensive and do not change the schedule.",
+        "description": "Each schedule is a comma-separated list of `HH:MM=price change in %` items. The first item must start at `00:00`; adding or removing an item adds or removes a tariff band. The four default threshold levels are -50, -10, +10, and +25 %. Thresholds classify modifiers and do not change the schedule.",
         "data": {
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
           "cheap_threshold": "Cheap threshold (%)",
           "super_cheap_threshold": "Super cheap threshold (%)",
           "expensive_threshold": "Expensive threshold (%)",
+          "very_expensive_threshold": "Very expensive threshold (%)",
           "reset_schedules": "Restore project default schedules",
           "winter_workday_schedule": "Winter workday tariff bands",
           "winter_offday_schedule": "Winter weekend/holiday tariff bands",
@@ -46,6 +48,7 @@
           "cheap_threshold": "A band at or below this modifier is cheap. Default: -10 %.",
           "super_cheap_threshold": "A band at or below this modifier is super cheap. Default: -50 %.",
           "expensive_threshold": "A band at or above this modifier is expensive. Default: +10 %.",
+          "very_expensive_threshold": "A band at or above this modifier is very expensive. Default: +25 %.",
           "reset_schedules": "Discard all custom times and price modifiers and restore the project defaults.",
           "winter_workday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+25. The next start ends the previous band.",
           "winter_offday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+10. The number of bands can be changed.",
@@ -57,6 +60,7 @@
     "error": {
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
+      "expensive_not_below_very_expensive": "Expensive threshold must be lower than very expensive threshold.",
       "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number."
     }
   },
@@ -66,6 +70,8 @@
       "current_band": {"name": "Current band"},
       "cheap_threshold": {"name": "Cheap threshold"},
       "super_cheap_threshold": {"name": "Super cheap threshold"},
+      "expensive_threshold": {"name": "Expensive threshold"},
+      "very_expensive_threshold": {"name": "Very expensive threshold"},
       "season": {"name": "Season"},
       "day_type": {"name": "Day type"},
       "effective_price": {"name": "Effective price"},
@@ -75,7 +81,8 @@
       "today_tariff_map": {"name": "Today tariff map"}
     },
     "binary_sensor": {
-      "expensive_now": {"name": "Expensive now"}
+      "expensive_now": {"name": "Expensive now"},
+      "very_expensive_now": {"name": "Very expensive now"}
     }
   }
 }

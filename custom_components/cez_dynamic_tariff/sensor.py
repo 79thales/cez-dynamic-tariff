@@ -59,6 +59,18 @@ SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
         value_fn=lambda data: data.super_cheap_threshold_percent,
     ),
     CezDynamicTariffSensorDescription(
+        key="expensive_threshold",
+        translation_key="expensive_threshold",
+        native_unit_of_measurement="%",
+        value_fn=lambda data: data.expensive_threshold_percent,
+    ),
+    CezDynamicTariffSensorDescription(
+        key="very_expensive_threshold",
+        translation_key="very_expensive_threshold",
+        native_unit_of_measurement="%",
+        value_fn=lambda data: data.very_expensive_threshold_percent,
+    ),
+    CezDynamicTariffSensorDescription(
         key="season",
         translation_key="season",
         value_fn=lambda data: data.season,

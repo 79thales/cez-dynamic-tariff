@@ -78,6 +78,25 @@ DEFAULT_SCHEDULES: dict[str, tuple[TariffWindow, ...]] = {
 }
 
 
+def classify_modifier(
+    modifier_percent: int,
+    super_cheap_threshold: int,
+    cheap_threshold: int,
+    expensive_threshold: int,
+    very_expensive_threshold: int,
+) -> str:
+    """Classify a modifier using all configured tariff thresholds."""
+    if modifier_percent <= super_cheap_threshold:
+        return "super_cheap"
+    if modifier_percent <= cheap_threshold:
+        return "cheap"
+    if modifier_percent < expensive_threshold:
+        return "normal"
+    if modifier_percent < very_expensive_threshold:
+        return "expensive"
+    return "very_expensive"
+
+
 def format_schedule(schedule: tuple[TariffWindow, ...]) -> str:
     """Format a complete schedule for the options form."""
     return ", ".join(
