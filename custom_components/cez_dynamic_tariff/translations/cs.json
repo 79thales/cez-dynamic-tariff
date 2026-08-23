@@ -20,7 +20,8 @@
     },
     "error": {
       "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",
-      "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma."
+      "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma.",
+      "invalid_schedule": "Zadej stejný počet rostoucích časů HH:MM jako ve výchozím rozvrhu; první musí být 00:00."
     }
   },
   "options": {
@@ -32,12 +33,22 @@
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
           "cheap_threshold": "Práh levného pásma (%)",
           "super_cheap_threshold": "Práh super levného pásma (%)",
-          "expensive_threshold": "Práh drahého pásma (%)"
+          "expensive_threshold": "Práh drahého pásma (%)",
+          "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
+          "winter_workday_schedule": "Začátky oken: zimní pracovní den",
+          "winter_offday_schedule": "Začátky oken: zimní víkend/svátek",
+          "summer_workday_schedule": "Začátky oken: letní pracovní den",
+          "summer_offday_schedule": "Začátky oken: letní víkend/svátek"
         },
         "data_description": {
           "cheap_threshold": "Výchozí -10 znamená, že levné je pásmo -10 % i -50 %.",
           "super_cheap_threshold": "Výchozí -50 znamená, že super levné je jen pásmo -50 %.",
-          "expensive_threshold": "Výchozí 10 znamená, že drahé je pásmo +10 % i +25 %."
+          "expensive_threshold": "Výchozí 10 znamená, že drahé je pásmo +10 % i +25 %.",
+          "reset_schedules": "Zahodí uložené časy a znovu načte výchozí rozvrhy vestavěné v integraci.",
+          "winter_workday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
+          "winter_offday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
+          "summer_workday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
+          "summer_offday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované."
         }
       }
     }

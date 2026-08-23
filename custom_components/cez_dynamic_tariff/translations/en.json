@@ -20,7 +20,8 @@
     },
     "error": {
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
-      "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold."
+      "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
+      "invalid_schedule": "Use the same number of strictly increasing HH:MM starts as the default schedule; the first must be 00:00."
     }
   },
   "options": {
@@ -32,12 +33,22 @@
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
           "cheap_threshold": "Cheap threshold (%)",
           "super_cheap_threshold": "Super cheap threshold (%)",
-          "expensive_threshold": "Expensive threshold (%)"
+          "expensive_threshold": "Expensive threshold (%)",
+          "reset_schedules": "Restore project default schedules",
+          "winter_workday_schedule": "Winter workday window starts",
+          "winter_offday_schedule": "Winter weekend/holiday window starts",
+          "summer_workday_schedule": "Summer workday window starts",
+          "summer_offday_schedule": "Summer weekend/holiday window starts"
         },
         "data_description": {
           "cheap_threshold": "Default -10 means both -10 % and -50 % windows are considered cheap.",
           "super_cheap_threshold": "Default -50 means only the -50 % window is considered super cheap.",
-          "expensive_threshold": "Default 10 means both +10 % and +25 % windows are considered expensive."
+          "expensive_threshold": "Default 10 means both +10 % and +25 % windows are considered expensive.",
+          "reset_schedules": "Discard saved schedule times and reload the defaults bundled with the integration.",
+          "winter_workday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
+          "winter_offday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
+          "summer_workday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
+          "summer_offday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged."
         }
       }
     }

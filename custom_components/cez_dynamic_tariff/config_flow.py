@@ -10,7 +10,12 @@ from .const import (
     CONF_EXPENSIVE_THRESHOLD,
     CONF_INCLUDE_HOLIDAYS,
     CONF_NAME,
+    CONF_RESET_SCHEDULES,
+    CONF_SUMMER_OFFDAY_SCHEDULE,
+    CONF_SUMMER_WORKDAY_SCHEDULE,
     CONF_SUPER_CHEAP_THRESHOLD,
+    CONF_WINTER_OFFDAY_SCHEDULE,
+    CONF_WINTER_WORKDAY_SCHEDULE,
     DEFAULT_BASE_PRICE_KWH,
     DEFAULT_CHEAP_THRESHOLD,
     DEFAULT_EXPENSIVE_THRESHOLD,
@@ -18,6 +23,14 @@ from .const import (
     DEFAULT_NAME,
     DEFAULT_SUPER_CHEAP_THRESHOLD,
     DOMAIN,
+)
+from .schedule import DEFAULT_SCHEDULES, format_schedule_starts, parse_schedule_starts
+
+SCHEDULE_OPTIONS = (
+    CONF_WINTER_WORKDAY_SCHEDULE,
+    CONF_WINTER_OFFDAY_SCHEDULE,
+    CONF_SUMMER_WORKDAY_SCHEDULE,
+    CONF_SUMMER_OFFDAY_SCHEDULE,
 )
 
 
@@ -34,6 +47,29 @@ def _validate_thresholds(user_input) -> dict[str, str]:
         return {"base": "cheap_not_below_expensive"}
 
     return {}
+
+
+def _schedule_default(config_entry, option: str) -> str:
+    """Return a saved schedule or the project default for the options form."""
+    value = config_entry.options.get(option)
+    if isinstance(value, str):
+        return value
+    return format_schedule_starts(DEFAULT_SCHEDULES[option])
+
+
+def _validate_schedules(user_input) -> dict[str, str]:
+    """Validate editable tariff window starts."""
+    if user_input[CONF_RESET_SCHEDULES]:
+        return {}
+
+    errors: dict[str, str] = {}
+    for option in SCHEDULE_OPTIONS:
+        try:
+            parse_schedule_starts(str(user_input[option]), DEFAULT_SCHEDULES[option])
+        except ValueError:
+            errors[option] = "invalid_schedule"
+
+    return errors
 
 
 def _options_schema(config_entry) -> vol.Schema:
@@ -85,6 +121,23 @@ def _options_schema(config_entry) -> vol.Schema:
                     )
                 ),
             ): vol.Coerce(int),
+            vol.Required(CONF_RESET_SCHEDULES, default=False): bool,
+            vol.Required(
+                CONF_WINTER_WORKDAY_SCHEDULE,
+                default=_schedule_default(config_entry, CONF_WINTER_WORKDAY_SCHEDULE),
+            ): str,
+            vol.Required(
+                CONF_WINTER_OFFDAY_SCHEDULE,
+                default=_schedule_default(config_entry, CONF_WINTER_OFFDAY_SCHEDULE),
+            ): str,
+            vol.Required(
+                CONF_SUMMER_WORKDAY_SCHEDULE,
+                default=_schedule_default(config_entry, CONF_SUMMER_WORKDAY_SCHEDULE),
+            ): str,
+            vol.Required(
+                CONF_SUMMER_OFFDAY_SCHEDULE,
+                default=_schedule_default(config_entry, CONF_SUMMER_OFFDAY_SCHEDULE),
+            ): str,
         }
     )
 
@@ -154,6 +207,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         """Manage the options."""
         if user_input is not None:
             errors = _validate_thresholds(user_input)
+            errors.update(_validate_schedules(user_input))
             if errors:
                 return self.async_show_form(
                     step_id="init",
@@ -161,16 +215,28 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     errors=errors,
                 )
 
-            return self.async_create_entry(
-                title="",
-                data={
-                    CONF_BASE_PRICE_KWH: float(user_input[CONF_BASE_PRICE_KWH]),
-                    CONF_INCLUDE_HOLIDAYS: bool(user_input[CONF_INCLUDE_HOLIDAYS]),
-                    CONF_CHEAP_THRESHOLD: int(user_input[CONF_CHEAP_THRESHOLD]),
-                    CONF_SUPER_CHEAP_THRESHOLD: int(user_input[CONF_SUPER_CHEAP_THRESHOLD]),
-                    CONF_EXPENSIVE_THRESHOLD: int(user_input[CONF_EXPENSIVE_THRESHOLD]),
-                },
-            )
+            options = {
+                CONF_BASE_PRICE_KWH: float(user_input[CONF_BASE_PRICE_KWH]),
+                CONF_INCLUDE_HOLIDAYS: bool(user_input[CONF_INCLUDE_HOLIDAYS]),
+                CONF_CHEAP_THRESHOLD: int(user_input[CONF_CHEAP_THRESHOLD]),
+                CONF_SUPER_CHEAP_THRESHOLD: int(user_input[CONF_SUPER_CHEAP_THRESHOLD]),
+                CONF_EXPENSIVE_THRESHOLD: int(user_input[CONF_EXPENSIVE_THRESHOLD]),
+            }
+
+            if not user_input[CONF_RESET_SCHEDULES]:
+                options.update(
+                    {
+                        option: format_schedule_starts(
+                            parse_schedule_starts(
+                                str(user_input[option]),
+                                DEFAULT_SCHEDULES[option],
+                            )
+                        )
+                        for option in SCHEDULE_OPTIONS
+                    }
+                )
+
+            return self.async_create_entry(title="", data=options)
 
         return self.async_show_form(
             step_id="init",

@@ -10,6 +10,11 @@ CONF_INCLUDE_HOLIDAYS = "include_holidays"
 CONF_CHEAP_THRESHOLD = "cheap_threshold"
 CONF_SUPER_CHEAP_THRESHOLD = "super_cheap_threshold"
 CONF_EXPENSIVE_THRESHOLD = "expensive_threshold"
+CONF_RESET_SCHEDULES = "reset_schedules"
+CONF_SUMMER_OFFDAY_SCHEDULE = "summer_offday_schedule"
+CONF_SUMMER_WORKDAY_SCHEDULE = "summer_workday_schedule"
+CONF_WINTER_OFFDAY_SCHEDULE = "winter_offday_schedule"
+CONF_WINTER_WORKDAY_SCHEDULE = "winter_workday_schedule"
 
 DEFAULT_NAME = "ČEZ Dynamic Tariff"
 DEFAULT_BASE_PRICE_KWH = 0.0

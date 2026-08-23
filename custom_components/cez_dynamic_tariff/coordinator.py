@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Any, Final
+from typing import Any
 
 import holidays
 from homeassistant.config_entries import ConfigEntry
@@ -17,7 +17,11 @@ from .const import (
     CONF_EXPENSIVE_THRESHOLD,
     CONF_INCLUDE_HOLIDAYS,
     CONF_NAME,
+    CONF_SUMMER_OFFDAY_SCHEDULE,
+    CONF_SUMMER_WORKDAY_SCHEDULE,
     CONF_SUPER_CHEAP_THRESHOLD,
+    CONF_WINTER_OFFDAY_SCHEDULE,
+    CONF_WINTER_WORKDAY_SCHEDULE,
     DEFAULT_BASE_PRICE_KWH,
     DEFAULT_CHEAP_THRESHOLD,
     DEFAULT_EXPENSIVE_THRESHOLD,
@@ -27,17 +31,9 @@ from .const import (
     DEFAULT_UPDATE_INTERVAL_SECONDS,
     DOMAIN,
 )
+from .schedule import DEFAULT_SCHEDULES, TariffWindow, parse_schedule_starts
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True, slots=True)
-class TariffWindow:
-    """One tariff window during a day."""
-
-    start_minute: int
-    end_minute: int
-    modifier_percent: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,55 +59,6 @@ class TariffSnapshot:
     today_schedule: list[dict[str, Any]]
     today_display_map: str
     legend: list[dict[str, str]]
-
-
-WINTER_WORKDAY: Final[tuple[TariffWindow, ...]] = (
-    TariffWindow(0, 180, -10),
-    TariffWindow(180, 300, -50),
-    TariffWindow(300, 480, 25),
-    TariffWindow(480, 660, 10),
-    TariffWindow(660, 840, -10),
-    TariffWindow(840, 960, 10),
-    TariffWindow(960, 1080, -10),
-    TariffWindow(1080, 1200, 25),
-    TariffWindow(1200, 1380, 10),
-    TariffWindow(1380, 1440, -10),
-)
-
-WINTER_OFFDAY: Final[tuple[TariffWindow, ...]] = (
-    TariffWindow(0, 180, -10),
-    TariffWindow(180, 300, -50),
-    TariffWindow(300, 660, 10),
-    TariffWindow(660, 840, -10),
-    TariffWindow(840, 960, 10),
-    TariffWindow(960, 1080, -10),
-    TariffWindow(1080, 1380, 10),
-    TariffWindow(1380, 1440, -10),
-)
-
-SUMMER_WORKDAY: Final[tuple[TariffWindow, ...]] = (
-    TariffWindow(0, 180, -10),
-    TariffWindow(180, 300, -50),
-    TariffWindow(300, 480, 25),
-    TariffWindow(480, 660, 10),
-    TariffWindow(660, 840, -50),
-    TariffWindow(840, 960, 10),
-    TariffWindow(960, 1080, -10),
-    TariffWindow(1080, 1200, 25),
-    TariffWindow(1200, 1380, 10),
-    TariffWindow(1380, 1440, -10),
-)
-
-SUMMER_OFFDAY: Final[tuple[TariffWindow, ...]] = (
-    TariffWindow(0, 180, -10),
-    TariffWindow(180, 300, -50),
-    TariffWindow(300, 660, 10),
-    TariffWindow(660, 840, -50),
-    TariffWindow(840, 960, 10),
-    TariffWindow(960, 1080, -10),
-    TariffWindow(1080, 1380, 10),
-    TariffWindow(1380, 1440, -10),
-)
 
 
 class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
@@ -160,11 +107,38 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         """Return True for weekend or holiday."""
         return day.weekday() >= 5 or self._is_holiday(day)
 
+    def _schedule_from_option(
+        self,
+        option: str,
+        default_schedule: tuple[TariffWindow, ...],
+    ) -> tuple[TariffWindow, ...]:
+        """Read a custom schedule, falling back safely to the project default."""
+        value = self._option(option, None)
+        if not isinstance(value, str):
+            return default_schedule
+
+        try:
+            return parse_schedule_starts(value, default_schedule)
+        except ValueError:
+            _LOGGER.warning("Ignoring invalid saved tariff schedule: %s", option)
+            return default_schedule
+
     def _schedule_for_day(self, day: date) -> tuple[TariffWindow, ...]:
         """Return the correct schedule for the given day."""
         if self._is_summer(day):
-            return SUMMER_OFFDAY if self._is_offday(day) else SUMMER_WORKDAY
-        return WINTER_OFFDAY if self._is_offday(day) else WINTER_WORKDAY
+            option = (
+                CONF_SUMMER_OFFDAY_SCHEDULE
+                if self._is_offday(day)
+                else CONF_SUMMER_WORKDAY_SCHEDULE
+            )
+        else:
+            option = (
+                CONF_WINTER_OFFDAY_SCHEDULE
+                if self._is_offday(day)
+                else CONF_WINTER_WORKDAY_SCHEDULE
+            )
+
+        return self._schedule_from_option(option, DEFAULT_SCHEDULES[option])
 
     @staticmethod
     def _minute_of_day(when: datetime) -> int:

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7
+
+- rozvrhy časových oken lze upravit přímo v možnostech integrace v Home Assistantu,
+- přidané obnovení výchozích rozvrhů vestavěných v projektu.
+
 ## 0.1.6
 
 - opravené odkazy na repozitář, dokumentaci, issue tracker a HACS workflow.

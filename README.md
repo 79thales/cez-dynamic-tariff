@@ -10,9 +10,9 @@
   <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
-Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Rozvrh je pevně definovaný podle sezóny a typu dne; integrace nestahuje aktuální ceny z internetu.
+Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časy oken lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.1.5`
+Aktuální verze: `0.1.7`
 
 ## Požadavky
 
@@ -29,6 +29,7 @@ Aktuální verze: `0.1.5`
   - práh super levného pásma v %
   - informaci, zda je právě drahé pásmo
 - umí zohlednit české státní svátky jako nepracovní dny
+- umožňuje upravit časy tarifních oken pro zimní/letní pracovní den i víkend/svátek
 
 ## Instalace do Home Assistantu
 
@@ -101,7 +102,9 @@ Binární senzory:
 - detekce svátků používá Python balíček `holidays`
 - základní cena `0` znamená, že se efektivní cena nevypočítává
 - prahy levného a drahého pásma lze změnit v nastavení integrace
-- tarifní rozvrh je pevný a je potřeba ověřit, že odpovídá aktuálním podmínkám vašeho produktu
+- časy tarifních oken lze změnit v **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff → Konfigurovat**
+- pro každý rozvrh zadej začátky oken oddělené čárkou ve formátu `HH:MM`; první čas musí být `00:00`
+- změnou časů se zachovají výchozí změny ceny jednotlivých oken; zaškrtnutím **Obnovit výchozí rozvrhy z projektu** se vlastní časy zahodí
 
 ## Vydání nové verze
 
@@ -109,7 +112,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.1.5`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.1.7`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
