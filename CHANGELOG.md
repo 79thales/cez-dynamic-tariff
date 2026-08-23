@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 0.2.0
 
 - časová pásma lze přidávat, odebírat a měnit ve formátu `HH:MM=změna_v_%`,
 - všechny čtyři výchozí rozvrhy jsou ověřené proti zveřejněné tabulce časových pásem a chráněné regresním testem,

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
 import types
 import unittest
+from pathlib import Path
 
 
 def _load_schedule_module():
