@@ -5,13 +5,13 @@
     "@79thales"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/79thales/cez_dynamic_tariff#readme",
+  "documentation": "https://github.com/79thales/cez-dynamic-tariff#readme",
   "integration_type": "helper",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/79thales/cez_dynamic_tariff/issues",
+  "issue_tracker": "https://github.com/79thales/cez-dynamic-tariff/issues",
   "requirements": [
     "holidays==0.93"
   ],
   "single_config_entry": true,
-  "version": "0.1.5"
+  "version": "0.1.6"
 }

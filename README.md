@@ -2,9 +2,9 @@
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
 [![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white)](https://hacs.xyz/)
-[![HACS validation](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hacs.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hacs.yaml)
-[![Hassfest](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/hassfest.yaml)
-[![Quality](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/quality.yaml/badge.svg)](https://github.com/79thales/cez_dynamic_tariff/actions/workflows/quality.yaml)
+[![HACS validation](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hacs.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hacs.yaml)
+[![Hassfest](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hassfest.yaml)
+[![Quality](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/quality.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/quality.yaml)
 
 <p align="center">
   <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
@@ -56,14 +56,14 @@ Po restartu:
 
 ### Varianta 2: instalace přes HACS
 
-[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez_dynamic_tariff&category=integration)
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
 
 Pokud repozitář ještě není ve výchozím katalogu HACS, přidej jej jako vlastní repozitář:
 
 1. Otevři **HACS**.
 2. Otevři nabídku **tři tečky**.
 3. Vyber **Vlastní repozitáře**.
-4. Vlož `https://github.com/79thales/cez_dynamic_tariff`.
+4. Vlož `https://github.com/79thales/cez-dynamic-tariff`.
 5. Vyber typ **Integrace** a repozitář přidej.
 6. Integraci nainstaluj a restartuj Home Assistant.
 7. Otevři **Nastavení → Zařízení a služby → Přidat integraci**.

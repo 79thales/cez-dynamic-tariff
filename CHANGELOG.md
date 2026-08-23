@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- opravené odkazy na repozitář, dokumentaci, issue tracker a HACS workflow.
+
 ## 0.1.5
 
 - lokalizované názvy entit v češtině a angličtině,
