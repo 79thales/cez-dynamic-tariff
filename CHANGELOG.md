@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+
+- všechny senzory a binární senzory jsou přiřazené ke společnému zařízení ČEZ Dynamic Tariff, takže nové výchozí ID jednotně používá prefix `cez_dynamic_tariff_`.
+
 ## 0.2.1
 
 - přidaný hotový dynamický dashboard v `examples/dashboard.yaml`; mapa a legenda se přizpůsobují upraveným časům, procentům i novým pásmům.

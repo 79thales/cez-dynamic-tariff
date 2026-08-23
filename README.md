@@ -12,7 +12,7 @@
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.2.1`
+Aktuální verze: `0.2.2`
 
 ## Požadavky
 
@@ -183,6 +183,8 @@ Binární senzory:
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
+Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**, proto jejich výchozí ID obsahují prefix `cez_dynamic_tariff_`. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
+
 ## Poznámky
 
 - `base_price_kwh` je pouze obchodní složka ceny elektřiny
@@ -199,7 +201,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.1`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.2`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
