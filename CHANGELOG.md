@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8
+
+- načtení českých svátků probíhá mimo hlavní event loop Home Assistantu.
+
 ## 0.1.7
 
 - rozvrhy časových oken lze upravit přímo v možnostech integrace v Home Assistantu,

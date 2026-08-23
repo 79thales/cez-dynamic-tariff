@@ -67,7 +67,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize coordinator."""
         self.entry = entry
-        self._holidays = holidays.country_holidays("CZ")
+        self._holidays = None
 
         super().__init__(
             hass,
@@ -95,6 +95,8 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         """Return True if the day is a Czech public holiday."""
         include_holidays = bool(self._option(CONF_INCLUDE_HOLIDAYS, DEFAULT_INCLUDE_HOLIDAYS))
         if not include_holidays:
+            return False
+        if self._holidays is None:
             return False
         return day in self._holidays
 
@@ -255,6 +257,12 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
     async def _async_update_data(self) -> TariffSnapshot:
         """Calculate the current tariff state."""
+        if self._holidays is None:
+            self._holidays = await self.hass.async_add_executor_job(
+                holidays.country_holidays,
+                "CZ",
+            )
+
         now = dt_util.now()
         current_window = self._current_window(now)
 
