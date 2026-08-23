@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- výchozí ID všech senzorů a binárních senzorů se nyní explicitně odvozují z interních stabilních klíčů, nikoli z přeloženého názvu entity,
+- senzor aktuální změny ceny se při nové registraci vytvoří jako `sensor.cez_dynamic_tariff_current_modifier`, nikoli jako `sensor.cez_dynamic_tariff_price_change`.
+
 ## 0.2.2
 
 - všechny senzory a binární senzory jsou přiřazené ke společnému zařízení ČEZ Dynamic Tariff, takže nové výchozí ID jednotně používá prefix `cez_dynamic_tariff_`.

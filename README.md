@@ -12,7 +12,7 @@
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.2.2`
+Aktuální verze: `0.2.3`
 
 ## Požadavky
 
@@ -183,7 +183,9 @@ Binární senzory:
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
-Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**, proto jejich výchozí ID obsahují prefix `cez_dynamic_tariff_`. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
+Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**. Integrace od verze `0.2.3` explicitně navrhuje výchozí ID podle stabilních interních klíčů uvedených výše, takže jejich suffix nezávisí na jazyku ani překladu názvu entity. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
+
+Pokud se senzor ve verzi `0.2.2` nově zaregistroval jako `sensor.cez_dynamic_tariff_price_change`, přejmenuj jej jednou v nastavení entity na `sensor.cez_dynamic_tariff_current_modifier`. Dashboard i automatizace v tomto projektu používají stabilní ID `sensor.cez_dynamic_tariff_current_modifier`.
 
 ## Poznámky
 
@@ -201,7 +203,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.2`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.3`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
