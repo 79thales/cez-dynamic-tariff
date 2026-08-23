@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+- časová pásma lze přidávat, odebírat a měnit ve formátu `HH:MM=změna_v_%`,
+- zachovaná kompatibilita se starším uloženým formátem obsahujícím pouze začátky oken,
+- nápověda v Home Assistantu i README vysvětluje pásma, prahy, validaci a obnovení výchozího rozvrhu,
+- mapa a legenda tarifu se automaticky přizpůsobí libovolným procentním změnám a novým pásmům,
+- chybové hlášky možností integrace mají vlastní české a anglické překlady,
+- při chybě ve formuláři zůstane zachovaný rozepsaný uživatelský vstup.
+
 ## 0.1.9
 
 - integrace je správně klasifikovaná jako služba a zobrazuje se v **Nastavení → Zařízení a služby → Integrace**,

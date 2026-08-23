@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "ČEZ Dynamický tarif",
-        "description": "Vytvoří senzory Home Assistantu z pevně daného rozvrhu Dynamického tarifu ČEZ.",
+        "description": "Vytvoří senzory Home Assistantu z výchozího rozvrhu Dynamického tarifu ČEZ. Tarifní pásma lze později upravit v možnostech integrace.",
         "data": {
           "name": "Název",
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
@@ -22,13 +22,14 @@
     "error": {
       "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",
       "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma.",
-      "invalid_schedule": "Zadej stejný počet rostoucích časů HH:MM jako ve výchozím rozvrhu; první musí být 00:00."
+      "invalid_schedule": "Použij položky `HH:MM=změna` seřazené podle času a oddělené čárkou; první musí být `00:00=...` a každá změna musí být celé číslo."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Možnosti ČEZ Dynamický tarif",
+        "description": "Každý rozvrh je seznam položek `HH:MM=změna ceny v %` oddělených čárkou. První položka musí začínat v `00:00`; přidáním nebo odebráním položky přidáš nebo odebereš tarifní pásmo. Prahy jen určují, které změny jsou levné či drahé, a nemění rozvrh.",
         "data": {
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
@@ -36,22 +37,27 @@
           "super_cheap_threshold": "Práh super levného pásma (%)",
           "expensive_threshold": "Práh drahého pásma (%)",
           "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
-          "winter_workday_schedule": "Začátky oken: zimní pracovní den",
-          "winter_offday_schedule": "Začátky oken: zimní víkend/svátek",
-          "summer_workday_schedule": "Začátky oken: letní pracovní den",
-          "summer_offday_schedule": "Začátky oken: letní víkend/svátek"
+          "winter_workday_schedule": "Pásma: zimní pracovní den",
+          "winter_offday_schedule": "Pásma: zimní víkend/svátek",
+          "summer_workday_schedule": "Pásma: letní pracovní den",
+          "summer_offday_schedule": "Pásma: letní víkend/svátek"
         },
         "data_description": {
-          "cheap_threshold": "Výchozí -10 znamená, že levné je pásmo -10 % i -50 %.",
-          "super_cheap_threshold": "Výchozí -50 znamená, že super levné je jen pásmo -50 %.",
-          "expensive_threshold": "Výchozí 10 znamená, že drahé je pásmo +10 % i +25 %.",
-          "reset_schedules": "Zahodí uložené časy a znovu načte výchozí rozvrhy vestavěné v integraci.",
-          "winter_workday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
-          "winter_offday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
-          "summer_workday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované.",
-          "summer_offday_schedule": "Časy odděl čárkou ve formátu HH:MM; první musí být 00:00. Změny ceny zůstanou zachované."
+          "cheap_threshold": "Pásmo s touto nebo nižší změnou je levné. Výchozí hodnota: -10 %.",
+          "super_cheap_threshold": "Pásmo s touto nebo nižší změnou je super levné. Výchozí hodnota: -50 %.",
+          "expensive_threshold": "Pásmo s touto nebo vyšší změnou je drahé. Výchozí hodnota: +10 %.",
+          "reset_schedules": "Zahodí všechny vlastní časy i změny cen a obnoví výchozí rozvrhy projektu.",
+          "winter_workday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+25. Další začátek ukončuje předchozí pásmo.",
+          "winter_offday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+10. Počet pásem lze změnit.",
+          "summer_workday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+25. Počet pásem lze změnit.",
+          "summer_offday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+10. Poslední pásmo končí o půlnoci."
         }
       }
+    },
+    "error": {
+      "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",
+      "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma.",
+      "invalid_schedule": "Použij položky `HH:MM=změna` seřazené podle času a oddělené čárkou; první musí být `00:00=...` a každá změna musí být celé číslo."
     }
   },
   "entity": {

@@ -1,7 +1,8 @@
-"""Default tariff schedules and helpers for user-configured window start times."""
+"""Default tariff schedules and helpers for user-configured tariff bands."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from .const import (
@@ -77,23 +78,35 @@ DEFAULT_SCHEDULES: dict[str, tuple[TariffWindow, ...]] = {
 }
 
 
-def format_schedule_starts(schedule: tuple[TariffWindow, ...]) -> str:
-    """Format window starts as a compact value for the options form."""
+def format_schedule(schedule: tuple[TariffWindow, ...]) -> str:
+    """Format a complete schedule for the options form."""
     return ", ".join(
-        f"{window.start_minute // 60:02d}:{window.start_minute % 60:02d}"
+        f"{window.start_minute // 60:02d}:{window.start_minute % 60:02d}="
+        f"{window.modifier_percent:+d}"
         for window in schedule
     )
 
 
-def parse_schedule_starts(
+def parse_schedule(
     value: str,
     default_schedule: tuple[TariffWindow, ...],
 ) -> tuple[TariffWindow, ...]:
-    """Build a schedule from comma-separated HH:MM starts and default modifiers."""
-    starts: list[int] = []
+    """Parse a complete schedule while accepting the legacy starts-only format."""
+    items = [item.strip() for item in re.split(r"[,;\n]+", value) if item.strip()]
+    if not items:
+        raise ValueError("invalid_schedule")
 
-    for item in value.split(","):
-        hours_text, separator, minutes_text = item.strip().partition(":")
+    has_modifiers = ["=" in item for item in items]
+    if any(has_modifiers) and not all(has_modifiers):
+        raise ValueError("invalid_schedule")
+
+    complete_format = all(has_modifiers)
+    starts: list[int] = []
+    modifiers: list[int] = []
+
+    for item in items:
+        time_text = item.partition("=")[0]
+        hours_text, separator, minutes_text = time_text.strip().partition(":")
         if not separator or not hours_text.isdigit() or not minutes_text.isdigit():
             raise ValueError("invalid_schedule")
 
@@ -104,16 +117,26 @@ def parse_schedule_starts(
 
         starts.append(hours * 60 + minutes)
 
-    if len(starts) != len(default_schedule):
-        raise ValueError("invalid_schedule")
     if not starts or starts[0] != 0 or starts != sorted(set(starts)):
         raise ValueError("invalid_schedule")
+
+    if complete_format:
+        for item in items:
+            _, _, modifier_text = item.partition("=")
+            try:
+                modifiers.append(int(modifier_text.strip()))
+            except ValueError as err:
+                raise ValueError("invalid_schedule") from err
+    else:
+        if len(starts) != len(default_schedule):
+            raise ValueError("invalid_schedule")
+        modifiers = [window.modifier_percent for window in default_schedule]
 
     return tuple(
         TariffWindow(
             start_minute=start,
             end_minute=starts[index + 1] if index + 1 < len(starts) else 1440,
-            modifier_percent=default_schedule[index].modifier_percent,
+            modifier_percent=modifiers[index],
         )
         for index, start in enumerate(starts)
     )

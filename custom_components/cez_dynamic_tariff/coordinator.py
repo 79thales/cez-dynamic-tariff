@@ -31,7 +31,7 @@ from .const import (
     DEFAULT_UPDATE_INTERVAL_SECONDS,
     DOMAIN,
 )
-from .schedule import DEFAULT_SCHEDULES, TariffWindow, parse_schedule_starts
+from .schedule import DEFAULT_SCHEDULES, TariffWindow, parse_schedule
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -120,7 +120,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             return default_schedule
 
         try:
-            return parse_schedule_starts(value, default_schedule)
+            return parse_schedule(value, default_schedule)
         except ValueError:
             _LOGGER.warning("Ignoring invalid saved tariff schedule: %s", option)
             return default_schedule
@@ -181,22 +181,41 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         return start_dt, end_dt
 
     @staticmethod
-    def _modifier_style(modifier_percent: int) -> tuple[str, str]:
+    def _modifier_style(
+        modifier_percent: int,
+        super_cheap_threshold: int,
+        cheap_threshold: int,
+        expensive_threshold: int,
+    ) -> tuple[str, str]:
         """Return display token and semantic level for a modifier."""
-        if modifier_percent <= -50:
+        if modifier_percent <= super_cheap_threshold:
             return "🟢", "super_cheap"
-        if modifier_percent <= -10:
+        if modifier_percent <= cheap_threshold:
             return "🟩", "cheap"
-        if modifier_percent >= 25:
-            return "◻️", "very_expensive"
-        return "⬜", "expensive"
+        if modifier_percent < expensive_threshold:
+            return "▫️", "normal"
+        if modifier_percent == expensive_threshold:
+            return "⬜", "expensive"
+        return "◻️", "very_expensive"
 
-    def _serialize_schedule(self, schedule: tuple[TariffWindow, ...]) -> list[dict[str, Any]]:
+    def _serialize_schedule(
+        self,
+        schedule: tuple[TariffWindow, ...],
+        super_cheap_threshold: int,
+        cheap_threshold: int,
+        expensive_threshold: int,
+    ) -> list[dict[str, Any]]:
         """Convert a daily schedule into Lovelace-friendly dictionaries."""
         items: list[dict[str, Any]] = []
 
         for window in schedule:
-            token, level = self._modifier_style(window.modifier_percent)
+            token, level = self._modifier_style(
+                window.modifier_percent,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            )
+            modifier_label = f"{window.modifier_percent:+d} %"
             items.append(
                 {
                     "start": self._format_minute(window.start_minute),
@@ -204,23 +223,65 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                     "modifier_percent": window.modifier_percent,
                     "level": level,
                     "token": token,
-                    "label": f"{token} {self._format_minute(window.start_minute)}-{self._format_minute(window.end_minute)}",
+                    "label": (
+                        f"{token} {self._format_minute(window.start_minute)}-"
+                        f"{self._format_minute(window.end_minute)} ({modifier_label})"
+                    ),
                 }
             )
 
         return items
 
-    def _display_map(self, schedule: tuple[TariffWindow, ...]) -> str:
+    def _display_map(
+        self,
+        schedule: tuple[TariffWindow, ...],
+        super_cheap_threshold: int,
+        cheap_threshold: int,
+        expensive_threshold: int,
+    ) -> str:
         """Render a compact one-line map for Markdown cards."""
         parts: list[str] = []
 
         for window in schedule:
-            token, _ = self._modifier_style(window.modifier_percent)
+            token, _ = self._modifier_style(
+                window.modifier_percent,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            )
             parts.append(
-                f"`{token} {self._format_minute(window.start_minute)}-{self._format_minute(window.end_minute)}`"
+                f"`{token} {self._format_minute(window.start_minute)}-"
+                f"{self._format_minute(window.end_minute)} "
+                f"({window.modifier_percent:+d} %)`"
             )
 
         return " ".join(parts)
+
+    def _legend(
+        self,
+        schedule: tuple[TariffWindow, ...],
+        super_cheap_threshold: int,
+        cheap_threshold: int,
+        expensive_threshold: int,
+    ) -> list[dict[str, str]]:
+        """Build a legend from all modifiers present in today's schedule."""
+        legend: list[dict[str, str]] = []
+        for modifier_percent in sorted({window.modifier_percent for window in schedule}):
+            token, level = self._modifier_style(
+                modifier_percent,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            )
+            legend.append(
+                {
+                    "token": token,
+                    "level": level,
+                    "label": level.replace("_", " "),
+                    "modifier_percent": f"{modifier_percent:+d}",
+                }
+            )
+        return legend
 
     def _current_window(self, when: datetime) -> TariffWindow:
         """Return the currently active tariff window."""
@@ -324,14 +385,24 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             next_cheap_end=next_cheap_end,
             next_cheap_modifier_percent=next_cheap_modifier_percent,
             today_map_code=today_map_code,
-            today_schedule=self._serialize_schedule(schedule),
-            today_display_map=self._display_map(schedule),
-            legend=[
-                {"token": "🟢", "label": "super cheap", "modifier_percent": "-50"},
-                {"token": "🟩", "label": "cheap", "modifier_percent": "-10"},
-                {"token": "⬜", "label": "expensive", "modifier_percent": "+10"},
-                {"token": "◻️", "label": "very expensive", "modifier_percent": "+25"},
-            ],
+            today_schedule=self._serialize_schedule(
+                schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            ),
+            today_display_map=self._display_map(
+                schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            ),
+            legend=self._legend(
+                schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+            ),
         )
 
     @property

@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "ČEZ Dynamic Tariff",
-        "description": "Creates Home Assistant sensors from the fixed ČEZ dynamic tariff schedule.",
+        "description": "Creates Home Assistant sensors from the default ČEZ dynamic tariff schedule. Tariff bands can be edited later in the integration options.",
         "data": {
           "name": "Name",
           "base_price_kwh": "Base trading price (CZK/kWh)",
@@ -22,13 +22,14 @@
     "error": {
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
-      "invalid_schedule": "Use the same number of strictly increasing HH:MM starts as the default schedule; the first must be 00:00."
+      "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "ČEZ Dynamic Tariff options",
+        "description": "Each schedule is a comma-separated list of `HH:MM=price change in %` items. The first item must start at `00:00`; adding or removing an item adds or removes a tariff band. Thresholds only classify modifiers as cheap or expensive and do not change the schedule.",
         "data": {
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
@@ -36,22 +37,27 @@
           "super_cheap_threshold": "Super cheap threshold (%)",
           "expensive_threshold": "Expensive threshold (%)",
           "reset_schedules": "Restore project default schedules",
-          "winter_workday_schedule": "Winter workday window starts",
-          "winter_offday_schedule": "Winter weekend/holiday window starts",
-          "summer_workday_schedule": "Summer workday window starts",
-          "summer_offday_schedule": "Summer weekend/holiday window starts"
+          "winter_workday_schedule": "Winter workday tariff bands",
+          "winter_offday_schedule": "Winter weekend/holiday tariff bands",
+          "summer_workday_schedule": "Summer workday tariff bands",
+          "summer_offday_schedule": "Summer weekend/holiday tariff bands"
         },
         "data_description": {
-          "cheap_threshold": "Default -10 means both -10 % and -50 % windows are considered cheap.",
-          "super_cheap_threshold": "Default -50 means only the -50 % window is considered super cheap.",
-          "expensive_threshold": "Default 10 means both +10 % and +25 % windows are considered expensive.",
-          "reset_schedules": "Discard saved schedule times and reload the defaults bundled with the integration.",
-          "winter_workday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
-          "winter_offday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
-          "summer_workday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged.",
-          "summer_offday_schedule": "Comma-separated starts in HH:MM, beginning with 00:00. Price modifiers stay unchanged."
+          "cheap_threshold": "A band at or below this modifier is cheap. Default: -10 %.",
+          "super_cheap_threshold": "A band at or below this modifier is super cheap. Default: -50 %.",
+          "expensive_threshold": "A band at or above this modifier is expensive. Default: +10 %.",
+          "reset_schedules": "Discard all custom times and price modifiers and restore the project defaults.",
+          "winter_workday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+25. The next start ends the previous band.",
+          "winter_offday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+10. The number of bands can be changed.",
+          "summer_workday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+25. The number of bands can be changed.",
+          "summer_offday_schedule": "Full schedule, for example: 00:00=-10, 03:00=-50, 05:00=+10. The last band ends at midnight."
         }
       }
+    },
+    "error": {
+      "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
+      "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
+      "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number."
     }
   },
   "entity": {

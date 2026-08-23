@@ -10,9 +10,9 @@
   <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
-Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časy oken lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
+Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.1.9`
+Aktuální verze: `0.2.0`
 
 ## Požadavky
 
@@ -22,14 +22,14 @@ Aktuální verze: `0.1.9`
 
 ## Co integrace umí
 
-- vypočítá aktuální změnu ceny podle pevně daného rozpisu ČEZ
+- vypočítá aktuální změnu ceny podle výchozího nebo vlastního rozpisu ČEZ
 - vystaví aktuální tarifní pásmo, sezónu, typ dne a nejbližší další levné okno
 - vystaví pomocné entity:
   - práh levného pásma v %
   - práh super levného pásma v %
   - informaci, zda je právě drahé pásmo
 - umí zohlednit české státní svátky jako nepracovní dny
-- umožňuje upravit časy tarifních oken pro zimní/letní pracovní den i víkend/svátek
+- umožňuje přidávat, odebírat a upravovat tarifní pásma včetně časů a procentních změn ceny
 
 ## Instalace do Home Assistantu
 
@@ -75,6 +75,51 @@ Po zařazení do výchozího katalogu HACS bude možné přeskočit krok s vlast
 [![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff)
 [![Open your Home Assistant instance and show your integrations.](https://my.home-assistant.io/badges/configuration.svg)](https://my.home-assistant.io/redirect/config/)
 
+## Nastavení tarifních pásem
+
+Otevři **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**. Ve formuláři jsou čtyři samostatné denní rozvrhy:
+
+- zimní pracovní den,
+- zimní víkend nebo svátek,
+- letní pracovní den,
+- letní víkend nebo svátek.
+
+Každý rozvrh obsahuje položky ve formátu `HH:MM=změna_v_procentech`, oddělené čárkou. Například:
+
+```text
+00:00=-10, 03:00=-50, 05:00=+25, 08:00=+10
+```
+
+Tento příklad znamená:
+
+- od `00:00` změnu ceny `-10 %`,
+- od `03:00` změnu ceny `-50 %`,
+- od `05:00` změnu ceny `+25 %`,
+- od `08:00` změnu ceny `+10 %` až do půlnoci.
+
+Pravidla rozvrhu:
+
+- první položka musí začínat v `00:00`,
+- časy musí být seřazené a nesmí se opakovat,
+- změna ceny musí být celé číslo; znaménko `+` je volitelné,
+- další čas automaticky ukončí předchozí pásmo,
+- počet položek není pevný.
+
+Pokud ČEZ zavede další pásmo, vlož do příslušného rozvrhu další položku, například `12:30=+5`. Pásmo odebereš odstraněním jeho položky. Volba **Obnovit výchozí rozvrhy z projektu** zahodí vlastní časy i procentní změny a načte výchozí hodnoty integrace.
+
+Integrace změny sazebníku nestahuje automaticky. Nové oficiální pásmo proto můžeš ihned zadat ručně; výchozí rozvrhy projektu se následně upraví v nové verzi integrace.
+
+Starší uložený formát obsahující jen časy je nadále podporovaný. Při otevření a uložení nastavení se automaticky převede na úplný formát s procentními změnami.
+
+### Rozdíl mezi pásmem a prahem
+
+- **Tarifní pásmo** určuje čas začátku a skutečnou procentní změnu ceny, například `12:30=+5`.
+- **Práh levného pásma** určuje, které změny se mají považovat za levné a hledat jako další levné okno.
+- **Práh super levného pásma** určuje hranici super levného pásma.
+- **Práh drahého pásma** řídí binární senzor „Právě probíhá drahé pásmo“.
+
+Změna prahu nemění cenu ani časový rozvrh; mění pouze klasifikaci pásem pro senzory, barvy a automatizace.
+
 ## Vytvořené entity
 
 Senzory:
@@ -102,9 +147,8 @@ Binární senzory:
 - detekce svátků používá Python balíček `holidays`
 - základní cena `0` znamená, že se efektivní cena nevypočítává
 - prahy levného a drahého pásma lze změnit v nastavení integrace
-- časy tarifních oken lze změnit v **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff → Konfigurovat**
-- pro každý rozvrh zadej začátky oken oddělené čárkou ve formátu `HH:MM`; první čas musí být `00:00`
-- změnou časů se zachovají výchozí změny ceny jednotlivých oken; zaškrtnutím **Obnovit výchozí rozvrhy z projektu** se vlastní časy zahodí
+- časová pásma a jejich změny ceny lze změnit v **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**
+- zaškrtnutím **Obnovit výchozí rozvrhy z projektu** se vlastní časy i změny ceny zahodí
 
 ## Vydání nové verze
 
@@ -112,7 +156,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.1.9`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.0`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
@@ -210,110 +254,9 @@ entities:
     name: Drahé pásmo právě teď
 ```
 
-## Příklad grafického zobrazení v Lovelace
+## Grafická mapa pásem v Lovelace
 
-Pokud chceš grafičtější zobrazení, můžeš použít podmíněné Markdown karty, které se automaticky přepínají podle sezóny a typu dne.
-
-Tento YAML patří do nastavení celého pohledu, kde se upravuje `title` a `cards`:
-
-```yaml
-title: ČEZ Dynamic Tariff
-cards:
-  - type: entities
-    title: Aktuální stav
-    entities:
-      - entity: sensor.cez_dynamic_tariff_current_modifier
-        name: Změna ceny o
-      - entity: sensor.cez_dynamic_tariff_effective_price
-        name: Aktuální cena
-      - entity: sensor.cez_dynamic_tariff_current_band
-        name: Aktuální pásmo
-      - entity: sensor.cez_dynamic_tariff_day_type
-        name: Typ dne
-      - entity: sensor.cez_dynamic_tariff_season
-        name: Sezóna
-      - entity: sensor.cez_dynamic_tariff_next_cheap_start
-        name: Další levné od
-      - entity: sensor.cez_dynamic_tariff_next_cheap_end
-        name: Další levné do
-
-  - type: markdown
-    title: Legenda
-    content: |
-      `🟩 -10 %`  `🟢 -50 %`  `⬜ +10 %`  `◻️ +25 %`
-
-  - type: conditional
-    conditions:
-      - entity: sensor.cez_dynamic_tariff_season
-        state: Letní
-      - entity: sensor.cez_dynamic_tariff_day_type
-        state: Pracovní den
-    card:
-      type: markdown
-      title: Mapa tarifu dnes
-      content: |
-        **Duben až září / pracovní den**
-
-        `🟩 00:00-02:59` `🟢 03:00-04:59` `◻️ 05:00-07:59`  
-        `⬜ 08:00-10:59` `🟢 11:00-13:59` `⬜ 14:00-15:59`  
-        `🟩 16:00-17:59` `◻️ 18:00-19:59` `⬜ 20:00-22:59`  
-        `🟩 23:00-23:59`
-
-  - type: conditional
-    conditions:
-      - entity: sensor.cez_dynamic_tariff_season
-        state: Letní
-      - entity: sensor.cez_dynamic_tariff_day_type
-        state: Víkend nebo Svátek
-    card:
-      type: markdown
-      title: Mapa tarifu dnes
-      content: |
-        **Duben až září / víkend nebo svátek**
-
-        `🟩 00:00-02:59` `🟢 03:00-04:59` `⬜ 05:00-10:59`  
-        `🟢 11:00-13:59` `⬜ 14:00-15:59` `🟩 16:00-17:59`  
-        `⬜ 18:00-22:59` `🟩 23:00-23:59`
-
-  - type: conditional
-    conditions:
-      - entity: sensor.cez_dynamic_tariff_season
-        state: Zimní
-      - entity: sensor.cez_dynamic_tariff_day_type
-        state: Pracovní den
-    card:
-      type: markdown
-      title: Mapa tarifu dnes
-      content: |
-        **Říjen až březen / pracovní den**
-
-        `🟩 00:00-02:59` `🟢 03:00-04:59` `◻️ 05:00-07:59`  
-        `⬜ 08:00-10:59` `🟩 11:00-13:59` `⬜ 14:00-15:59`  
-        `🟩 16:00-17:59` `◻️ 18:00-19:59` `⬜ 20:00-22:59`  
-        `🟩 23:00-23:59`
-
-  - type: conditional
-    conditions:
-      - entity: sensor.cez_dynamic_tariff_season
-        state: Zimní
-      - entity: sensor.cez_dynamic_tariff_day_type
-        state: Víkend nebo Svátek
-    card:
-      type: markdown
-      title: Mapa tarifu dnes
-      content: |
-        **Říjen až březen / víkend nebo svátek**
-
-        `🟩 00:00-02:59` `🟢 03:00-04:59` `⬜ 05:00-10:59`  
-        `🟩 11:00-13:59` `⬜ 14:00-17:59` `🟩 18:00-19:59`  
-        `⬜ 20:00-22:59` `🟩 23:00-23:59`
-```
-
-Pokud upravuješ pouze jednu kartu a ne celý pohled, použij jen sekci jedné karty, ne celý blok s `title:` a `cards:`.
-
-## Jednodušší grafická mapa z nového senzoru
-
-Integrace nově vystavuje i senzor:
+Integrace vystavuje senzor:
 
 - `sensor.cez_dynamic_tariff_today_tariff_map`
 
@@ -321,9 +264,9 @@ Ten má v atributech připraveno:
 
 - `display_map` pro přímé vložení do Markdown karty
 - `schedule` jako seznam všech dnešních oken
-- `legend` s významem barev
+- `legend` sestavenou ze všech procentních změn použitých v dnešním rozvrhu
 
-Příklad jednoduché Markdown karty:
+Mapa i legenda se automaticky přizpůsobí vlastním časům, změnám ceny a nově přidaným pásmům. Příklad Markdown karty:
 
 ```yaml
 type: markdown
@@ -332,6 +275,10 @@ content: |
   **{{ states('sensor.cez_dynamic_tariff_today_tariff_map') }}**
 
   {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
+
+  {% for item in state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
+  `{{ item.token }} {{ item.modifier_percent }} %`
+  {% endfor %}
 ```
 
 ## Vzor dashboardu
@@ -372,12 +319,14 @@ cards:
       - type: markdown
         title: Legenda
         content: |
-          `🟩 -10 %` `🟢 -50 %` `⬜ +10 %` `◻️ +25 %`
+          {% for item in state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
+          `{{ item.token }} {{ item.modifier_percent }} %`
+          {% endfor %}
 
       - type: markdown
         title: Mapa tarifu dnes
         content: |
-          **{% if states('sensor.cez_dynamic_tariff_season') == 'Letní' %}Duben až září{% else %}Říjen až březen{% endif %} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
+          **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
 
           {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
 ```
