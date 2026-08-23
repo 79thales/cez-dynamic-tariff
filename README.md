@@ -12,7 +12,7 @@
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.2.0`
+Aktuální verze: `0.2.1`
 
 ## Požadavky
 
@@ -199,7 +199,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.0`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.1`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
@@ -334,70 +334,68 @@ content: |
 
 Tento dashboard je plně dynamický. Neobsahuje natvrdo zapsaná pásma ani hodnoty `-50/-10/+10/+25`; mapu a legendu čte z integrace, takže se automaticky přizpůsobí vlastnímu rozvrhu i případnému novému pásmu.
 
-YAML vlož do editoru YAML jednoho pohledu. Pokud se tvoje ID entit liší, vyber odpovídající entity ve vizuálním editoru:
+Hotová konfigurace celého dashboardu je v souboru [`examples/dashboard.yaml`](examples/dashboard.yaml). Je určena pro **Nastavení → Ovládací panely → editor nezpracované konfigurace**. Pokud se tvoje ID entit liší, vyber odpovídající entity ve vizuálním editoru.
+
+Pro vložení pouze jednoho pohledu použij tuto část:
 
 ```yaml
 title: ČEZ Dynamic Tariff
 path: cez-dynamic-tariff
 icon: mdi:transmission-tower
 cards:
-  - type: grid
-    columns: 2
-    square: false
-    cards:
-      - type: entities
-        title: Aktuální tarif
-        state_color: true
-        show_header_toggle: false
-        entities:
-          - entity: sensor.cez_dynamic_tariff_current_modifier
-            name: Změna ceny
-          - entity: sensor.cez_dynamic_tariff_effective_price
-            name: Efektivní cena
-          - entity: sensor.cez_dynamic_tariff_current_band
-            name: Čas aktuálního pásma
-          - entity: sensor.cez_dynamic_tariff_day_type
-            name: Typ dne
-          - entity: sensor.cez_dynamic_tariff_season
-            name: Sezóna
-          - entity: binary_sensor.cez_dynamic_tariff_expensive_now
-            name: Drahé pásmo
-          - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
-            name: Velmi drahé pásmo (+25 %)
+  - type: entities
+    title: Aktuální stav
+    state_color: true
+    show_header_toggle: false
+    entities:
+      - entity: sensor.cez_dynamic_tariff_current_modifier
+        name: Změna ceny o
+      - entity: sensor.cez_dynamic_tariff_effective_price
+        name: Aktuální cena
+      - entity: sensor.cez_dynamic_tariff_current_band
+        name: Aktuální pásmo
+      - entity: sensor.cez_dynamic_tariff_day_type
+        name: Typ dne
+      - entity: sensor.cez_dynamic_tariff_season
+        name: Sezóna
+      - entity: sensor.cez_dynamic_tariff_next_cheap_start
+        name: Další levné od
+      - entity: sensor.cez_dynamic_tariff_next_cheap_end
+        name: Další levné do
+      - entity: binary_sensor.cez_dynamic_tariff_expensive_now
+        name: Drahé pásmo právě teď
+      - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
+        name: Velmi drahé pásmo právě teď
 
-      - type: entities
-        title: Nastavené prahy
-        show_header_toggle: false
-        entities:
-          - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
-            name: Super levné
-          - entity: sensor.cez_dynamic_tariff_cheap_threshold
-            name: Levné
-          - entity: sensor.cez_dynamic_tariff_expensive_threshold
-            name: Drahé
-          - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
-            name: Velmi drahé
+  - type: markdown
+    title: Legenda
+    content: |
+      {% set legend = state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
+      {% if legend %}
+      {% for item in legend %}
+      `{{ item['token'] }} {{ item['modifier_percent'] }} %`
+      {% endfor %}
+      {% else %}
+      Legenda zatím není dostupná.
+      {% endif %}
 
-      - type: entities
-        title: Další levné okno
-        show_header_toggle: false
-        entities:
-          - entity: sensor.cez_dynamic_tariff_next_cheap_start
-            name: Začátek
-          - entity: sensor.cez_dynamic_tariff_next_cheap_end
-            name: Konec
-          - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
-            name: Změna ceny
+  - type: markdown
+    title: Mapa tarifu dnes
+    content: |
+      **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
 
-      - type: markdown
-        title: Dnešní mapa a legenda
-        content: |
-          **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
+      {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
 
-          {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
-
-          **Legenda**
-          {% for item in state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
-          `{{ item['token'] }} {{ item['modifier_percent'] }} %`
-          {% endfor %}
+  - type: entities
+    title: Nastavené prahy
+    show_header_toggle: false
+    entities:
+      - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
+        name: Super levné
+      - entity: sensor.cez_dynamic_tariff_cheap_threshold
+        name: Levné
+      - entity: sensor.cez_dynamic_tariff_expensive_threshold
+        name: Drahé
+      - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
+        name: Velmi drahé
 ```

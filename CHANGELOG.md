@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- přidaný hotový dynamický dashboard v `examples/dashboard.yaml`; mapa a legenda se přizpůsobují upraveným časům, procentům i novým pásmům.
+
 ## 0.2.0
 
 - časová pásma lze přidávat, odebírat a měnit ve formátu `HH:MM=změna_v_%`,

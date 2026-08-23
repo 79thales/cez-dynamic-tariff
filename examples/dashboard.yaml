@@ -1,0 +1,61 @@
+title: ČEZ Dynamic Tariff
+views:
+  - title: ČEZ Dynamic Tariff
+    path: cez-dynamic-tariff
+    icon: mdi:transmission-tower
+    cards:
+      - type: entities
+        title: Aktuální stav
+        state_color: true
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_current_modifier
+            name: Změna ceny o
+          - entity: sensor.cez_dynamic_tariff_effective_price
+            name: Aktuální cena
+          - entity: sensor.cez_dynamic_tariff_current_band
+            name: Aktuální pásmo
+          - entity: sensor.cez_dynamic_tariff_day_type
+            name: Typ dne
+          - entity: sensor.cez_dynamic_tariff_season
+            name: Sezóna
+          - entity: sensor.cez_dynamic_tariff_next_cheap_start
+            name: Další levné od
+          - entity: sensor.cez_dynamic_tariff_next_cheap_end
+            name: Další levné do
+          - entity: binary_sensor.cez_dynamic_tariff_expensive_now
+            name: Drahé pásmo právě teď
+          - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
+            name: Velmi drahé pásmo právě teď
+
+      - type: markdown
+        title: Legenda
+        content: |
+          {% set legend = state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
+          {% if legend %}
+          {% for item in legend %}
+          `{{ item['token'] }} {{ item['modifier_percent'] }} %`
+          {% endfor %}
+          {% else %}
+          Legenda zatím není dostupná.
+          {% endif %}
+
+      - type: markdown
+        title: Mapa tarifu dnes
+        content: |
+          **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
+
+          {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+
+      - type: entities
+        title: Nastavené prahy
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
+            name: Super levné
+          - entity: sensor.cez_dynamic_tariff_cheap_threshold
+            name: Levné
+          - entity: sensor.cez_dynamic_tariff_expensive_threshold
+            name: Drahé
+          - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
+            name: Velmi drahé
