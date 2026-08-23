@@ -16,7 +16,8 @@
       }
     },
     "abort": {
-      "already_configured": "Integrace už je nakonfigurovaná."
+      "already_configured": "Integrace už je nakonfigurovaná.",
+      "single_instance_allowed": "Je povolena pouze jedna konfigurace ČEZ Dynamického tarifu."
     },
     "error": {
       "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",

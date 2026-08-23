@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9
+
+- integrace je správně klasifikovaná jako služba a zobrazuje se v **Nastavení → Zařízení a služby → Integrace**,
+- opravené lokalizované názvy entit bez textu `UndefinedType._singleton`,
+- doplněný překlad hlášky při pokusu přidat druhou konfiguraci.
+
 ## 0.1.8
 
 - načtení českých svátků probíhá mimo hlavní event loop Home Assistantu.

@@ -46,6 +46,7 @@ class CezDynamicTariffBinarySensor(
     """Representation of a ČEZ Dynamic Tariff binary sensor."""
 
     entity_description: CezDynamicTariffBinarySensorDescription
+    _attr_has_entity_name = True
     _attr_should_poll = False
 
     def __init__(self, coordinator, entry, description) -> None:
@@ -54,7 +55,6 @@ class CezDynamicTariffBinarySensor(
         self.entity_description = description
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_name = f"{entry.title} {description.name}"
 
     @property
     def is_on(self) -> bool | None:

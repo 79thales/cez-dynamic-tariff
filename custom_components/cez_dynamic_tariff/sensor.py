@@ -117,6 +117,7 @@ class CezDynamicTariffSensor(
     """Representation of a ČEZ Dynamic Tariff sensor."""
 
     entity_description: CezDynamicTariffSensorDescription
+    _attr_has_entity_name = True
     _attr_should_poll = False
 
     def __init__(self, coordinator, entry, description) -> None:
@@ -125,7 +126,6 @@ class CezDynamicTariffSensor(
         self.entity_description = description
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{description.key}"
-        self._attr_name = f"{entry.title} {description.name}"
 
     @property
     def native_value(self):

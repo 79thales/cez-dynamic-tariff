@@ -16,7 +16,8 @@
       }
     },
     "abort": {
-      "already_configured": "The integration is already configured."
+      "already_configured": "The integration is already configured.",
+      "single_instance_allowed": "Only one ČEZ Dynamic Tariff configuration is allowed."
     },
     "error": {
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
