@@ -3,6 +3,7 @@
 ## 0.2.0
 
 - časová pásma lze přidávat, odebírat a měnit ve formátu `HH:MM=změna_v_%`,
+- všechny čtyři výchozí rozvrhy jsou ověřené proti zveřejněné tabulce časových pásem a chráněné regresním testem,
 - zachovaná kompatibilita se starším uloženým formátem obsahujícím pouze začátky oken,
 - nápověda v Home Assistantu i README vysvětluje pásma, prahy, validaci a obnovení výchozího rozvrhu,
 - doporučený dashboard dynamicky zobrazuje mapu, legendu, všechny čtyři prahy a stav drahého i velmi drahého pásma,

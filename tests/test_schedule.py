@@ -46,6 +46,64 @@ schedule = _load_schedule_module()
 class ScheduleTests(unittest.TestCase):
     """Verify parsing, formatting, validation, and backward compatibility."""
 
+    def test_default_schedules_match_published_tariff_table(self) -> None:
+        """All default bands match the supplied ČEZ tariff table."""
+        expected = {
+            "WINTER_WORKDAY": [
+                (0, 180, -10),
+                (180, 300, -50),
+                (300, 480, 25),
+                (480, 660, 10),
+                (660, 840, -10),
+                (840, 960, 10),
+                (960, 1080, -10),
+                (1080, 1200, 25),
+                (1200, 1380, 10),
+                (1380, 1440, -10),
+            ],
+            "WINTER_OFFDAY": [
+                (0, 180, -10),
+                (180, 300, -50),
+                (300, 660, 10),
+                (660, 840, -10),
+                (840, 960, 10),
+                (960, 1080, -10),
+                (1080, 1380, 10),
+                (1380, 1440, -10),
+            ],
+            "SUMMER_WORKDAY": [
+                (0, 180, -10),
+                (180, 300, -50),
+                (300, 480, 25),
+                (480, 660, 10),
+                (660, 840, -50),
+                (840, 960, 10),
+                (960, 1080, -10),
+                (1080, 1200, 25),
+                (1200, 1380, 10),
+                (1380, 1440, -10),
+            ],
+            "SUMMER_OFFDAY": [
+                (0, 180, -10),
+                (180, 300, -50),
+                (300, 660, 10),
+                (660, 840, -50),
+                (840, 960, 10),
+                (960, 1080, -10),
+                (1080, 1380, 10),
+                (1380, 1440, -10),
+            ],
+        }
+
+        for schedule_name, expected_bands in expected.items():
+            actual = getattr(schedule, schedule_name)
+            actual_bands = [
+                (item.start_minute, item.end_minute, item.modifier_percent)
+                for item in actual
+            ]
+            with self.subTest(schedule=schedule_name):
+                self.assertEqual(actual_bands, expected_bands)
+
     def test_complete_schedule_supports_any_number_of_bands(self) -> None:
         """A complete schedule may add or remove bands and set modifiers."""
         result = schedule.parse_schedule(

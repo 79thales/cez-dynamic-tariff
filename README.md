@@ -107,6 +107,34 @@ Pravidla rozvrhu:
 - další čas automaticky ukončí předchozí pásmo,
 - počet položek není pevný.
 
+### Ověřené výchozí rozvrhy
+
+**Říjen až březen – pracovní den**
+
+```text
+00:00=-10, 03:00=-50, 05:00=+25, 08:00=+10, 11:00=-10, 14:00=+10, 16:00=-10, 18:00=+25, 20:00=+10, 23:00=-10
+```
+
+**Říjen až březen – víkend nebo svátek**
+
+```text
+00:00=-10, 03:00=-50, 05:00=+10, 11:00=-10, 14:00=+10, 16:00=-10, 18:00=+10, 23:00=-10
+```
+
+**Duben až září – pracovní den**
+
+```text
+00:00=-10, 03:00=-50, 05:00=+25, 08:00=+10, 11:00=-50, 14:00=+10, 16:00=-10, 18:00=+25, 20:00=+10, 23:00=-10
+```
+
+**Duben až září – víkend nebo svátek**
+
+```text
+00:00=-10, 03:00=-50, 05:00=+10, 11:00=-50, 14:00=+10, 16:00=-10, 18:00=+10, 23:00=-10
+```
+
+Začátek intervalu je včetně a konec bez následujícího okamžiku. Zápis `03:00=-50, 05:00=+25` tedy znamená `-50 %` od `03:00:00` do `04:59:59…`; přesně v `05:00:00` začne `+25 %`. Poslední položka platí do půlnoci.
+
 Pokud ČEZ zavede další pásmo, vlož do příslušného rozvrhu další položku, například `12:30=+5`. Pásmo odebereš odstraněním jeho položky. Volba **Obnovit výchozí rozvrhy z projektu** zahodí vlastní časy i procentní změny a načte výchozí hodnoty integrace.
 
 Integrace změny sazebníku nestahuje automaticky. Nové oficiální pásmo proto můžeš ihned zadat ručně; výchozí rozvrhy projektu se následně upraví v nové verzi integrace.
