@@ -30,7 +30,7 @@
     "step": {
       "init": {
         "title": "Možnosti ČEZ Dynamický tarif",
-        "description": "Každý rozvrh je seznam položek `HH:MM=změna ceny v %` oddělených čárkou. První položka musí začínat v `00:00`; přidáním nebo odebráním položky přidáš nebo odebereš tarifní pásmo. Čtyři výchozí prahy jsou -50, -10, +10 a +25 %. Prahy změny pouze klasifikují a nemění rozvrh.",
+        "description": "Rozvrhy používají položky `HH:MM=změna ceny v %` oddělené čárkou a musí začínat v `00:00`. Přidáním nebo odebráním položky přidáš nebo odebereš pásmo. Výchozí prahy jsou -50, -10, +10 a +25 %. Hodnota +25 % je ve výchozích pracovních rozvrzích; víkendové/sváteční rozvrhy ji ve výchozím stavu nepoužívají. Prahy změny pouze klasifikují a nemění rozvrh.",
         "data": {
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
@@ -45,15 +45,15 @@
           "summer_offday_schedule": "Pásma: letní víkend/svátek"
         },
         "data_description": {
-          "cheap_threshold": "Pásmo s touto nebo nižší změnou je levné. Výchozí hodnota: -10 %.",
-          "super_cheap_threshold": "Pásmo s touto nebo nižší změnou je super levné. Výchozí hodnota: -50 %.",
-          "expensive_threshold": "Pásmo s touto nebo vyšší změnou je drahé. Výchozí hodnota: +10 %.",
-          "very_expensive_threshold": "Pásmo s touto nebo vyšší změnou je velmi drahé. Výchozí hodnota: +25 %.",
+          "cheap_threshold": "Nad prahem super levného pásma až po tuto hodnotu je pásmo levné. Výchozí hodnota: -10 %.",
+          "super_cheap_threshold": "Tato nebo nižší hodnota je super levná. Výchozí hodnota: -50 %.",
+          "expensive_threshold": "Od této hodnoty až pod práh velmi drahého pásma je pásmo drahé. Výchozí hodnota: +10 %.",
+          "very_expensive_threshold": "Tato nebo vyšší hodnota je velmi drahá. Výchozí hodnota: +25 %.",
           "reset_schedules": "Zahodí všechny vlastní časy i změny cen a obnoví výchozí rozvrhy projektu.",
-          "winter_workday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+25. Další začátek ukončuje předchozí pásmo.",
-          "winter_offday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+10. Počet pásem lze změnit.",
-          "summer_workday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+25. Počet pásem lze změnit.",
-          "summer_offday_schedule": "Úplný rozvrh, například: 00:00=-10, 03:00=-50, 05:00=+10. Poslední pásmo končí o půlnoci."
+          "winter_workday_schedule": "Úplný rozvrh. Výchozí pásma +25 % začínají v 05:00 a 18:00. Další začátek ukončuje předchozí pásmo.",
+          "winter_offday_schedule": "Úplný rozvrh. Výchozí víkendový/sváteční rozvrh pásmo +25 % nemá, ale můžeš ho přidat, například 12:00=+25.",
+          "summer_workday_schedule": "Úplný rozvrh. Výchozí pásma +25 % začínají v 05:00 a 18:00. Počet pásem lze změnit.",
+          "summer_offday_schedule": "Úplný rozvrh. Výchozí víkendový/sváteční rozvrh pásmo +25 % nemá, ale můžeš ho přidat. Poslední pásmo končí o půlnoci."
         }
       }
     },

@@ -5,6 +5,7 @@
 - časová pásma lze přidávat, odebírat a měnit ve formátu `HH:MM=změna_v_%`,
 - zachovaná kompatibilita se starším uloženým formátem obsahujícím pouze začátky oken,
 - nápověda v Home Assistantu i README vysvětluje pásma, prahy, validaci a obnovení výchozího rozvrhu,
+- doporučený dashboard dynamicky zobrazuje mapu, legendu, všechny čtyři prahy a stav drahého i velmi drahého pásma,
 - mapa a legenda tarifu se automaticky přizpůsobí libovolným procentním změnám a novým pásmům,
 - doplněný samostatný práh velmi drahého pásma `+25 %`, jeho senzor a binární senzor,
 - chybové hlášky možností integrace mají vlastní české a anglické překlady,
