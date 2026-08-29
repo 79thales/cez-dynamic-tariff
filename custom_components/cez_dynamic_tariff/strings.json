@@ -29,31 +29,55 @@
   "options": {
     "step": {
       "init": {
-        "title": "ČEZ Dynamic Tariff options",
-        "description": "Schedules use comma-separated `HH:MM=price change in %` items and must start at `00:00`. Add or remove an item to add or remove a band. Default thresholds are -50, -10, +10, and +25 %. The +25 % modifier occurs in the default workday schedules; default weekend/holiday schedules do not use it. Thresholds classify modifiers and do not change a schedule.",
+        "title": "General options",
+        "description": "Set the base trading price and holiday handling. Continue to the next step to configure tariff thresholds.",
         "data": {
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
+          "reset_schedules": "Restore project default schedules"
+        },
+        "data_description": {
+          "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
+          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore project defaults."
+        }
+      },
+      "thresholds": {
+        "title": "Tariff classification thresholds",
+        "description": "Thresholds only classify modifiers for map colors, binary sensors and automations. They do not change any tariff schedule.",
+        "data": {
           "cheap_threshold": "Cheap threshold (%)",
           "super_cheap_threshold": "Super cheap threshold (%)",
           "expensive_threshold": "Expensive threshold (%)",
-          "very_expensive_threshold": "Very expensive threshold (%)",
-          "reset_schedules": "Restore project default schedules",
+          "very_expensive_threshold": "Very expensive threshold (%)"
+        },
+        "data_description": {
+          "cheap_threshold": "Above the super cheap threshold and at or below this value is cheap. Default: -10 %.",
+          "super_cheap_threshold": "At or below this value is super cheap. Default: -50 %.",
+          "expensive_threshold": "From this value up to the very expensive threshold is expensive. Default: +10 %.",
+          "very_expensive_threshold": "At or above this value is very expensive. Default: +25 %."
+        }
+      },
+      "schedules": {
+        "title": "Tariff schedules",
+        "description": "Use comma-separated `HH:MM=price change in %` items starting at `00:00`. Add or remove an item to add or remove a band.",
+        "data": {
           "winter_workday_schedule": "Winter workday tariff bands",
           "winter_offday_schedule": "Winter weekend/holiday tariff bands",
           "summer_workday_schedule": "Summer workday tariff bands",
           "summer_offday_schedule": "Summer weekend/holiday tariff bands"
         },
         "data_description": {
-          "cheap_threshold": "Above the super cheap threshold and at or below this value is cheap. Default: -10 %.",
-          "super_cheap_threshold": "At or below this value is super cheap. Default: -50 %.",
-          "expensive_threshold": "From this value up to the very expensive threshold is expensive. Default: +10 %.",
-          "very_expensive_threshold": "At or above this value is very expensive. Default: +25 %.",
-          "reset_schedules": "Discard all custom times and price modifiers and restore the project defaults.",
           "winter_workday_schedule": "Complete schedule. The default +25 % bands start at 05:00 and 18:00. Each next start ends the previous band.",
           "winter_offday_schedule": "Complete schedule. The default weekend/holiday schedule has no +25 % band, but one can be added, for example 12:00=+25.",
           "summer_workday_schedule": "Complete schedule. The default +25 % bands start at 05:00 and 18:00. The number of bands can be changed.",
           "summer_offday_schedule": "Complete schedule. The default weekend/holiday schedule has no +25 % band, but one can be added. The last band ends at midnight."
+        }
+      },
+      "reset_schedules": {
+        "title": "Restore default schedules",
+        "description": "This removes all four custom schedules and restores the schedules bundled with the integration. Threshold and general changes from the previous steps will be kept.",
+        "data": {
+          "confirm_reset": "I understand and want to restore all default schedules"
         }
       }
     },
@@ -61,7 +85,8 @@
       "super_cheap_above_cheap": "Super cheap threshold must be less than or equal to cheap threshold.",
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
       "expensive_not_below_very_expensive": "Expensive threshold must be lower than very expensive threshold.",
-      "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number."
+      "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number.",
+      "confirm_reset": "Confirm that you want to restore all project default schedules."
     }
   },
   "entity": {
@@ -78,9 +103,14 @@
       "next_cheap_start": {"name": "Next cheap start"},
       "next_cheap_end": {"name": "Next cheap end"},
       "next_cheap_modifier": {"name": "Next cheap modifier"},
-      "today_tariff_map": {"name": "Today tariff map"}
+      "next_change": {"name": "Next tariff change"},
+      "next_modifier": {"name": "Modifier after next change"},
+      "today_tariff_map": {"name": "Today tariff map"},
+      "tomorrow_tariff_map": {"name": "Tomorrow tariff map"}
     },
     "binary_sensor": {
+      "cheap_now": {"name": "Cheap now"},
+      "super_cheap_now": {"name": "Super cheap now"},
       "expensive_now": {"name": "Expensive now"},
       "very_expensive_now": {"name": "Very expensive now"}
     }

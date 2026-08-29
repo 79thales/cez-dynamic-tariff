@@ -29,31 +29,55 @@
   "options": {
     "step": {
       "init": {
-        "title": "Možnosti ČEZ Dynamický tarif",
-        "description": "Rozvrhy používají položky `HH:MM=změna ceny v %` oddělené čárkou a musí začínat v `00:00`. Přidáním nebo odebráním položky přidáš nebo odebereš pásmo. Výchozí prahy jsou -50, -10, +10 a +25 %. Hodnota +25 % je ve výchozích pracovních rozvrzích; víkendové/sváteční rozvrhy ji ve výchozím stavu nepoužívají. Prahy změny pouze klasifikují a nemění rozvrh.",
+        "title": "Základní nastavení",
+        "description": "Nastav základní obchodní cenu a zohlednění svátků. V dalším kroku se nastavují prahy tarifních pásem.",
         "data": {
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
+          "reset_schedules": "Obnovit výchozí rozvrhy z projektu"
+        },
+        "data_description": {
+          "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
+          "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu."
+        }
+      },
+      "thresholds": {
+        "title": "Prahy tarifních pásem",
+        "description": "Prahy pouze klasifikují změny pro barvy mapy, binární senzory a automatizace. Samotné rozvrhy nemění.",
+        "data": {
           "cheap_threshold": "Práh levného pásma (%)",
           "super_cheap_threshold": "Práh super levného pásma (%)",
           "expensive_threshold": "Práh drahého pásma (%)",
-          "very_expensive_threshold": "Práh velmi drahého pásma (%)",
-          "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
+          "very_expensive_threshold": "Práh velmi drahého pásma (%)"
+        },
+        "data_description": {
+          "cheap_threshold": "Nad prahem super levného pásma až po tuto hodnotu je pásmo levné. Výchozí hodnota: -10 %.",
+          "super_cheap_threshold": "Tato nebo nižší hodnota je super levná. Výchozí hodnota: -50 %.",
+          "expensive_threshold": "Od této hodnoty až pod práh velmi drahého pásma je pásmo drahé. Výchozí hodnota: +10 %.",
+          "very_expensive_threshold": "Tato nebo vyšší hodnota je velmi drahá. Výchozí hodnota: +25 %."
+        }
+      },
+      "schedules": {
+        "title": "Časové rozvrhy",
+        "description": "Použij položky `HH:MM=změna ceny v %` oddělené čárkou a začínající v `00:00`. Přidáním nebo odebráním položky přidáš nebo odebereš pásmo.",
+        "data": {
           "winter_workday_schedule": "Pásma: zimní pracovní den",
           "winter_offday_schedule": "Pásma: zimní víkend/svátek",
           "summer_workday_schedule": "Pásma: letní pracovní den",
           "summer_offday_schedule": "Pásma: letní víkend/svátek"
         },
         "data_description": {
-          "cheap_threshold": "Nad prahem super levného pásma až po tuto hodnotu je pásmo levné. Výchozí hodnota: -10 %.",
-          "super_cheap_threshold": "Tato nebo nižší hodnota je super levná. Výchozí hodnota: -50 %.",
-          "expensive_threshold": "Od této hodnoty až pod práh velmi drahého pásma je pásmo drahé. Výchozí hodnota: +10 %.",
-          "very_expensive_threshold": "Tato nebo vyšší hodnota je velmi drahá. Výchozí hodnota: +25 %.",
-          "reset_schedules": "Zahodí všechny vlastní časy i změny cen a obnoví výchozí rozvrhy projektu.",
           "winter_workday_schedule": "Úplný rozvrh. Výchozí pásma +25 % začínají v 05:00 a 18:00. Další začátek ukončuje předchozí pásmo.",
           "winter_offday_schedule": "Úplný rozvrh. Výchozí víkendový/sváteční rozvrh pásmo +25 % nemá, ale můžeš ho přidat, například 12:00=+25.",
           "summer_workday_schedule": "Úplný rozvrh. Výchozí pásma +25 % začínají v 05:00 a 18:00. Počet pásem lze změnit.",
           "summer_offday_schedule": "Úplný rozvrh. Výchozí víkendový/sváteční rozvrh pásmo +25 % nemá, ale můžeš ho přidat. Poslední pásmo končí o půlnoci."
+        }
+      },
+      "reset_schedules": {
+        "title": "Obnovit výchozí rozvrhy",
+        "description": "Tímto odstraníš všechny čtyři vlastní rozvrhy a obnovíš rozvrhy dodané s integrací. Změny prahů a základního nastavení z předchozích kroků zůstanou zachované.",
+        "data": {
+          "confirm_reset": "Rozumím a chci obnovit všechny výchozí rozvrhy"
         }
       }
     },
@@ -61,7 +85,8 @@
       "super_cheap_above_cheap": "Práh super levného pásma musí být menší nebo roven prahu levného pásma.",
       "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma.",
       "expensive_not_below_very_expensive": "Práh drahého pásma musí být nižší než práh velmi drahého pásma.",
-      "invalid_schedule": "Použij položky `HH:MM=změna` seřazené podle času a oddělené čárkou; první musí být `00:00=...` a každá změna musí být celé číslo."
+      "invalid_schedule": "Použij položky `HH:MM=změna` seřazené podle času a oddělené čárkou; první musí být `00:00=...` a každá změna musí být celé číslo.",
+      "confirm_reset": "Potvrď, že chceš obnovit všechny výchozí rozvrhy projektu."
     }
   },
   "entity": {
@@ -78,9 +103,14 @@
       "next_cheap_start": {"name": "Začátek dalšího levného pásma"},
       "next_cheap_end": {"name": "Konec dalšího levného pásma"},
       "next_cheap_modifier": {"name": "Změna ceny v dalším levném pásmu"},
-      "today_tariff_map": {"name": "Dnešní mapa tarifu"}
+      "next_change": {"name": "Další změna tarifu"},
+      "next_modifier": {"name": "Změna ceny po další změně"},
+      "today_tariff_map": {"name": "Dnešní mapa tarifu"},
+      "tomorrow_tariff_map": {"name": "Zítřejší mapa tarifu"}
     },
     "binary_sensor": {
+      "cheap_now": {"name": "Právě probíhá levné pásmo"},
+      "super_cheap_now": {"name": "Právě probíhá super levné pásmo"},
       "expensive_now": {"name": "Právě probíhá drahé pásmo"},
       "very_expensive_now": {"name": "Právě probíhá velmi drahé pásmo"}
     }

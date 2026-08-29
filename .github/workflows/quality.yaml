@@ -29,5 +29,5 @@ jobs:
       - name: Run Ruff
         run: ruff check custom_components tests
 
-      - name: Run schedule tests
+      - name: Run tests
         run: python -m unittest discover -s tests

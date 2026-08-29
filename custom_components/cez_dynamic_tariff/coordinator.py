@@ -47,12 +47,16 @@ class TariffSnapshot:
     current_window_start: str
     current_window_end: str
     season: str
+    season_code: str
     day_type: str
+    day_type_code: str
     is_holiday: bool
     cheap_threshold_percent: int
     super_cheap_threshold_percent: int
     expensive_threshold_percent: int
     very_expensive_threshold_percent: int
+    cheap_now: bool
+    super_cheap_now: bool
     expensive_now: bool
     very_expensive_now: bool
     base_price_kwh: float
@@ -60,10 +64,20 @@ class TariffSnapshot:
     next_cheap_start: datetime | None
     next_cheap_end: datetime | None
     next_cheap_modifier_percent: int | None
+    next_change: datetime | None
+    next_modifier_percent: int | None
     today_map_code: str
     today_schedule: list[dict[str, Any]]
     today_display_map: str
-    legend: list[dict[str, str]]
+    today_legend: list[dict[str, str]]
+    tomorrow_map_code: str
+    tomorrow_schedule: list[dict[str, Any]]
+    tomorrow_display_map: str
+    tomorrow_legend: list[dict[str, str]]
+    tomorrow_season: str
+    tomorrow_season_code: str
+    tomorrow_day_type: str
+    tomorrow_day_type_code: str
 
 
 class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
@@ -113,6 +127,28 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
     def _is_offday(self, day: date) -> bool:
         """Return True for weekend or holiday."""
         return day.weekday() >= 5 or self._is_holiday(day)
+
+    @classmethod
+    def _season_code(cls, day: date) -> str:
+        """Return a stable machine-readable season code."""
+        return "summer" if cls._is_summer(day) else "winter"
+
+    def _day_type_code(self, day: date) -> str:
+        """Return a stable machine-readable day type code."""
+        return "weekend_or_holiday" if self._is_offday(day) else "workday"
+
+    @classmethod
+    def _season_label(cls, day: date) -> str:
+        """Return the backward-compatible Czech season label."""
+        return "Letní" if cls._is_summer(day) else "Zimní"
+
+    def _day_type_label(self, day: date) -> str:
+        """Return the backward-compatible Czech day type label."""
+        return "Víkend nebo Svátek" if self._is_offday(day) else "Pracovní den"
+
+    def _map_code(self, day: date) -> str:
+        """Return a stable code describing the schedule used for a day."""
+        return f"{self._season_code(day)}_{self._day_type_code(day)}"
 
     def _schedule_from_option(
         self,
@@ -317,7 +353,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         when: datetime,
         threshold: int,
     ) -> tuple[datetime | None, datetime | None, int | None]:
-        """Find current or next tariff window matching the threshold."""
+        """Find the next future tariff window matching the threshold."""
         for offset in range(8):
             day = when.date() + timedelta(days=offset)
             schedule = self._schedule_for_day(day)
@@ -334,6 +370,22 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
         return None, None, None
 
+    def _next_change(
+        self,
+        when: datetime,
+        current_modifier: int,
+    ) -> tuple[datetime | None, int | None]:
+        """Find the next future boundary with a different modifier."""
+        for offset in range(8):
+            day = when.date() + timedelta(days=offset)
+            for window in self._schedule_for_day(day):
+                start_dt, _ = self._window_to_datetimes(day, window)
+                if start_dt <= when or window.modifier_percent == current_modifier:
+                    continue
+                return start_dt, window.modifier_percent
+
+        return None, None
+
     async def _async_update_data(self) -> TariffSnapshot:
         """Calculate the current tariff state."""
         if self._holidays is None:
@@ -345,10 +397,15 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         now = dt_util.now()
         current_window = self._current_window(now)
 
-        season = "Letní" if self._is_summer(now.date()) else "Zimní"
-        is_holiday = self._is_holiday(now.date())
-        day_type = "Víkend nebo Svátek" if self._is_offday(now.date()) else "Pracovní den"
-        schedule = self._schedule_for_day(now.date())
+        today = now.date()
+        tomorrow = today + timedelta(days=1)
+        season = self._season_label(today)
+        season_code = self._season_code(today)
+        is_holiday = self._is_holiday(today)
+        day_type = self._day_type_label(today)
+        day_type_code = self._day_type_code(today)
+        schedule = self._schedule_for_day(today)
+        tomorrow_schedule = self._schedule_for_day(tomorrow)
 
         cheap_threshold = int(self._option(CONF_CHEAP_THRESHOLD, DEFAULT_CHEAP_THRESHOLD))
         super_cheap_threshold = int(
@@ -381,16 +438,13 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             now,
             cheap_threshold,
         )
-
-        today_map_code = (
-            "summer_workday"
-            if self._is_summer(now.date()) and not self._is_offday(now.date())
-            else "summer_weekend_or_holiday"
-            if self._is_summer(now.date())
-            else "winter_workday"
-            if not self._is_offday(now.date())
-            else "winter_weekend_or_holiday"
+        next_change, next_modifier_percent = self._next_change(
+            now,
+            current_modifier_percent,
         )
+
+        today_map_code = self._map_code(today)
+        tomorrow_map_code = self._map_code(tomorrow)
 
         return TariffSnapshot(
             current_modifier_percent=current_modifier_percent,
@@ -398,12 +452,16 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             current_window_start=current_window_start,
             current_window_end=current_window_end,
             season=season,
+            season_code=season_code,
             day_type=day_type,
+            day_type_code=day_type_code,
             is_holiday=is_holiday,
             cheap_threshold_percent=cheap_threshold,
             super_cheap_threshold_percent=super_cheap_threshold,
             expensive_threshold_percent=expensive_threshold,
             very_expensive_threshold_percent=very_expensive_threshold,
+            cheap_now=current_modifier_percent <= cheap_threshold,
+            super_cheap_now=current_modifier_percent <= super_cheap_threshold,
             expensive_now=current_modifier_percent >= expensive_threshold,
             very_expensive_now=current_modifier_percent >= very_expensive_threshold,
             base_price_kwh=base_price_kwh,
@@ -411,6 +469,8 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             next_cheap_start=next_cheap_start,
             next_cheap_end=next_cheap_end,
             next_cheap_modifier_percent=next_cheap_modifier_percent,
+            next_change=next_change,
+            next_modifier_percent=next_modifier_percent,
             today_map_code=today_map_code,
             today_schedule=self._serialize_schedule(
                 schedule,
@@ -426,13 +486,39 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 expensive_threshold,
                 very_expensive_threshold,
             ),
-            legend=self._legend(
+            today_legend=self._legend(
                 schedule,
                 super_cheap_threshold,
                 cheap_threshold,
                 expensive_threshold,
                 very_expensive_threshold,
             ),
+            tomorrow_map_code=tomorrow_map_code,
+            tomorrow_schedule=self._serialize_schedule(
+                tomorrow_schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+                very_expensive_threshold,
+            ),
+            tomorrow_display_map=self._display_map(
+                tomorrow_schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+                very_expensive_threshold,
+            ),
+            tomorrow_legend=self._legend(
+                tomorrow_schedule,
+                super_cheap_threshold,
+                cheap_threshold,
+                expensive_threshold,
+                very_expensive_threshold,
+            ),
+            tomorrow_season=self._season_label(tomorrow),
+            tomorrow_season_code=self._season_code(tomorrow),
+            tomorrow_day_type=self._day_type_label(tomorrow),
+            tomorrow_day_type_code=self._day_type_code(tomorrow),
         )
 
     @property

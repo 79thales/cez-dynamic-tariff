@@ -19,14 +19,30 @@ views:
             name: Typ dne
           - entity: sensor.cez_dynamic_tariff_season
             name: Sezóna
-          - entity: sensor.cez_dynamic_tariff_next_cheap_start
-            name: Další levné od
-          - entity: sensor.cez_dynamic_tariff_next_cheap_end
-            name: Další levné do
+          - entity: binary_sensor.cez_dynamic_tariff_super_cheap_now
+            name: Super levné pásmo právě teď
+          - entity: binary_sensor.cez_dynamic_tariff_cheap_now
+            name: Levné pásmo právě teď
           - entity: binary_sensor.cez_dynamic_tariff_expensive_now
             name: Drahé pásmo právě teď
           - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
             name: Velmi drahé pásmo právě teď
+
+      - type: entities
+        title: Další změny
+        icon: mdi:clock-outline
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_next_change
+            name: Další změna tarifu
+          - entity: sensor.cez_dynamic_tariff_next_modifier
+            name: Změna ceny po další změně
+          - entity: sensor.cez_dynamic_tariff_next_cheap_start
+            name: Další levné od
+          - entity: sensor.cez_dynamic_tariff_next_cheap_end
+            name: Další levné do
+          - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
+            name: Změna ceny v dalším levném pásmu
 
       - type: markdown
         title: Legenda
@@ -46,6 +62,18 @@ views:
           **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
 
           {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+
+      - type: markdown
+        title: Mapa tarifu zítra
+        content: |
+          **{{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'season') or 'Neznámá sezóna' }} / {{ (state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'day_type') or 'neznámý typ dne') | lower }}**
+
+          {{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+
+          {% set legend = state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'legend') or [] %}
+          {% for item in legend %}
+          `{{ item['token'] }} {{ item['modifier_percent'] }} %`
+          {% endfor %}
 
       - type: entities
         title: Nastavené prahy

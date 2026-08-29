@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.0
+
+- přidané senzory nejbližší skutečné změny tarifu a procentní změny, která po ní začne,
+- přidaná dynamická mapa tarifu na zítřek včetně rozvrhu, legendy, sezóny a typu dne,
+- přidané binární senzory levného a super levného pásma,
+- sezóna a typ dne nyní obsahují stabilní strojové kódy v atributech bez změny dosavadních českých stavů,
+- možnosti integrace jsou rozdělené na základní nastavení, prahy a časové rozvrhy; obnovení výchozích rozvrhů vyžaduje samostatné potvrzení,
+- přidané stažení diagnostiky integrace a použití typovaného `ConfigEntry.runtime_data`,
+- prahové senzory jsou označené jako diagnostické entity,
+- rozšířené regresní testy pokrývají veřejné entity, překlady, svátky, půlnoc, přechod sezóny, časové pásmo a nové výpočty,
+- aktualizovaný doporučený dashboard zobrazuje další změnu, levná pásma a zítřejší mapu.
+
 ## 0.2.3
 
 - výchozí ID všech senzorů a binárních senzorů se nyní explicitně odvozují z interních stabilních klíčů, nikoli z přeloženého názvu entity,

@@ -23,6 +23,16 @@ class CezDynamicTariffBinarySensorDescription(BinarySensorEntityDescription):
 
 BINARY_SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffBinarySensorDescription, ...] = (
     CezDynamicTariffBinarySensorDescription(
+        key="cheap_now",
+        translation_key="cheap_now",
+        value_fn=lambda data: data.cheap_now,
+    ),
+    CezDynamicTariffBinarySensorDescription(
+        key="super_cheap_now",
+        translation_key="super_cheap_now",
+        value_fn=lambda data: data.super_cheap_now,
+    ),
+    CezDynamicTariffBinarySensorDescription(
         key="expensive_now",
         translation_key="expensive_now",
         value_fn=lambda data: data.expensive_now,
@@ -37,7 +47,7 @@ BINARY_SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffBinarySensorDescription, ...] 
 
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up binary sensors for a config entry."""
-    coordinator: CezDynamicTariffCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: CezDynamicTariffCoordinator = entry.runtime_data
 
     async_add_entities(
         CezDynamicTariffBinarySensor(coordinator, entry, description)

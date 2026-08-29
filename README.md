@@ -10,9 +10,9 @@
   <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
-Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzor. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
+Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzory. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.2.3`
+Aktuální verze: `0.3.0`
 
 ## Požadavky
 
@@ -24,12 +24,14 @@ Aktuální verze: `0.2.3`
 
 - vypočítá aktuální změnu ceny podle výchozího nebo vlastního rozpisu ČEZ
 - vystaví aktuální tarifní pásmo, sezónu, typ dne a nejbližší další levné okno
+- ukáže čas a hodnotu nejbližší skutečné změny tarifu
+- připraví dynamickou mapu tarifu pro dnešek i zítřek
 - vystaví pomocné entity:
   - práh levného pásma v %
   - práh super levného pásma v %
   - práh drahého pásma v %
   - práh velmi drahého pásma v %
-  - informaci, zda je právě drahé nebo velmi drahé pásmo
+  - informaci, zda je právě levné, super levné, drahé nebo velmi drahé pásmo
 - umí zohlednit české státní svátky jako nepracovní dny
 - umožňuje přidávat, odebírat a upravovat tarifní pásma včetně časů a procentních změn ceny
 
@@ -79,7 +81,15 @@ Po zařazení do výchozího katalogu HACS bude možné přeskočit krok s vlast
 
 ## Nastavení tarifních pásem
 
-Otevři **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**. Ve formuláři jsou čtyři samostatné denní rozvrhy:
+Otevři **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**. Nastavení je rozdělené do tří kroků:
+
+1. základní cena, zohlednění svátků a případná volba obnovení výchozích rozvrhů,
+2. prahy super levného, levného, drahého a velmi drahého pásma,
+3. čtyři samostatné denní rozvrhy.
+
+Při obnovení výchozích rozvrhů se místo třetího kroku zobrazí samostatné potvrzení. Obnovení odstraní vlastní časy i procentní změny, ale zachová právě zadanou základní cenu, práci se svátky a prahy.
+
+K dispozici jsou tyto rozvrhy:
 
 - zimní pracovní den,
 - zimní víkend nebo svátek,
@@ -156,7 +166,7 @@ Výchozí klasifikace:
 | Drahé | `≥ +10 %` a `< +25 %` | ⬜ |
 | Velmi drahé | `≥ +25 %` | ◻️ |
 
-Hodnota `+25 %` je součástí výchozích rozvrhů pro pracovní dny od `05:00` a `18:00`. Výchozí víkendové/sváteční rozvrhy ji nepoužívají, ale lze ji do nich ručně přidat. Při `+25 %` jsou aktivní oba binární senzory: **drahé** i **velmi drahé**.
+Hodnota `+25 %` je součástí výchozích rozvrhů pro pracovní dny od `05:00` a `18:00`. Výchozí víkendové/sváteční rozvrhy ji nepoužívají, ale lze ji do nich ručně přidat. Při `+25 %` jsou aktivní oba binární senzory: **drahé** i **velmi drahé**. Obdobně při `-50 %` jsou aktivní senzory **levné** i **super levné**.
 
 Změna prahu nemění cenu ani časový rozvrh; mění pouze klasifikaci pásem pro senzory, barvy a automatizace.
 
@@ -176,22 +186,34 @@ Senzory:
 - `sensor.cez_dynamic_tariff_next_cheap_start`
 - `sensor.cez_dynamic_tariff_next_cheap_end`
 - `sensor.cez_dynamic_tariff_next_cheap_modifier`
+- `sensor.cez_dynamic_tariff_next_change`
+- `sensor.cez_dynamic_tariff_next_modifier`
 - `sensor.cez_dynamic_tariff_today_tariff_map`
+- `sensor.cez_dynamic_tariff_tomorrow_tariff_map`
 
 Binární senzory:
 
+- `binary_sensor.cez_dynamic_tariff_cheap_now`
+- `binary_sensor.cez_dynamic_tariff_super_cheap_now`
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
+
+Integrace tedy vytváří celkem 20 vlastních entit: 16 senzorů a 4 binární senzory. Aktualizační entitu HACS vytváří HACS samostatně.
 
 Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**. Integrace od verze `0.2.3` explicitně navrhuje výchozí ID podle stabilních interních klíčů uvedených výše, takže jejich suffix nezávisí na jazyku ani překladu názvu entity. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
 
 Pokud se senzor ve verzi `0.2.2` nově zaregistroval jako `sensor.cez_dynamic_tariff_price_change`, přejmenuj jej jednou v nastavení entity na `sensor.cez_dynamic_tariff_current_modifier`. Dashboard i automatizace v tomto projektu používají stabilní ID `sensor.cez_dynamic_tariff_current_modifier`.
+
+Stavy senzorů sezóny a typu dne zůstávají kvůli kompatibilitě české (`Letní`, `Zimní`, `Pracovní den`, `Víkend nebo Svátek`). Pro jazykově nezávislé automatizace používej jejich atributy `season_code` (`summer`/`winter`) a `day_type_code` (`workday`/`weekend_or_holiday`). Stejné kódy jsou dostupné také u obou map tarifu.
+
+`next_change` ukazuje nejbližší budoucí okamžik, kdy se skutečně změní procentní modifier; hranice dvou sousedních pásem se stejnou hodnotou se přeskočí. `next_modifier` obsahuje hodnotu platnou od tohoto okamžiku. Naproti tomu trojice `next_cheap_start`, `next_cheap_end` a `next_cheap_modifier` hledá nejbližší budoucí okno na nebo pod nastaveným prahem levného pásma.
 
 ## Poznámky
 
 - `base_price_kwh` je pouze obchodní složka ceny elektřiny
 - distribuce, daně, měsíční fixní poplatky a regulované složky se do výpočtu nezapočítávají
 - detekce svátků používá Python balíček `holidays`
+- v nabídce integrace lze stáhnout diagnostiku obsahující nastavení a aktuálně vypočítaný stav; název konfigurace je v ní skrytý
 - základní cena `0` znamená, že se efektivní cena nevypočítává
 - všechny čtyři prahy `-50/-10/+10/+25 %` lze změnit v nastavení integrace
 - časová pásma a jejich změny ceny lze změnit v **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**
@@ -203,7 +225,7 @@ Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json
 
 1. Změň verzi v `manifest.json`.
 2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `v0.2.3`.
+3. Vytvoř GitHub Release se stejnou verzí, například `v0.3.0`.
 
 Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
 
@@ -287,6 +309,10 @@ entities:
     name: Typ dne
   - entity: sensor.cez_dynamic_tariff_season
     name: Sezóna
+  - entity: sensor.cez_dynamic_tariff_next_change
+    name: Další změna tarifu
+  - entity: sensor.cez_dynamic_tariff_next_modifier
+    name: Změna ceny po další změně
   - entity: sensor.cez_dynamic_tariff_next_cheap_start
     name: Další levné od
   - entity: sensor.cez_dynamic_tariff_next_cheap_end
@@ -301,23 +327,29 @@ entities:
     name: Práh drahého pásma
   - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
     name: Práh velmi drahého pásma
+  - entity: binary_sensor.cez_dynamic_tariff_super_cheap_now
+    name: Super levné pásmo právě teď
+  - entity: binary_sensor.cez_dynamic_tariff_cheap_now
+    name: Levné pásmo právě teď
   - entity: binary_sensor.cez_dynamic_tariff_expensive_now
     name: Drahé pásmo právě teď
   - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
     name: Velmi drahé pásmo právě teď
 ```
 
-## Grafická mapa pásem v Lovelace
+## Grafické mapy pásem v Lovelace
 
-Integrace vystavuje senzor:
+Integrace vystavuje dva senzory:
 
 - `sensor.cez_dynamic_tariff_today_tariff_map`
+- `sensor.cez_dynamic_tariff_tomorrow_tariff_map`
 
-Ten má v atributech připraveno:
+Oba mají v atributech připraveno:
 
 - `display_map` pro přímé vložení do Markdown karty
-- `schedule` jako seznam všech dnešních oken
-- `legend` sestavenou ze všech procentních změn použitých v dnešním rozvrhu
+- `schedule` jako seznam všech oken příslušného dne
+- `legend` sestavenou ze všech procentních změn použitých v rozvrhu
+- `season`, `season_code`, `day_type` a `day_type_code`
 
 Mapa i legenda se automaticky přizpůsobí vlastním časům, změnám ceny a nově přidaným pásmům. Příklad Markdown karty:
 
@@ -333,6 +365,8 @@ content: |
   `{{ item['token'] }} {{ item['modifier_percent'] }} %`
   {% endfor %}
 ```
+
+Pro zítřek použij stejnou kartu s entitou `sensor.cez_dynamic_tariff_tomorrow_tariff_map`.
 
 ## Doporučený dashboard
 
@@ -362,14 +396,30 @@ cards:
         name: Typ dne
       - entity: sensor.cez_dynamic_tariff_season
         name: Sezóna
-      - entity: sensor.cez_dynamic_tariff_next_cheap_start
-        name: Další levné od
-      - entity: sensor.cez_dynamic_tariff_next_cheap_end
-        name: Další levné do
+      - entity: binary_sensor.cez_dynamic_tariff_super_cheap_now
+        name: Super levné pásmo právě teď
+      - entity: binary_sensor.cez_dynamic_tariff_cheap_now
+        name: Levné pásmo právě teď
       - entity: binary_sensor.cez_dynamic_tariff_expensive_now
         name: Drahé pásmo právě teď
       - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
         name: Velmi drahé pásmo právě teď
+
+  - type: entities
+    title: Další změny
+    icon: mdi:clock-outline
+    show_header_toggle: false
+    entities:
+      - entity: sensor.cez_dynamic_tariff_next_change
+        name: Další změna tarifu
+      - entity: sensor.cez_dynamic_tariff_next_modifier
+        name: Změna ceny po další změně
+      - entity: sensor.cez_dynamic_tariff_next_cheap_start
+        name: Další levné od
+      - entity: sensor.cez_dynamic_tariff_next_cheap_end
+        name: Další levné do
+      - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
+        name: Změna ceny v dalším levném pásmu
 
   - type: markdown
     title: Legenda
@@ -389,6 +439,18 @@ cards:
       **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
 
       {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+
+  - type: markdown
+    title: Mapa tarifu zítra
+    content: |
+      **{{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'season') or 'Neznámá sezóna' }} / {{ (state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'day_type') or 'neznámý typ dne') | lower }}**
+
+      {{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+
+      {% set legend = state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'legend') or [] %}
+      {% for item in legend %}
+      `{{ item['token'] }} {{ item['modifier_percent'] }} %`
+      {% endfor %}
 
   - type: entities
     title: Nastavené prahy
