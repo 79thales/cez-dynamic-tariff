@@ -351,7 +351,7 @@ Oba mají v atributech připraveno:
 - `legend` sestavenou ze všech procentních změn použitých v rozvrhu
 - `season`, `season_code`, `day_type` a `day_type_code`
 
-Mapa i legenda se automaticky přizpůsobí vlastním časům, změnám ceny a nově přidaným pásmům. Příklad Markdown karty:
+Mapa i legenda se automaticky přizpůsobí vlastním časům, změnám ceny a nově přidaným pásmům. Atribut `display_map` zůstává zachovaný pro zpětnou kompatibilitu a jednoduché Markdown karty:
 
 ```yaml
 type: markdown
@@ -366,11 +366,11 @@ content: |
   {% endfor %}
 ```
 
-Pro zítřek použij stejnou kartu s entitou `sensor.cez_dynamic_tariff_tomorrow_tariff_map`.
+Pro zítřek použij stejnou kartu s entitou `sensor.cez_dynamic_tariff_tomorrow_tariff_map`. Doporučený dashboard níže místo jednořádkového `display_map` prochází atribut `schedule`, takže zobrazí každé tarifní okno na samostatném řádku.
 
 ## Doporučený dashboard
 
-Tento dashboard je plně dynamický. Neobsahuje natvrdo zapsaná pásma ani hodnoty `-50/-10/+10/+25`; mapu a legendu čte z integrace, takže se automaticky přizpůsobí vlastnímu rozvrhu i případnému novému pásmu.
+Tento dashboard pro ČEZ Dynamic Tariff od verze v0.3.0 používá responzivní pohled **Sections**. Neobsahuje duplicitní karty pro mobil a počítač ani natvrdo zapsané časy či procenta. Dnešní a zítřejší mapu sestavuje z atributu `schedule`, takže se automaticky přizpůsobí vlastnímu rozvrhu, vlastním prahům i případnému novému pásmu. V dnešní mapě zvýrazní právě aktivní okno.
 
 Hotová konfigurace celého dashboardu je v souboru [`examples/dashboard.yaml`](examples/dashboard.yaml). Je určena pro **Nastavení → Ovládací panely → editor nezpracované konfigurace**. Pokud se tvoje ID entit liší, vyber odpovídající entity ve vizuálním editoru.
 
@@ -380,88 +380,152 @@ Pro vložení pouze jednoho pohledu použij tuto část:
 title: ČEZ Dynamic Tariff
 path: cez-dynamic-tariff
 icon: mdi:transmission-tower
-cards:
-  - type: entities
-    title: Aktuální stav
-    state_color: true
-    show_header_toggle: false
-    entities:
-      - entity: sensor.cez_dynamic_tariff_current_modifier
-        name: Změna ceny o
-      - entity: sensor.cez_dynamic_tariff_effective_price
-        name: Aktuální cena
-      - entity: sensor.cez_dynamic_tariff_current_band
-        name: Aktuální pásmo
-      - entity: sensor.cez_dynamic_tariff_day_type
-        name: Typ dne
-      - entity: sensor.cez_dynamic_tariff_season
-        name: Sezóna
-      - entity: binary_sensor.cez_dynamic_tariff_super_cheap_now
-        name: Super levné pásmo právě teď
-      - entity: binary_sensor.cez_dynamic_tariff_cheap_now
-        name: Levné pásmo právě teď
-      - entity: binary_sensor.cez_dynamic_tariff_expensive_now
-        name: Drahé pásmo právě teď
-      - entity: binary_sensor.cez_dynamic_tariff_very_expensive_now
-        name: Velmi drahé pásmo právě teď
+type: sections
+max_columns: 3
+dense_section_placement: true
+sections:
+  - type: grid
+    cards:
+      - type: heading
+        heading: Aktuální tarif
+        icon: mdi:transmission-tower
 
-  - type: entities
-    title: Další změny
-    icon: mdi:clock-outline
-    show_header_toggle: false
-    entities:
-      - entity: sensor.cez_dynamic_tariff_next_change
-        name: Další změna tarifu
-      - entity: sensor.cez_dynamic_tariff_next_modifier
-        name: Změna ceny po další změně
-      - entity: sensor.cez_dynamic_tariff_next_cheap_start
-        name: Další levné od
-      - entity: sensor.cez_dynamic_tariff_next_cheap_end
-        name: Další levné do
-      - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
-        name: Změna ceny v dalším levném pásmu
+      - type: entities
+        title: Právě teď
+        state_color: true
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_current_modifier
+            name: Změna ceny
+          - entity: sensor.cez_dynamic_tariff_effective_price
+            name: Aktuální cena
+          - entity: sensor.cez_dynamic_tariff_current_band
+            name: Aktuální pásmo
+          - entity: sensor.cez_dynamic_tariff_day_type
+            name: Typ dne
+          - entity: sensor.cez_dynamic_tariff_season
+            name: Sezóna
 
-  - type: markdown
-    title: Legenda
-    content: |
-      {% set legend = state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
-      {% if legend %}
-      {% for item in legend %}
-      `{{ item['token'] }} {{ item['modifier_percent'] }} %`
-      {% endfor %}
-      {% else %}
-      Legenda zatím není dostupná.
-      {% endif %}
+      - type: markdown
+        title: Stav tarifu
+        content: |
+          {% if is_state('binary_sensor.cez_dynamic_tariff_very_expensive_now', 'on') %}
 
-  - type: markdown
-    title: Mapa tarifu dnes
-    content: |
-      **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') | lower }}**
+          ## 🔴 Velmi drahé pásmo
 
-      {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+          Preferovat provoz z baterie a omezit odběr ze sítě.
 
-  - type: markdown
-    title: Mapa tarifu zítra
-    content: |
-      **{{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'season') or 'Neznámá sezóna' }} / {{ (state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'day_type') or 'neznámý typ dne') | lower }}**
+          {% elif is_state('binary_sensor.cez_dynamic_tariff_expensive_now', 'on') %}
 
-      {{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'display_map') or 'Mapa zatím není dostupná.' }}
+          ## 🟠 Drahé pásmo
 
-      {% set legend = state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'legend') or [] %}
-      {% for item in legend %}
-      `{{ item['token'] }} {{ item['modifier_percent'] }} %`
-      {% endfor %}
+          Větší spotřebu je vhodné přesunout do levnějšího okna.
 
-  - type: entities
-    title: Nastavené prahy
-    show_header_toggle: false
-    entities:
-      - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
-        name: Super levné
-      - entity: sensor.cez_dynamic_tariff_cheap_threshold
-        name: Levné
-      - entity: sensor.cez_dynamic_tariff_expensive_threshold
-        name: Drahé
-      - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
-        name: Velmi drahé
+          {% elif is_state('binary_sensor.cez_dynamic_tariff_super_cheap_now', 'on') %}
+
+          ## 🟢 Super levné pásmo
+
+          Vhodná doba pro nabíjení baterie, ohřev bojlerů a nabíjení EV.
+
+          {% elif is_state('binary_sensor.cez_dynamic_tariff_cheap_now', 'on') %}
+
+          ## 🟩 Levné pásmo
+
+          Vhodná doba pro vyšší spotřebu.
+
+          {% else %}
+
+          ## ⚪ Běžné pásmo
+
+          Aktuální změna ceny: **{{ states('sensor.cez_dynamic_tariff_current_modifier') }} %**
+          {% endif %}
+
+  - type: grid
+    cards:
+      - type: heading
+        heading: Další změny
+        icon: mdi:clock-outline
+
+      - type: entities
+        title: Další změna tarifu
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_next_change
+            name: Změna nastane
+          - entity: sensor.cez_dynamic_tariff_next_modifier
+            name: Nová změna ceny
+
+      - type: entities
+        title: Další levné okno
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_next_cheap_start
+            name: Začátek
+          - entity: sensor.cez_dynamic_tariff_next_cheap_end
+            name: Konec
+          - entity: sensor.cez_dynamic_tariff_next_cheap_modifier
+            name: Změna ceny
+
+  - type: grid
+    cards:
+      - type: heading
+        heading: Nastavení pásem
+        icon: mdi:tune-variant
+
+      - type: entities
+        title: Prahy
+        show_header_toggle: false
+        entities:
+          - entity: sensor.cez_dynamic_tariff_super_cheap_threshold
+            name: Super levné
+          - entity: sensor.cez_dynamic_tariff_cheap_threshold
+            name: Levné
+          - entity: sensor.cez_dynamic_tariff_expensive_threshold
+            name: Drahé
+          - entity: sensor.cez_dynamic_tariff_very_expensive_threshold
+            name: Velmi drahé
+
+  - type: grid
+    cards:
+      - type: heading
+        heading: Dnešní tarif
+        icon: mdi:calendar-today
+
+      - type: markdown
+        title: Dnešní mapa
+        content: |
+          **{{ states('sensor.cez_dynamic_tariff_season') }} / {{ states('sensor.cez_dynamic_tariff_day_type') }}**
+
+          {% set schedule = state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'schedule') or [] %}
+          {% set current = states('sensor.cez_dynamic_tariff_current_band') %}
+
+          {% for item in schedule %}
+          {% set interval = item['start'] ~ '-' ~ item['end'] %}
+          {% set mod = item['modifier_percent'] | int %}
+          {% if interval == current %}
+          ➡️ **{{ item['token'] }} {{ item['start'] }}–{{ item['end'] }} · {{ '+' if mod > 0 else '' }}{{ mod }} % · TEĎ**
+          {% else %}
+          {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+          {% endif %}
+          {% endfor %}
+
+  - type: grid
+    cards:
+      - type: heading
+        heading: Zítřejší tarif
+        icon: mdi:calendar-arrow-right
+
+      - type: markdown
+        title: Zítřejší mapa
+        content: |
+          **{{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'season') or '—' }} / {{ state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'day_type') or '—' }}**
+
+          {% set schedule = state_attr('sensor.cez_dynamic_tariff_tomorrow_tariff_map', 'schedule') or [] %}
+
+          {% for item in schedule %}
+          {% set mod = item['modifier_percent'] | int %}
+          {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+          {% endfor %}
+
+cards: []
 ```

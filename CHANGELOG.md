@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1
+
+- doporučený Lovelace dashboard je převedený na responzivní pohled Sections s hustým rozmístěním sekcí,
+- dnešní a zítřejší mapa zobrazuje každé tarifní okno na samostatném řádku přímo z dynamického atributu `schedule`,
+- právě aktivní tarifní okno je v dnešní mapě zvýrazněné,
+- aktuální kategorie tarifu se odvozuje ze všech čtyř binárních senzorů a doplňuje praktické doporučení,
+- další změna tarifu, další levné okno a všechny nastavitelné prahy mají samostatné přehledné karty,
+- dokumentace a hotový příklad dashboardu jsou vzájemně synchronizované.
+
 ## 0.3.0
 
 - přidané senzory nejbližší skutečné změny tarifu a procentní změny, která po ní začne,
