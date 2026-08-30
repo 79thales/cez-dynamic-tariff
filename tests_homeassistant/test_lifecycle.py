@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -87,5 +89,11 @@ async def test_setup_repeated_reload_and_unload(hass: HomeAssistant) -> None:
         assert await hass.config_entries.async_unload(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert hass.states.get(f"sensor.{DOMAIN}_current_modifier") is None
-    assert hass.states.get(f"binary_sensor.{DOMAIN}_cheap_now") is None
+    assert entry.state is ConfigEntryState.NOT_LOADED
+    for entity_id in (
+        f"sensor.{DOMAIN}_current_modifier",
+        f"binary_sensor.{DOMAIN}_cheap_now",
+    ):
+        state = hass.states.get(entity_id)
+        # Restore-state handling may retain an unloaded entity as unavailable.
+        assert state is None or state.state == STATE_UNAVAILABLE
