@@ -103,6 +103,52 @@ class PublicContractTests(unittest.TestCase):
             }.issubset(methods)
         )
 
+    def test_reload_uses_config_entry_lifecycle(self) -> None:
+        """Options updates must not bypass Home Assistant unload callbacks."""
+        tree = ast.parse((COMPONENT / "__init__.py").read_text(encoding="utf-8"))
+        reload_function = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.AsyncFunctionDef)
+            and node.name == "async_reload_entry"
+        )
+        calls = {
+            ast.unparse(node.func)
+            for node in ast.walk(reload_function)
+            if isinstance(node, ast.Call)
+        }
+
+        self.assertIn("hass.config_entries.async_reload", calls)
+        self.assertNotIn("async_unload_entry", calls)
+        self.assertNotIn("async_setup_entry", calls)
+
+    def test_default_schedule_has_public_provenance(self) -> None:
+        """The bundled table must expose a stable revision and official source."""
+        source = (COMPONENT / "const.py").read_text(encoding="utf-8")
+
+        self.assertIn('DEFAULT_SCHEDULE_REVISION = "cez-public-table-2024-09"', source)
+        self.assertIn("https://www.cez.cz/", source)
+
+    def test_blueprint_examples_are_present(self) -> None:
+        """Ship the documented automation starting points with the repository."""
+        blueprint_dir = (
+            ROOT / "blueprints" / "automation" / "cez_dynamic_tariff"
+        )
+        expected = {
+            "cheap_window_device.yaml",
+            "super_cheap_charging.yaml",
+            "expensive_window_actions.yaml",
+        }
+
+        self.assertEqual(
+            {path.name for path in blueprint_dir.glob("*.yaml")},
+            expected,
+        )
+        for filename in expected:
+            content = (blueprint_dir / filename).read_text(encoding="utf-8")
+            self.assertIn("domain: automation", content)
+            self.assertIn("source_url:", content)
+
 
 if __name__ == "__main__":
     unittest.main()

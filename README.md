@@ -12,7 +12,7 @@
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzory. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.3.0`
+Aktuální verze: `0.3.1`
 
 ## Požadavky
 
@@ -95,6 +95,20 @@ K dispozici jsou tyto rozvrhy:
 - zimní víkend nebo svátek,
 - letní pracovní den,
 - letní víkend nebo svátek.
+
+### Zdroj a platnost výchozího rozvrhu
+
+Vestavěná pásma odpovídají veřejné tabulce na stránce
+[Dynamický tarif ČEZ](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif)
+a dokumentu [Ceny v časových pásmech Dynamického tarifu od ČEZ](https://www.cez.cz/webpublic/file/edee/2024/09/dynamickytarif_pasma.pdf).
+Revize vestavěných dat je `cez-public-table-2024-09`; shoda všech čtyř rozvrhů
+s tabulkou je chráněná regresním testem. ČEZ může podmínky produktu změnit, proto
+je před použitím pro finančně významnou automatizaci vhodné porovnat rozvrh s
+aktuální smlouvou. Vlastní smluvní pásma lze kdykoliv zadat v možnostech integrace.
+
+Revize a zdroj jsou dostupné také v atributech `schedule_revision` a
+`schedule_source_url` u aktuálního modifieru a obou map tarifu. Vlastní rozvrh
+má revizi `custom` a zdroj je u něj prázdný, aby nebyl vydáván za tabulku ČEZ.
 
 Každý rozvrh obsahuje položky ve formátu `HH:MM=změna_v_procentech`, oddělené čárkou. Například:
 
@@ -243,7 +257,38 @@ Kontrola Ruff:
 ruff check custom_components
 ```
 
+Rychlé jednotkové testy bez instalace Home Assistantu:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Skutečné lifecycle testy používají odpovídající dvojici verzí Home Assistantu a
+`pytest-homeassistant-custom-component` ze CI workflow. Workflow je spouští pro
+nejstarší deklarovanou verzi HA i aktuální stabilní vydání a vypisuje coverage.
+
 Pull requesty a vydání automaticky kontrolují HACS, Hassfest a Ruff přes GitHub Actions.
+
+## Blueprinty automatizací
+
+Ve složce [`blueprints/automation/cez_dynamic_tariff`](blueprints/automation/cez_dynamic_tariff)
+jsou připravené tři importovatelné blueprinty:
+
+- řízení spotřebiče v levném pásmu,
+- řízení nabíječky v super levném pásmu,
+- vlastní akce při vstupu do drahého pásma a po jeho skončení.
+
+Soubory lze zkopírovat do stejné cesty pod konfigurační složkou Home Assistantu
+a následně z nich vytvořit automatizaci v **Nastavení → Automatizace a scény → Blueprinty**.
+
+## Koncept rozšířeného dashboardu
+
+![Koncept rozšířeného dashboardu ČEZ Dynamic Tariff](presentace.png)
+
+Obrázek je návrh možného společného energetického dashboardu. Části s predikcí
+FVE, baterií a spotřebou vyžadují další entity nebo integrace a nejsou vytvářené
+samotnou integrací ČEZ Dynamic Tariff. Skutečný dashboard podporovaný tímto
+projektem je v [`examples/dashboard.yaml`](examples/dashboard.yaml).
 
 ## Příklad automatizace v Home Assistantu
 

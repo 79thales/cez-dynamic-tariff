@@ -28,6 +28,8 @@ from .const import (
     DEFAULT_EXPENSIVE_THRESHOLD,
     DEFAULT_INCLUDE_HOLIDAYS,
     DEFAULT_NAME,
+    DEFAULT_SCHEDULE_REVISION,
+    DEFAULT_SCHEDULE_SOURCE_URL,
     DEFAULT_SUPER_CHEAP_THRESHOLD,
     DEFAULT_UPDATE_INTERVAL_SECONDS,
     DEFAULT_VERY_EXPENSIVE_THRESHOLD,
@@ -67,10 +69,14 @@ class TariffSnapshot:
     next_change: datetime | None
     next_modifier_percent: int | None
     today_map_code: str
+    today_schedule_revision: str
+    today_schedule_source_url: str | None
     today_schedule: list[dict[str, Any]]
     today_display_map: str
     today_legend: list[dict[str, str]]
     tomorrow_map_code: str
+    tomorrow_schedule_revision: str
+    tomorrow_schedule_source_url: str | None
     tomorrow_schedule: list[dict[str, Any]]
     tomorrow_display_map: str
     tomorrow_legend: list[dict[str, str]]
@@ -166,22 +172,32 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             _LOGGER.warning("Ignoring invalid saved tariff schedule: %s", option)
             return default_schedule
 
-    def _schedule_for_day(self, day: date) -> tuple[TariffWindow, ...]:
-        """Return the correct schedule for the given day."""
+    def _schedule_option_for_day(self, day: date) -> str:
+        """Return the config option containing the schedule for a day."""
         if self._is_summer(day):
-            option = (
+            return (
                 CONF_SUMMER_OFFDAY_SCHEDULE
                 if self._is_offday(day)
                 else CONF_SUMMER_WORKDAY_SCHEDULE
             )
-        else:
-            option = (
-                CONF_WINTER_OFFDAY_SCHEDULE
-                if self._is_offday(day)
-                else CONF_WINTER_WORKDAY_SCHEDULE
-            )
+        return (
+            CONF_WINTER_OFFDAY_SCHEDULE
+            if self._is_offday(day)
+            else CONF_WINTER_WORKDAY_SCHEDULE
+        )
+
+    def _schedule_for_day(self, day: date) -> tuple[TariffWindow, ...]:
+        """Return the correct schedule for the given day."""
+        option = self._schedule_option_for_day(day)
 
         return self._schedule_from_option(option, DEFAULT_SCHEDULES[option])
+
+    def _schedule_metadata_for_day(self, day: date) -> tuple[str, str | None]:
+        """Return provenance for the schedule selected for a day."""
+        option = self._schedule_option_for_day(day)
+        if isinstance(self._option(option, None), str):
+            return "custom", None
+        return DEFAULT_SCHEDULE_REVISION, DEFAULT_SCHEDULE_SOURCE_URL
 
     @staticmethod
     def _minute_of_day(when: datetime) -> int:
@@ -445,6 +461,12 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
         today_map_code = self._map_code(today)
         tomorrow_map_code = self._map_code(tomorrow)
+        today_schedule_revision, today_schedule_source_url = (
+            self._schedule_metadata_for_day(today)
+        )
+        tomorrow_schedule_revision, tomorrow_schedule_source_url = (
+            self._schedule_metadata_for_day(tomorrow)
+        )
 
         return TariffSnapshot(
             current_modifier_percent=current_modifier_percent,
@@ -472,6 +494,8 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             next_change=next_change,
             next_modifier_percent=next_modifier_percent,
             today_map_code=today_map_code,
+            today_schedule_revision=today_schedule_revision,
+            today_schedule_source_url=today_schedule_source_url,
             today_schedule=self._serialize_schedule(
                 schedule,
                 super_cheap_threshold,
@@ -494,6 +518,8 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                 very_expensive_threshold,
             ),
             tomorrow_map_code=tomorrow_map_code,
+            tomorrow_schedule_revision=tomorrow_schedule_revision,
+            tomorrow_schedule_source_url=tomorrow_schedule_source_url,
             tomorrow_schedule=self._serialize_schedule(
                 tomorrow_schedule,
                 super_cheap_threshold,

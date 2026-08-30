@@ -25,6 +25,8 @@ from .const import (
     ATTR_NEXT_CHEAP_MODIFIER_PERCENT,
     ATTR_NEXT_MODIFIER_PERCENT,
     ATTR_SCHEDULE,
+    ATTR_SCHEDULE_REVISION,
+    ATTR_SCHEDULE_SOURCE_URL,
     ATTR_SEASON,
     ATTR_SEASON_CODE,
     DOMAIN,
@@ -195,6 +197,8 @@ class CezDynamicTariffSensor(
                 ATTR_DISPLAY_MAP: data.today_display_map,
                 ATTR_LEGEND: data.today_legend,
                 ATTR_SCHEDULE: data.today_schedule,
+                ATTR_SCHEDULE_REVISION: data.today_schedule_revision,
+                ATTR_SCHEDULE_SOURCE_URL: data.today_schedule_source_url,
                 ATTR_SEASON: data.season,
                 ATTR_SEASON_CODE: data.season_code,
             }
@@ -206,6 +210,8 @@ class CezDynamicTariffSensor(
                 ATTR_DISPLAY_MAP: data.tomorrow_display_map,
                 ATTR_LEGEND: data.tomorrow_legend,
                 ATTR_SCHEDULE: data.tomorrow_schedule,
+                ATTR_SCHEDULE_REVISION: data.tomorrow_schedule_revision,
+                ATTR_SCHEDULE_SOURCE_URL: data.tomorrow_schedule_source_url,
                 ATTR_SEASON: data.tomorrow_season,
                 ATTR_SEASON_CODE: data.tomorrow_season_code,
             }
@@ -228,6 +234,8 @@ class CezDynamicTariffSensor(
             ATTR_IS_HOLIDAY: data.is_holiday,
             ATTR_NEXT_CHEAP_MODIFIER_PERCENT: data.next_cheap_modifier_percent,
             ATTR_NEXT_MODIFIER_PERCENT: data.next_modifier_percent,
+            ATTR_SCHEDULE_REVISION: data.today_schedule_revision,
+            ATTR_SCHEDULE_SOURCE_URL: data.today_schedule_source_url,
             ATTR_SEASON: data.season,
             ATTR_SEASON_CODE: data.season_code,
         }

@@ -152,6 +152,23 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
             25,
             {item["modifier_percent"] for item in snapshot.tomorrow_schedule},
         )
+        self.assertEqual(
+            snapshot.today_schedule_revision,
+            "cez-public-table-2024-09",
+        )
+        self.assertTrue(snapshot.today_schedule_source_url.startswith("https://"))
+
+    async def test_custom_schedule_has_honest_provenance(self) -> None:
+        """A user-edited table must not claim to be the official built-in revision."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 24, 12, 0, tzinfo=PRAGUE_TIMEZONE),
+            options={
+                "summer_workday_schedule": "00:00=-10, 12:00=+10",
+            },
+        )
+
+        self.assertEqual(snapshot.today_schedule_revision, "custom")
+        self.assertIsNone(snapshot.today_schedule_source_url)
 
     async def test_cheap_binary_states_include_super_cheap(self) -> None:
         """Super cheap is also cheap, mirroring expensive classification."""

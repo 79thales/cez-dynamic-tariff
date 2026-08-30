@@ -1,0 +1,42 @@
+blueprint:
+  name: ČEZ – reakce na drahé pásmo
+  description: >-
+    Spustí vlastní akce při vstupu do drahého pásma a další akce po jeho
+    skončení. Lze použít pro omezení odběru, přepnutí baterie nebo oznámení.
+  domain: automation
+  source_url: https://github.com/79thales/cez-dynamic-tariff/blob/master_HA/blueprints/automation/cez_dynamic_tariff/expensive_window_actions.yaml
+  input:
+    tariff_sensor:
+      name: Senzor drahého pásma
+      default: binary_sensor.cez_dynamic_tariff_expensive_now
+      selector:
+        entity:
+          domain: binary_sensor
+    expensive_actions:
+      name: Akce při drahém pásmu
+      default: []
+      selector:
+        action: {}
+    normal_actions:
+      name: Akce po skončení drahého pásma
+      default: []
+      selector:
+        action: {}
+
+triggers:
+  - trigger: state
+    entity_id: !input tariff_sensor
+    to: "on"
+    id: expensive
+  - trigger: state
+    entity_id: !input tariff_sensor
+    to: "off"
+    id: normal
+
+actions:
+  - choose:
+      - conditions: "{{ trigger.id == 'expensive' }}"
+        sequence: !input expensive_actions
+    default: !input normal_actions
+
+mode: restart

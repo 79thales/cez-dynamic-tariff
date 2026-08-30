@@ -1,0 +1,40 @@
+blueprint:
+  name: ČEZ – spotřebič v levném pásmu
+  description: >-
+    Zapne vybraná zařízení při vstupu do levného pásma a vypne je po jeho
+    skončení. Při startu Home Assistantu stav bezpečně sesynchronizuje.
+  domain: automation
+  source_url: https://github.com/79thales/cez-dynamic-tariff/blob/master_HA/blueprints/automation/cez_dynamic_tariff/cheap_window_device.yaml
+  input:
+    tariff_sensor:
+      name: Senzor levného pásma
+      default: binary_sensor.cez_dynamic_tariff_cheap_now
+      selector:
+        entity:
+          domain: binary_sensor
+    devices:
+      name: Řízená zařízení
+      description: Například bojler, myčka nebo nabíječka.
+      selector:
+        target: {}
+
+triggers:
+  - trigger: homeassistant
+    event: start
+  - trigger: state
+    entity_id: !input tariff_sensor
+
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input tariff_sensor
+            state: "on"
+        sequence:
+          - action: homeassistant.turn_on
+            target: !input devices
+    default:
+      - action: homeassistant.turn_off
+        target: !input devices
+
+mode: restart

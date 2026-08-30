@@ -27,6 +27,13 @@ DEFAULT_EXPENSIVE_THRESHOLD = 10
 DEFAULT_VERY_EXPENSIVE_THRESHOLD = 25
 DEFAULT_UPDATE_INTERVAL_SECONDS = 60
 
+# The built-in schedules mirror the public ČEZ table linked below. Update the
+# revision whenever the source or any built-in window changes.
+DEFAULT_SCHEDULE_REVISION = "cez-public-table-2024-09"
+DEFAULT_SCHEDULE_SOURCE_URL = (
+    "https://www.cez.cz/cs/nova-energetika/dynamicky-tarif"
+)
+
 ATTR_BASE_PRICE_KWH = "base_price_kwh"
 ATTR_CURRENT_WINDOW_START = "current_window_start"
 ATTR_CURRENT_WINDOW_END = "current_window_end"
@@ -38,5 +45,7 @@ ATTR_LEGEND = "legend"
 ATTR_NEXT_CHEAP_MODIFIER_PERCENT = "next_cheap_modifier_percent"
 ATTR_NEXT_MODIFIER_PERCENT = "next_modifier_percent"
 ATTR_SCHEDULE = "schedule"
+ATTR_SCHEDULE_REVISION = "schedule_revision"
+ATTR_SCHEDULE_SOURCE_URL = "schedule_source_url"
 ATTR_SEASON = "season"
 ATTR_SEASON_CODE = "season_code"

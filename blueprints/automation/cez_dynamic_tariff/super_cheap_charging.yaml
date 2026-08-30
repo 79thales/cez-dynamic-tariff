@@ -1,0 +1,39 @@
+blueprint:
+  name: ČEZ – nabíjení v super levném pásmu
+  description: >-
+    Zapne nabíječku, baterii nebo jiný cíl pouze v super levném pásmu a po
+    jeho skončení jej vypne. Stav se sesynchronizuje také po restartu HA.
+  domain: automation
+  source_url: https://github.com/79thales/cez-dynamic-tariff/blob/master_HA/blueprints/automation/cez_dynamic_tariff/super_cheap_charging.yaml
+  input:
+    tariff_sensor:
+      name: Senzor super levného pásma
+      default: binary_sensor.cez_dynamic_tariff_super_cheap_now
+      selector:
+        entity:
+          domain: binary_sensor
+    chargers:
+      name: Nabíječky nebo baterie
+      selector:
+        target: {}
+
+triggers:
+  - trigger: homeassistant
+    event: start
+  - trigger: state
+    entity_id: !input tariff_sensor
+
+actions:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input tariff_sensor
+            state: "on"
+        sequence:
+          - action: homeassistant.turn_on
+            target: !input chargers
+    default:
+      - action: homeassistant.turn_off
+        target: !input chargers
+
+mode: restart

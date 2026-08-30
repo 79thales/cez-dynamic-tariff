@@ -1,5 +1,14 @@
 # Changelog
 
+## Nezveřejněno
+
+- reload po změně nastavení nyní používá plný lifecycle config entry v Home Assistantu a nehromadí update listenery,
+- vestavěný rozvrh má dohledatelnou revizi, oficiální zdroj ČEZ a odpovídající atributy entit,
+- CI ověřuje skutečný setup, opakovaný reload a unload na nejstarší podporované i aktuální stabilní verzi Home Assistantu a publikuje coverage,
+- přidané blueprinty pro levné a super levné pásmo a pro reakci na drahé pásmo,
+- prezentační obrázek je začleněný jako jasně označený koncept rozšířeného energetického dashboardu,
+- opravené číslo aktuální verze v README.
+
 ## 0.3.1
 
 - doporučený Lovelace dashboard je převedený na responzivní pohled Sections s hustým rozmístěním sekcí,
