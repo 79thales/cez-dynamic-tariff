@@ -1,6 +1,6 @@
 # Changelog
 
-## Nezveřejněno
+## 0.4.0
 
 - reload po změně nastavení nyní používá plný lifecycle config entry v Home Assistantu a nehromadí update listenery,
 - vestavěný rozvrh má dohledatelnou revizi, oficiální zdroj ČEZ a odpovídající atributy entit,
