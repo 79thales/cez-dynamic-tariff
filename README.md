@@ -12,7 +12,7 @@
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzory. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
-Aktuální verze: `0.4.0`
+Aktuální verze: `0.4.1`
 
 ## Požadavky
 

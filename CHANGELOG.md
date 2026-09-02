@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+- lifecycle testy ověřují bezpečné obnovení stavů entit po odpojení a opětovném načtení integrace,
+- opravená importní cesta pro testy spouštěné s Home Assistantem,
+- GitHub Actions používají aktuální Node.js 24.
+
 ## 0.4.0
 
 - reload po změně nastavení nyní používá plný lifecycle config entry v Home Assistantu a nehromadí update listenery,
