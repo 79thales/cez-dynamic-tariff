@@ -232,6 +232,73 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
         if isinstance(PRAGUE_TIMEZONE, ZoneInfo):
             self.assertEqual(snapshot.next_change.utcoffset(), timedelta(hours=2))
 
+    @unittest.skipUnless(
+        isinstance(PRAGUE_TIMEZONE, ZoneInfo),
+        "IANA timezone data is required for DST fold coverage",
+    )
+    async def test_autumn_dst_repeated_hour_keeps_next_real_boundary(self) -> None:
+        """Both occurrences of 02:30 lead to the 03:00 winter boundary."""
+        first_occurrence = await self._snapshot(
+            datetime(2026, 10, 25, 2, 30, tzinfo=PRAGUE_TIMEZONE, fold=0)
+        )
+        repeated_occurrence = await self._snapshot(
+            datetime(2026, 10, 25, 2, 30, tzinfo=PRAGUE_TIMEZONE, fold=1)
+        )
+
+        expected_change = datetime(2026, 10, 25, 3, 0, tzinfo=PRAGUE_TIMEZONE)
+        for snapshot in (first_occurrence, repeated_occurrence):
+            self.assertEqual(snapshot.current_modifier_percent, -10)
+            self.assertEqual(snapshot.next_change, expected_change)
+            self.assertEqual(snapshot.next_modifier_percent, -50)
+
+        self.assertEqual(
+            first_occurrence.next_change.utcoffset(),
+            timedelta(hours=1),
+        )
+
+    async def test_negative_modifier_reduces_effective_price_with_rounding(self) -> None:
+        """A negative modifier reduces the base price and keeps four decimals."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 23, 3, 30, tzinfo=PRAGUE_TIMEZONE),
+            options={"base_price_kwh": 4.56789},
+        )
+
+        self.assertEqual(snapshot.current_modifier_percent, -50)
+        self.assertEqual(snapshot.effective_price_kwh, 2.2839)
+
+    async def test_zero_base_price_has_no_effective_price(self) -> None:
+        """A zero base price deliberately leaves the derived price unavailable."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 23, 3, 30, tzinfo=PRAGUE_TIMEZONE),
+            options={"base_price_kwh": 0},
+        )
+
+        self.assertIsNone(snapshot.effective_price_kwh)
+
+    async def test_positive_modifier_rounding_is_stable(self) -> None:
+        """The effective price keeps the existing four-decimal rounding behavior."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 24, 5, 0, tzinfo=PRAGUE_TIMEZONE),
+            options={"base_price_kwh": 4.56789},
+        )
+
+        self.assertEqual(snapshot.current_modifier_percent, 25)
+        self.assertEqual(snapshot.effective_price_kwh, 5.7099)
+
+    async def test_schedule_boundary_changes_at_exact_minute(self) -> None:
+        """The active tariff changes exactly at the configured boundary minute."""
+        before = await self._snapshot(
+            datetime(2026, 8, 24, 4, 59, tzinfo=PRAGUE_TIMEZONE)
+        )
+        at_boundary = await self._snapshot(
+            datetime(2026, 8, 24, 5, 0, tzinfo=PRAGUE_TIMEZONE)
+        )
+
+        self.assertEqual(before.current_modifier_percent, -50)
+        self.assertEqual(before.current_band, "03:00-05:00")
+        self.assertEqual(at_boundary.current_modifier_percent, 25)
+        self.assertEqual(at_boundary.current_band, "05:00-08:00")
+
 
 if __name__ == "__main__":
     unittest.main()
