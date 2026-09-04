@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3
+
+- anglický přehled přesně rozlišuje tarifní rozvrh, tarifní období, procentní modifier, vypočtenou obchodní cenu a skutečnou smluvní nebo tržní cenu,
+- zpřesněné anglické názvy entit a texty konfiguračního flow pro mezinárodní HACS review,
+- výslovně uvedené, že integrace nestahuje živé ceny ani smluvní data,
+- beze změn runtime logiky, ID entit, konfigurace, formátu rozvrhů a automatizačního chování.
+
 ## 0.4.2
 
 - přidaný profesionální anglický přehled funkcí, zdrojů tarifních dat, omezení, instalace a konfigurace pro HACS review,
