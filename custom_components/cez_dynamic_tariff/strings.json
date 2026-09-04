@@ -4,7 +4,7 @@
     "step": {
       "user": {
         "title": "ČEZ Dynamic Tariff",
-        "description": "Creates Home Assistant sensors from the default ČEZ dynamic tariff schedule. Tariff bands can be edited later in the integration options.",
+        "description": "Creates Home Assistant entities from the bundled ČEZ Dynamic Tariff schedules. Schedules can be edited later in the integration options; no live pricing data is downloaded.",
         "data": {
           "name": "Name",
           "base_price_kwh": "Base trading price (CZK/kWh)",
@@ -34,11 +34,11 @@
         "data": {
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
-          "reset_schedules": "Restore project default schedules"
+          "reset_schedules": "Restore bundled default schedules"
         },
         "data_description": {
           "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
-          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore project defaults."
+          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults."
         }
       },
       "thresholds": {
@@ -75,7 +75,7 @@
       },
       "reset_schedules": {
         "title": "Restore default schedules",
-        "description": "This removes all four custom schedules and restores the schedules bundled with the integration. Threshold and general changes from the previous steps will be kept.",
+        "description": "This removes all four custom schedules and restores the schedules bundled with the integration. Threshold and general changes from the previous steps are kept.",
         "data": {
           "confirm_reset": "I understand and want to restore all default schedules"
         }
@@ -86,33 +86,33 @@
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
       "expensive_not_below_very_expensive": "Expensive threshold must be lower than very expensive threshold.",
       "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number.",
-      "confirm_reset": "Confirm that you want to restore all project default schedules."
+      "confirm_reset": "Confirm that you want to restore all bundled default schedules."
     }
   },
   "entity": {
     "sensor": {
-      "current_modifier": {"name": "Price change"},
-      "current_band": {"name": "Current band"},
+      "current_modifier": {"name": "Current price modifier"},
+      "current_band": {"name": "Current tariff period"},
       "cheap_threshold": {"name": "Cheap threshold"},
       "super_cheap_threshold": {"name": "Super cheap threshold"},
       "expensive_threshold": {"name": "Expensive threshold"},
       "very_expensive_threshold": {"name": "Very expensive threshold"},
       "season": {"name": "Season"},
       "day_type": {"name": "Day type"},
-      "effective_price": {"name": "Effective price"},
-      "next_cheap_start": {"name": "Next cheap start"},
-      "next_cheap_end": {"name": "Next cheap end"},
-      "next_cheap_modifier": {"name": "Next cheap modifier"},
+      "effective_price": {"name": "Effective trading price"},
+      "next_cheap_start": {"name": "Next cheap period start"},
+      "next_cheap_end": {"name": "Next cheap period end"},
+      "next_cheap_modifier": {"name": "Next cheap period modifier"},
       "next_change": {"name": "Next tariff change"},
-      "next_modifier": {"name": "Modifier after next change"},
-      "today_tariff_map": {"name": "Today tariff map"},
-      "tomorrow_tariff_map": {"name": "Tomorrow tariff map"}
+      "next_modifier": {"name": "Next price modifier"},
+      "today_tariff_map": {"name": "Today's tariff map"},
+      "tomorrow_tariff_map": {"name": "Tomorrow's tariff map"}
     },
     "binary_sensor": {
-      "cheap_now": {"name": "Cheap now"},
-      "super_cheap_now": {"name": "Super cheap now"},
-      "expensive_now": {"name": "Expensive now"},
-      "very_expensive_now": {"name": "Very expensive now"}
+      "cheap_now": {"name": "Cheap period active"},
+      "super_cheap_now": {"name": "Super cheap period active"},
+      "expensive_now": {"name": "Expensive period active"},
+      "very_expensive_now": {"name": "Very expensive period active"}
     }
   }
 }

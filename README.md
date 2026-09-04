@@ -26,6 +26,14 @@
 
 ### Tariff data and pricing
 
+| Term | Meaning in this integration |
+|---|---|
+| **Tariff schedule** | One of four daily tables selected by season and day type. Each entry defines a start time and a percentage modifier. |
+| **Tariff period** | The interval from one schedule entry to the next. The current period determines the active modifier. |
+| **Tariff modifier** | The percentage assigned to a tariff period, such as `-50 %` or `+25 %`. It is not an electricity price. |
+| **Effective price** | A calculated value using the user-entered base trading price: `base price × (1 + modifier / 100)`. It is unavailable when the base price is `0` and covers only the trading component. |
+| **Actual market or contract price** | Not provided or downloaded. The integration does not connect to a ČEZ account, a market-price feed, or a meter, and it cannot determine the user's complete billed price. |
+
 The bundled schedules are transcribed from the official [ČEZ Dynamic Tariff product page](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif) and the ČEZ document [Prices in ČEZ Dynamic Tariff time periods](https://www.cez.cz/webpublic/file/edee/2024/09/dynamickytarif_pasma.pdf). Their internal revision is `cez-public-table-2024-09`.
 
 This is a schedule-based integration. It does **not** download current prices, contract data, or revised tariff schedules from the internet. Users can edit all four schedules in the integration options if their contract differs from the bundled data. ČEZ may change its product terms, so users should compare the bundled schedule with their current contract before relying on it for financially significant automations.
