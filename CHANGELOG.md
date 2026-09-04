@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2
+
+- přidaný profesionální anglický přehled funkcí, zdrojů tarifních dat, omezení, instalace a konfigurace pro HACS review,
+- opravený neplatný odkaz na My Home Assistant badge a nahrazené natvrdo uvedené číslo verze dynamickým odkazem na aktuální release,
+- odstraněný zavádějící konceptuální obrázek s funkcemi, které integrace neposkytuje,
+- zpřesněná anglická metadata repozitáře a poznámky k vydání.
+
 ## 0.4.1
 
 - lifecycle testy ověřují bezpečné obnovení stavů entit po odpojení a opětovném načtení integrace,
