@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.4
+
+- přidané regresní testy pro podzimní přechod na standardní čas, přesné hranice tarifního rozvrhu, záporný modifier, nulovou základní cenu a stabilní čtyřmístné zaokrouhlení,
+- potvrzená kompatibilita lifecycle testů s Home Assistant 2025.1.4 a 2026.8.3,
+- beze změn runtime logiky, ID entit, konfigurace, formátu rozvrhů a automatizačního chování.
+
 ## 0.4.3
 
 - anglický přehled přesně rozlišuje tarifní rozvrh, tarifní období, procentní modifier, vypočtenou obchodní cenu a skutečnou smluvní nebo tržní cenu,
