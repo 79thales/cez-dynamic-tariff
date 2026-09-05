@@ -41,6 +41,7 @@ class PublicContractTests(unittest.TestCase):
             "season",
             "day_type",
             "effective_price",
+            "current_cheap_end",
             "next_cheap_start",
             "next_cheap_end",
             "next_cheap_modifier",

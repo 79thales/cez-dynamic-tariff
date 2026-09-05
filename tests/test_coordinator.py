@@ -6,17 +6,13 @@ import importlib.util
 import sys
 import types
 import unittest
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
-try:
-    PRAGUE_TIMEZONE = ZoneInfo("Europe/Prague")
-    UTC_TIMEZONE = ZoneInfo("UTC")
-except ZoneInfoNotFoundError:
-    PRAGUE_TIMEZONE = timezone(timedelta(hours=2), "Europe/Prague")
-    UTC_TIMEZONE = timezone.utc
+PRAGUE_TIMEZONE = ZoneInfo("Europe/Prague")
+UTC_TIMEZONE = ZoneInfo("UTC")
 
 
 def _load_coordinator_module():
@@ -229,13 +225,8 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(snapshot.next_change.hour, 3)
-        if isinstance(PRAGUE_TIMEZONE, ZoneInfo):
-            self.assertEqual(snapshot.next_change.utcoffset(), timedelta(hours=2))
+        self.assertEqual(snapshot.next_change.utcoffset(), timedelta(hours=2))
 
-    @unittest.skipUnless(
-        isinstance(PRAGUE_TIMEZONE, ZoneInfo),
-        "IANA timezone data is required for DST fold coverage",
-    )
     async def test_autumn_dst_repeated_hour_keeps_next_real_boundary(self) -> None:
         """Both occurrences of 02:30 lead to the 03:00 winter boundary."""
         first_occurrence = await self._snapshot(
@@ -255,6 +246,52 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
             first_occurrence.next_change.utcoffset(),
             timedelta(hours=1),
         )
+
+    async def test_invalid_schedule_reports_builtin_provenance(self) -> None:
+        """Fallback data must expose its actual bundled source."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 24, 12, tzinfo=PRAGUE_TIMEZONE),
+            options={"summer_workday_schedule": "invalid"},
+        )
+        self.assertEqual(snapshot.current_modifier_percent, -50)
+        self.assertEqual(snapshot.today_schedule_revision, "cez-public-table-2024-09")
+        self.assertIsNotNone(snapshot.today_schedule_source_url)
+
+    async def test_current_cheap_end_merges_bands_and_midnight(self) -> None:
+        """Cheap and super-cheap windows stay continuous across midnight."""
+        snapshot = await self._snapshot(
+            datetime(2026, 8, 23, 23, 30, tzinfo=PRAGUE_TIMEZONE)
+        )
+        self.assertEqual(snapshot.current_cheap_end,
+                         datetime(2026, 8, 24, 5, tzinfo=PRAGUE_TIMEZONE))
+
+    async def test_current_cheap_end_inactive_and_unbounded(self) -> None:
+        """Do not invent an end when inactive or cheap throughout the horizon."""
+        inactive = await self._snapshot(
+            datetime(2026, 8, 24, 5, tzinfo=PRAGUE_TIMEZONE)
+        )
+        self.assertIsNone(inactive.current_cheap_end)
+        continuous = await self._snapshot(
+            datetime(2026, 8, 24, 5, tzinfo=PRAGUE_TIMEZONE),
+            options={"cheap_threshold": 30},
+        )
+        self.assertIsNone(continuous.current_cheap_end)
+
+    async def test_current_cheap_end_custom_dst_boundaries(self) -> None:
+        """Follow the active wall-clock tariff through missing/repeated minutes."""
+        options = {"winter_offday_schedule": "00:00=-50, 02:30=10"}
+        cases = (
+            (datetime(2026, 3, 29, 1, 30, tzinfo=PRAGUE_TIMEZONE),
+             datetime(2026, 3, 29, 3, tzinfo=PRAGUE_TIMEZONE)),
+            (datetime(2026, 10, 25, 2, 15, tzinfo=PRAGUE_TIMEZONE, fold=0),
+             datetime(2026, 10, 25, 2, 30, tzinfo=PRAGUE_TIMEZONE, fold=0)),
+            (datetime(2026, 10, 25, 2, 15, tzinfo=PRAGUE_TIMEZONE, fold=1),
+             datetime(2026, 10, 25, 2, 30, tzinfo=PRAGUE_TIMEZONE, fold=1)),
+        )
+        for when, expected in cases:
+            with self.subTest(when=when.isoformat()):
+                snapshot = await self._snapshot(when, options=options)
+                self.assertEqual(snapshot.current_cheap_end.timestamp(), expected.timestamp())
 
     async def test_negative_modifier_reduces_effective_price_with_rounding(self) -> None:
         """A negative modifier reduces the base price and keeps four decimals."""

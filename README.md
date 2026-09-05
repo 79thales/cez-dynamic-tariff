@@ -17,7 +17,7 @@
 
 ### Features
 
-- 16 sensors for the current tariff period and modifier, season and day type, optional effective trading price, the next tariff change, the next cheap period, configurable thresholds, and tariff maps for today and tomorrow.
+- 17 sensors for the current tariff period and modifier, season and day type, optional effective trading price, the next tariff change, current and next cheap periods, configurable thresholds, and tariff maps for today and tomorrow.
 - 4 binary sensors indicating cheap, super cheap, expensive, and very expensive periods.
 - Four bundled schedules covering April-September and October-March, each split into workdays and weekends or Czech public holidays.
 - Editable schedule entries in `HH:MM=modifier` format, with support for adding or removing tariff periods and changing their percentage modifiers.
@@ -243,6 +243,7 @@ Senzory:
 - `sensor.cez_dynamic_tariff_effective_price`
 - `sensor.cez_dynamic_tariff_next_cheap_start`
 - `sensor.cez_dynamic_tariff_next_cheap_end`
+- `sensor.cez_dynamic_tariff_current_cheap_end`
 - `sensor.cez_dynamic_tariff_next_cheap_modifier`
 - `sensor.cez_dynamic_tariff_next_change`
 - `sensor.cez_dynamic_tariff_next_modifier`
@@ -256,7 +257,13 @@ Binární senzory:
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
-Integrace tedy vytváří celkem 20 vlastních entit: 16 senzorů a 4 binární senzory. Aktualizační entitu HACS vytváří HACS samostatně.
+Integrace tedy vytváří celkem 21 vlastních entit: 17 senzorů a 4 binární senzory. Aktualizační entitu HACS vytváří HACS samostatně.
+
+`current_cheap_end` ukazuje konec právě probíhajícího souvislého levného období podle prahu `cheap_threshold`, včetně navazujících super levných pásem a přechodu přes půlnoc. Pokud právě není levno nebo konec není nalezen během následujících osmi dnů, stav je `unknown`. Při změně času sleduje skutečné minuty a stejný lokální rozvrh jako `cheap_now`; v opakované hodině tak může vlastní rozvrh projít pásmem znovu. Senzor se aktualizuje spolu s koordinátorem každých 60 sekund, nikoli nutně přesně na hranici minuty.
+
+The `current_cheap_end` timestamp gives the end of the currently active continuous cheap period using `cheap_threshold`. It includes adjacent super-cheap bands and continues across midnight. It is `unknown` when not currently cheap or when no end is found within the next eight days. It follows real elapsed minutes and the same local-clock schedule as `cheap_now` through DST; a custom band can therefore occur again during the repeated hour. Updates follow the coordinator's 60-second interval, which is not necessarily aligned with tariff boundaries. Existing `next_cheap_*` sensors continue to describe a future individual window.
+
+Developer tests: install `requirements-test.txt` before running `python -m unittest discover -s tests`. The `tzdata` dependency ensures DST tests also run on Windows; timezone data is required rather than silently replaced with a fixed UTC offset. Real Home Assistant test environments are specified in `.github/workflows/quality.yaml`.
 
 Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**. Integrace od verze `0.2.3` explicitně navrhuje výchozí ID podle stabilních interních klíčů uvedených výše, takže jejich suffix nezávisí na jazyku ani překladu názvu entity. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
 

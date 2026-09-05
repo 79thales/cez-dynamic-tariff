@@ -91,6 +91,7 @@
   },
   "entity": {
     "sensor": {
+      "current_cheap_end": {"name": "Konec aktuálního levného období"},
       "current_modifier": {"name": "Změna ceny"},
       "current_band": {"name": "Aktuální pásmo"},
       "cheap_threshold": {"name": "Práh levného pásma"},

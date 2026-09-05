@@ -1,0 +1,4 @@
+# Lightweight tests and lint; real Home Assistant environments are pinned in CI.
+tzdata
+ruff
+coverage

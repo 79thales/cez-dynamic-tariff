@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0
+
+- nový timestamp senzor `current_cheap_end` ukazuje konec aktuálního souvislého levného období včetně navazujících pásem a půlnoci; mimo levné období nebo bez konce v osmiden­ním výhledu vrací neznámou hodnotu,
+- opravený původ tarifních dat při návratu k vestavěnému rozvrhu po neplatném uloženém rozvrhu,
+- DST testy vyžadují skutečná IANA data i na Windows; doplněné testy konfigurace a resetu přes skutečné Home Assistant rozhraní,
+- zachovaná stávající ID entit, konfigurace, formát rozvrhů, cenové výpočty a chování dosavadních senzorů.
+
+### English
+
+- Added the `current_cheap_end` timestamp sensor for the end of the active continuous cheap period, including adjacent bands and midnight. It returns unknown when inactive or when no end is found within eight days.
+- Corrected schedule provenance when invalid saved schedules fall back to bundled data.
+- Required real IANA timezone data for DST tests on Windows and added configuration/reset tests through Home Assistant's flow APIs.
+- Preserved existing entity IDs, configuration, schedule format, price calculations, and existing sensor behavior.
+
 ## 0.4.4
 
 - přidané regresní testy pro podzimní přechod na standardní čas, přesné hranice tarifního rozvrhu, záporný modifier, nulovou základní cenu a stabilní čtyřmístné zaokrouhlení,

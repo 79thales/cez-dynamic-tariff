@@ -64,7 +64,8 @@ async def test_setup_repeated_reload_and_unload(hass: HomeAssistant) -> None:
             for state in hass.states.async_all()
             if state.entity_id.startswith((f"sensor.{DOMAIN}_", f"binary_sensor.{DOMAIN}_"))
         ]
-        assert len(states) == 20
+        assert len(states) == 21
+        assert hass.states.get(f"sensor.{DOMAIN}_current_cheap_end") is not None
 
         modifier = hass.states.get(f"sensor.{DOMAIN}_current_modifier")
         assert modifier is not None

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 import holidays
@@ -63,6 +63,7 @@ class TariffSnapshot:
     very_expensive_now: bool
     base_price_kwh: float
     effective_price_kwh: float | None
+    current_cheap_end: datetime | None
     next_cheap_start: datetime | None
     next_cheap_end: datetime | None
     next_cheap_modifier_percent: int | None
@@ -195,8 +196,14 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
     def _schedule_metadata_for_day(self, day: date) -> tuple[str, str | None]:
         """Return provenance for the schedule selected for a day."""
         option = self._schedule_option_for_day(day)
-        if isinstance(self._option(option, None), str):
-            return "custom", None
+        value = self._option(option, None)
+        if isinstance(value, str):
+            try:
+                parse_schedule(value, DEFAULT_SCHEDULES[option])
+            except ValueError:
+                pass
+            else:
+                return "custom", None
         return DEFAULT_SCHEDULE_REVISION, DEFAULT_SCHEDULE_SOURCE_URL
 
     @staticmethod
@@ -364,6 +371,33 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
         return schedule[-1]
 
+    def _current_cheap_end(self, when: datetime, threshold: int) -> datetime | None:
+        """Find the first non-cheap minute within eight elapsed days.
+
+        Walk real UTC minutes so nonexistent local minutes are skipped and
+        repeated minutes follow the same wall-clock rule as cheap_now. Cache
+        each day's classification to avoid parsing schedules inside the loop.
+        """
+        if self._current_window(when).modifier_percent > threshold:
+            return None
+        daily_cheap: dict[date, list[bool]] = {}
+        minute = timedelta(minutes=1)
+        candidate = when.astimezone(UTC).replace(second=0, microsecond=0)
+        timezone = self._local_tz()
+        for _ in range(8 * 24 * 60):
+            candidate += minute
+            local = candidate.astimezone(timezone)
+            day = local.date()
+            if day not in daily_cheap:
+                daily_cheap[day] = [
+                    window.modifier_percent <= threshold
+                    for window in self._schedule_for_day(day)
+                    for _ in range(window.start_minute, window.end_minute)
+                ]
+            if not daily_cheap[day][self._minute_of_day(local)]:
+                return local
+        return None
+
     def _next_matching_window(
         self,
         when: datetime,
@@ -488,6 +522,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             very_expensive_now=current_modifier_percent >= very_expensive_threshold,
             base_price_kwh=base_price_kwh,
             effective_price_kwh=effective_price_kwh,
+            current_cheap_end=self._current_cheap_end(now, cheap_threshold),
             next_cheap_start=next_cheap_start,
             next_cheap_end=next_cheap_end,
             next_cheap_modifier_percent=next_cheap_modifier_percent,

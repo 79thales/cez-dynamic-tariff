@@ -21,7 +21,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install Ruff
-        run: python -m pip install ruff coverage
+        run: python -m pip install -r requirements-test.txt
 
       - name: Compile Python sources
         run: python -m compileall -q custom_components tests tests_homeassistant

@@ -98,6 +98,12 @@ SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
         value_fn=lambda data: data.effective_price_kwh,
     ),
     CezDynamicTariffSensorDescription(
+        key="current_cheap_end",
+        translation_key="current_cheap_end",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=lambda data: data.current_cheap_end,
+    ),
+    CezDynamicTariffSensorDescription(
         key="next_cheap_start",
         translation_key="next_cheap_start",
         device_class=SensorDeviceClass.TIMESTAMP,

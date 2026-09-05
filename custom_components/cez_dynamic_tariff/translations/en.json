@@ -91,6 +91,7 @@
   },
   "entity": {
     "sensor": {
+      "current_cheap_end": {"name": "Current cheap period end"},
       "current_modifier": {"name": "Current price modifier"},
       "current_band": {"name": "Current tariff period"},
       "cheap_threshold": {"name": "Cheap threshold"},
