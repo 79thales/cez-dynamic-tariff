@@ -60,12 +60,12 @@ async def test_coordinator_uses_real_czech_holidays(hass: HomeAssistant) -> None
     await hass.config.async_set_time_zone("Europe/Prague")
     timezone = ZoneInfo("Europe/Prague")
     cases = (
-        (datetime(2026, 4, 3, 5, tzinfo=timezone), True, True, 10, "summer_offday"),
+        (datetime(2026, 4, 3, 5, tzinfo=timezone), True, True, 10, "summer_weekend_or_holiday"),
         (datetime(2026, 4, 6, 5, tzinfo=timezone), True, True, 10, "summer_workday"),
         (datetime(2026, 4, 6, 5, tzinfo=timezone), False, False, 25, "summer_workday"),
         (datetime(2026, 4, 7, 5, tzinfo=timezone), True, False, 25, "summer_workday"),
-        (datetime(2026, 12, 31, 5, tzinfo=timezone), True, False, 25, "winter_offday"),
-        (datetime(2027, 1, 1, 5, tzinfo=timezone), True, True, 10, "winter_offday"),
+        (datetime(2026, 12, 31, 5, tzinfo=timezone), True, False, 25, "winter_weekend_or_holiday"),
+        (datetime(2027, 1, 1, 5, tzinfo=timezone), True, True, 10, "winter_weekend_or_holiday"),
     )
     for when, include_holidays, is_holiday, modifier, tomorrow_map in cases:
         entry = MockConfigEntry(
