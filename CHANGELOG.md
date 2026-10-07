@@ -7,14 +7,18 @@
 - Instalační příloha `cez_dynamic_tariff.zip` pro HACS a odznaky celkových stažení i posledního vydání v README. Počítání začíná touto verzí; zahrnuje stažení balíčku a aktualizace, nikoli unikátní uživatele.
 - Horní počet v HACS patří vybranému vydání. Zdrojové archivy, instalace výchozí větve a ukázkové blueprinty se do odznaků nezapočítávají; starší stažení bez přílohy nelze zpětně dopočítat.
 - Automatické balíčkování z přesného Git commitu nejdříve vytvoří koncept release s ZIPem a českými i anglickými poznámkami. Kontroluje verzi, strukturu archivu a nepřepisuje zveřejněné přílohy.
-- Bez změn tarifních výpočtů, rozvrhů, entit, konfigurace nebo závislostí integrace; bez telemetrie. Starší vydání si zachovávají původní způsob instalace.
+- Aktualizace knihovny `holidays` z `0.93` na `0.106` odstraňuje konflikt závislosti hlášený aktuálním Hassfestem. CI testuje stejnou verzi jako manifest integrace.
+- Regresní testy ověřují české svátky v letech 2025–2027, Velikonoce, přechod přes Nový rok a volbu tarifu se skutečnou knihovnou. Testy kalendáře prošly s původní i novou verzí.
+- Bez změn tarifních výpočtů, rozvrhů, entit nebo konfigurace; bez telemetrie. Starší vydání si zachovávají původní způsob instalace.
 
 ### English
 
 - A HACS installer asset, `cez_dynamic_tariff.zip`, and README badges for total and latest-release installer downloads. Counting starts with this version and includes downloads and updates, not unique users.
 - HACS's download indicator covers the selected release. Source-code archives, default-branch installations and example blueprints are excluded from the badges; earlier downloads without an installer asset cannot be recovered.
 - The packaging workflow builds from the exact Git commit and first creates a draft with the installer and Czech/English release notes. It validates the manifest version and archive layout and never overwrites published assets.
-- No changes to tariff calculations, schedules, entities, configuration or integration dependencies, and no added telemetry. Older releases retain their original installation method.
+- Updated `holidays` from `0.93` to `0.106` to resolve the dependency conflict reported by current Hassfest validation. CI uses the same version as the integration manifest.
+- Added regressions for Czech public holidays in 2025–2027, Easter, year boundaries and tariff selection using the real library. Calendar tests passed with both the previous and updated dependency.
+- No changes to tariff calculations, schedules, entities or configuration, and no added telemetry. Older releases retain their original installation method.
 
 ## 0.5.0
 

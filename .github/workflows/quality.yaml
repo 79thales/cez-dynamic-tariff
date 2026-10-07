@@ -63,7 +63,7 @@ jobs:
           homeassistant==${{ matrix.homeassistant }}
           pytest-homeassistant-custom-component==${{ matrix.test_plugin }}
           pytest-cov
-          holidays==0.93
+          holidays==0.106
 
       - name: Run real Home Assistant lifecycle tests
         run: >-
