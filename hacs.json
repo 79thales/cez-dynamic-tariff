@@ -3,5 +3,7 @@
   "country": "CZ",
   "homeassistant": "2025.1.0",
   "render_readme": true,
-  "hide_default_branch": false
+  "hide_default_branch": false,
+  "zip_release": true,
+  "filename": "cez_dynamic_tariff.zip"
 }

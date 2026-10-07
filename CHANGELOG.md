@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1 – 2026-10-07
+
+### Čeština
+
+- Instalační příloha `cez_dynamic_tariff.zip` pro HACS a odznaky celkových stažení i posledního vydání v README. Počítání začíná touto verzí; zahrnuje stažení balíčku a aktualizace, nikoli unikátní uživatele.
+- Horní počet v HACS patří vybranému vydání. Zdrojové archivy, instalace výchozí větve a ukázkové blueprinty se do odznaků nezapočítávají; starší stažení bez přílohy nelze zpětně dopočítat.
+- Automatické balíčkování z přesného Git commitu nejdříve vytvoří koncept release s ZIPem a českými i anglickými poznámkami. Kontroluje verzi, strukturu archivu a nepřepisuje zveřejněné přílohy.
+- Bez změn tarifních výpočtů, rozvrhů, entit, konfigurace nebo závislostí integrace; bez telemetrie. Starší vydání si zachovávají původní způsob instalace.
+
+### English
+
+- A HACS installer asset, `cez_dynamic_tariff.zip`, and README badges for total and latest-release installer downloads. Counting starts with this version and includes downloads and updates, not unique users.
+- HACS's download indicator covers the selected release. Source-code archives, default-branch installations and example blueprints are excluded from the badges; earlier downloads without an installer asset cannot be recovered.
+- The packaging workflow builds from the exact Git commit and first creates a draft with the installer and Czech/English release notes. It validates the manifest version and archive layout and never overwrites published assets.
+- No changes to tariff calculations, schedules, entities, configuration or integration dependencies, and no added telemetry. Older releases retain their original installation method.
+
 ## 0.5.0
 
 - nový timestamp senzor `current_cheap_end` ukazuje konec aktuálního souvislého levného období včetně navazujících pásem a půlnoci; mimo levné období nebo bez konce v osmiden­ním výhledu vrací neznámou hodnotu,

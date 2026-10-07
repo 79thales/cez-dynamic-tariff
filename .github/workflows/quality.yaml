@@ -24,10 +24,10 @@ jobs:
         run: python -m pip install -r requirements-test.txt
 
       - name: Compile Python sources
-        run: python -m compileall -q custom_components tests tests_homeassistant
+        run: python -m compileall -q custom_components tests tests_homeassistant scripts
 
       - name: Run Ruff
-        run: ruff check custom_components tests tests_homeassistant
+        run: ruff check custom_components tests tests_homeassistant scripts
 
       - name: Run tests
         run: coverage run --source=custom_components/cez_dynamic_tariff -m unittest discover -s tests
