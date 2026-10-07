@@ -108,5 +108,5 @@ jobs:
             await core.summary
               .addHeading('Installer ready; release is still a draft')
               .addLink(tag, release.html_url)
-              .addRaw('\nReview the bilingual notes and Validate workflow results before publishing.\n')
+              .addRaw('\nReview the bilingual notes and Quality, HACS and Hassfest results before publishing.\n')
               .write();

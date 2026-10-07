@@ -9,6 +9,22 @@ permissions:
   contents: read
 
 jobs:
+  latest-home-assistant:
+    name: Resolve latest stable Home Assistant
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.resolve.outputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - name: Resolve stable HA and matching test plugin from PyPI
+        id: resolve
+        run: echo "environment=$(python scripts/resolve_latest_ha.py)" >> "$GITHUB_OUTPUT"
+
   python:
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +53,7 @@ jobs:
 
   home-assistant:
     name: Home Assistant ${{ matrix.homeassistant }}
+    needs: latest-home-assistant
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -45,9 +62,15 @@ jobs:
           - homeassistant: "2025.1.4"
             test_plugin: "0.13.205"
             python: "3.12"
+            holidays: "holidays==0.106"
           - homeassistant: "2026.8.3"
             test_plugin: "0.13.357"
             python: "3.14"
+            holidays: "holidays==0.106"
+          - homeassistant: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).homeassistant }}
+            test_plugin: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).test_plugin }}
+            python: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).python }}
+            holidays: "holidays>=0.106"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -63,7 +86,7 @@ jobs:
           homeassistant==${{ matrix.homeassistant }}
           pytest-homeassistant-custom-component==${{ matrix.test_plugin }}
           pytest-cov
-          holidays==0.106
+          "${{ matrix.holidays }}"
 
       - name: Run real Home Assistant lifecycle tests
         run: >-

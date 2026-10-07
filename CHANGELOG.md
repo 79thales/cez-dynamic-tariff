@@ -7,8 +7,10 @@
 - Instalační příloha `cez_dynamic_tariff.zip` pro HACS a odznaky celkových stažení i posledního vydání v README. Počítání začíná touto verzí; zahrnuje stažení balíčku a aktualizace, nikoli unikátní uživatele.
 - Horní počet v HACS patří vybranému vydání. Zdrojové archivy, instalace výchozí větve a ukázkové blueprinty se do odznaků nezapočítávají; starší stažení bez přílohy nelze zpětně dopočítat.
 - Automatické balíčkování z přesného Git commitu nejdříve vytvoří koncept release s ZIPem a českými i anglickými poznámkami. Kontroluje verzi, strukturu archivu a nepřepisuje zveřejněné přílohy.
-- Aktualizace knihovny `holidays` z `0.93` na `0.106` odstraňuje konflikt závislosti hlášený aktuálním Hassfestem. CI testuje stejnou verzi jako manifest integrace.
+- Závislost `holidays>=0.106` odstraňuje konflikt hlášený aktuálním Hassfestem a umožňuje následovat aktualizace této knihovny v Home Assistantu. CI ověřuje minimální podporovanou verzi `0.106`.
 - Regresní testy ověřují české svátky v letech 2025–2027, Velikonoce, přechod přes Nový rok a volbu tarifu se skutečnou knihovnou. Testy kalendáře prošly s původní i novou verzí.
+- CI při každém běhu doplní test skutečně nejnovější stabilní verze Home Assistantu z PyPI, s odpovídajícím testovacím pluginem; vedle dosavadních testovaných verzí. Nesoulad testovacího pluginu skončí chybou, nikoli tichým návratem ke staršímu nebo beta HA.
+- Sjednocené pořadí a vzhled odznaků s ostatními integracemi; souhrnný odznak Validation a absolutní odkaz na logo pro správné zobrazení v HACS. Odznak Home Assistant uvádí minimální podporovanou verzi.
 - Bez změn tarifních výpočtů, rozvrhů, entit nebo konfigurace; bez telemetrie. Starší vydání si zachovávají původní způsob instalace.
 
 ### English
@@ -16,8 +18,10 @@
 - A HACS installer asset, `cez_dynamic_tariff.zip`, and README badges for total and latest-release installer downloads. Counting starts with this version and includes downloads and updates, not unique users.
 - HACS's download indicator covers the selected release. Source-code archives, default-branch installations and example blueprints are excluded from the badges; earlier downloads without an installer asset cannot be recovered.
 - The packaging workflow builds from the exact Git commit and first creates a draft with the installer and Czech/English release notes. It validates the manifest version and archive layout and never overwrites published assets.
-- Updated `holidays` from `0.93` to `0.106` to resolve the dependency conflict reported by current Hassfest validation. CI uses the same version as the integration manifest.
+- Changed the dependency to `holidays>=0.106` to resolve the conflict reported by current Hassfest validation and allow it to follow Home Assistant's library updates. CI verifies the minimum supported version, `0.106`.
 - Added regressions for Czech public holidays in 2025–2027, Easter, year boundaries and tariff selection using the real library. Calendar tests passed with both the previous and updated dependency.
+- Each CI run also tests the actual latest stable Home Assistant from PyPI with a matching test plugin, alongside the existing pinned environments. A missing matching plugin fails clearly instead of silently testing an older or beta HA release.
+- Unified badge order and styling across the integrations, an aggregate Validation badge and an absolute logo URL for HACS rendering. The Home Assistant badge states the minimum supported version.
 - No changes to tariff calculations, schedules, entities or configuration, and no added telemetry. Older releases retain their original installation method.
 
 ## 0.5.0

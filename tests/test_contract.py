@@ -29,6 +29,13 @@ def _description_keys(filename: str, constructor: str) -> set[str]:
 class PublicContractTests(unittest.TestCase):
     """Protect stable IDs and translated entity names."""
 
+    def test_shared_holidays_dependency_is_not_exactly_pinned(self) -> None:
+        """Allow HA to update its shared package, and test the minimum in CI."""
+        manifest = json.loads((COMPONENT / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["requirements"], ["holidays>=0.106"])
+        workflow = (ROOT / ".github/workflows/quality.yaml").read_text(encoding="utf-8")
+        self.assertIn("holidays==0.106", workflow)
+
     def test_all_sensor_keys_are_stable_and_translated(self) -> None:
         """Every public sensor key exists in all translation files."""
         expected = {

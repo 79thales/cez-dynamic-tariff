@@ -4,8 +4,8 @@
 the archive root, as required by HACS `zip_release`. It uses `git archive` on the
 selected commit's `custom_components/cez_dynamic_tariff` tree, never the working directory.
 Uncommitted edits, local credentials, exports, caches and repository metadata are
-not included. Keep private data out of Git as well; the repository privacy tests
-remain part of validation.
+not included. Keep private data out of Git as well and inspect the staged diff
+before committing.
 
 Local verification, without uploading or publishing:
 
@@ -18,7 +18,7 @@ python scripts/build_release.py --ref HEAD
 
 1. Update `manifest.json` and add a matching version section to `CHANGELOG.md`,
    preserving both `### Čeština` and `### English`. Commit the changes and pass
-   the **Validate** workflow, including HACS and Hassfest.
+   the **Quality**, **HACS** and **Hassfest** workflows.
 2. Push the corresponding `vX.Y.Z` tag. **Prepare release installer** checks out
    that exact tag, runs tests, verifies the manifest version and builds the ZIP.
 3. The workflow attaches the ZIP to a **draft** release and copies the matching
@@ -41,3 +41,17 @@ dashboard samples or other attachments do not inflate the installer count. The
 latest-release badge and HACS's download indicator cover one release; the total
 badge combines installer downloads across releases. Neither metric identifies
 unique users or active installations, and no integration telemetry is involved.
+
+## Latest stable Home Assistant tests
+
+`resolve_latest_ha.py` reads public PyPI metadata during each Quality workflow
+run. It selects the latest stable Home Assistant and a non-yanked version of
+`pytest-homeassistant-custom-component` that requires that exact HA version.
+The newest test plugin may target a beta, so it must not be used blindly.
+
+The resolver checks at most 25 published stable plugin versions with a 20-second
+timeout per request. If no matching plugin exists or the metadata is unavailable,
+CI fails clearly; it never downgrades HA or silently skips the latest-version test.
+The existing pinned environments remain in the matrix to protect older supported
+installations. `python scripts/resolve_latest_ha.py` prints the resolved versions
+as JSON without installing packages or changing a live Home Assistant instance.

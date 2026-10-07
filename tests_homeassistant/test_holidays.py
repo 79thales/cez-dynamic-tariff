@@ -57,7 +57,7 @@ async def test_coordinator_uses_real_czech_holidays(hass: HomeAssistant) -> None
         CezDynamicTariffCoordinator,
     )
 
-    hass.config.set_time_zone("Europe/Prague")
+    await hass.config.async_set_time_zone("Europe/Prague")
     timezone = ZoneInfo("Europe/Prague")
     cases = (
         (datetime(2026, 4, 3, 5, tzinfo=timezone), True, True, 10, "summer_offday"),

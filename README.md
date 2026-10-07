@@ -1,16 +1,14 @@
 # ČEZ Dynamic Tariff for Home Assistant
 
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1%2B-41BDF5?logo=home-assistant&logoColor=white)](https://www.home-assistant.io/)
-[![HACS](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white)](https://hacs.xyz/)
-[![Latest release](https://img.shields.io/github/v/release/79thales/cez-dynamic-tariff)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
-[![Installer downloads, all releases](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/cez_dynamic_tariff.zip?label=Downloads%20total&displayAssetName=false)](https://github.com/79thales/cez-dynamic-tariff/releases)
-[![Installer downloads, latest release](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/latest/cez_dynamic_tariff.zip?label=Downloads%20latest&displayAssetName=false)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
-[![HACS validation](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hacs.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hacs.yaml)
-[![Hassfest](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hassfest.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/hassfest.yaml)
-[![Quality](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/quality.yaml/badge.svg)](https://github.com/79thales/cez-dynamic-tariff/actions/workflows/quality.yaml)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1.0%2B-41BDF5?logo=home-assistant&logoColor=white&style=flat)](https://www.home-assistant.io/)
+[![HACS Integration](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white&style=flat)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
+[![Latest release](https://img.shields.io/github/v/release/79thales/cez-dynamic-tariff?label=Release&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
+[![Installer downloads, all releases](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/cez_dynamic_tariff.zip?label=Downloads%20total&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases)
+[![Installer downloads, latest release](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/latest/cez_dynamic_tariff.zip?label=Downloads%20latest&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
+[![Validation](https://img.shields.io/github/check-suites/79thales/cez-dynamic-tariff/master_HA?label=Validation&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/actions)
 
 <p align="center">
-  <img src="custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
+  <img src="https://raw.githubusercontent.com/79thales/cez-dynamic-tariff/master_HA/custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
 ## English overview
@@ -55,6 +53,10 @@ Home Assistant `2025.1.0` or newer is required.
 [Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration) · [Start the configuration flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff) · [Latest release](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
 
 ## Installer downloads
+
+The header uses the same badge order and style as EDC Sharing Stats, Entity Audit and VSChrudim Watermeter. `Validation` summarizes the default branch's GitHub check suites, including HACS, Hassfest and tests. The Home Assistant badge states the minimum supported version, not the newest version tested.
+
+Every Quality workflow run resolves the latest stable Home Assistant from PyPI and tests it with a matching `pytest-homeassistant-custom-component` version, alongside Home Assistant 2025.1.4 and 2026.8.3. A missing matching plugin fails the check instead of silently substituting an older or beta HA release.
 
 From v0.5.1, HACS installs the `cez_dynamic_tariff.zip` release asset. The download badges count only this installer, including manual downloads and updates, not unique users or active installations. HACS's download indicator covers the selected release; the total badge combines installer downloads across releases. Source-code archives, default-branch installations and blueprint samples are not counted. Earlier downloads cannot be reconstructed, and cached counts may take time to refresh. No telemetry is added to the integration.
 
