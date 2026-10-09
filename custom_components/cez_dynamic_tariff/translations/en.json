@@ -32,8 +32,7 @@
         "title": "Nastavení ČEZ Dynamic Tariff & Accounting",
         "description": "Choose what to edit. Each task saves independently.",
         "menu_options": {
-          "advance_month": "Monthly advances – amount and confirmation",
-          "advances": "Annual advance totals",
+          "monthly_advances": "Advances",
           "accounting": "Billing period, contract and consumption sources",
           "accounting_history": "Backfill and starting totals",
           "price_list": "Import a CEZ price-list PDF",
@@ -162,34 +161,69 @@
           "dynamic_contract_mode": "Dynamic Tariff contract mode",
           "current_price_start": "Actual current price-list start",
           "deduct_shared_income": "Deduct already calculated sharing income",
-          "shared_income_entity": "Existing sharing income or EDC statistic source",
+          "shared_income_entity": "Sharing revenue – suggested EDC Share entity",
           "historical_cost_entity": "Existing import-only costs (optional)",
           "accounting_energy_entity": "Accounting grid import meter (optional)"
         },
         "data_description": {
           "dynamic_contract_mode": "Trial: invoiced import uses standard NT/VT prices. The future separately paid refund is not automatically deducted; it requires the contractual weighted trading price and the full trial period. Final: hourly modifiers apply only to the trading component.",
-          "accounting_energy_entity": "Empty reuses the existing meter. Select the Meter Total Energy (import) used in Energy if required. Original entities are unchanged; costs from a different meter are not reused."
-        }
-      },
-      "advances": {
-        "title": "Full period advances",
-        "description": "Alternative to monthly entry: enter the planned and paid annual totals. Submit enables annual accounting. Use Monthly advances for individual payments. No history is required here.",
-        "data": {
-          "advance_total": "Total planned advances for full period (CZK)",
-          "advance_paid": "Already paid advances (CZK)"
+          "accounting_energy_entity": "Empty reuses the existing meter. Select the Meter Total Energy (import) used in Energy if required. Original entities are unchanged; costs from a different meter are not reused.",
+          "shared_income_entity": "Suggest an existing EDC monetary revenue statistic. Reuse recipient revenue in CZK, not shared kWh or a unit price. Multiple distinct statistics require manual selection. Enable deduction with the separate switch."
         }
       },
       "monthly_advances": {
-        "title": "Advance and payment",
-        "description": "**Month: {month}**. Enter the advance and amount already paid. Full-payment confirmation sets the paid amount to the advance. Submit saves this month and uses monthly advances for accounting. Annual totals remain saved and are not added to monthly payments. Reopen advance settings for another month.",
+        "title": "Advances and payment confirmations",
+        "description": "**Period: {start} → {end}.**\n\nFor one common amount, enable the common advance and enter it above. For different amounts, disable it and fill in the months. Enter partial payments or confirm full payment for each month. Automatic confirmation is on this page.\n\nSubmit saves the whole plan once; totals come from the months. Blank fields preserve existing values; an unknown month stays unknown.",
         "data": {
-          "amount": "Advance (CZK)",
-          "paid_amount": "Already paid (CZK)",
-          "confirm_paid": "Confirm this advance is fully paid",
-          "automatic_advances": "Automatically confirm advances on the first of the month"
+          "same_amount": "Use the same advance amount for every month",
+          "common_amount": "Common monthly advance (CZK)",
+          "automatic_advances": "Automatically confirm advances on the first of the month",
+          "month_1_amount": "{month_1} – advance (CZK)",
+          "month_1_paid_amount": "{month_1} – paid (CZK)",
+          "month_1_confirm": "{month_1} – confirm full payment",
+          "month_2_amount": "{month_2} – advance (CZK)",
+          "month_2_paid_amount": "{month_2} – paid (CZK)",
+          "month_2_confirm": "{month_2} – confirm full payment",
+          "month_3_amount": "{month_3} – advance (CZK)",
+          "month_3_paid_amount": "{month_3} – paid (CZK)",
+          "month_3_confirm": "{month_3} – confirm full payment",
+          "month_4_amount": "{month_4} – advance (CZK)",
+          "month_4_paid_amount": "{month_4} – paid (CZK)",
+          "month_4_confirm": "{month_4} – confirm full payment",
+          "month_5_amount": "{month_5} – advance (CZK)",
+          "month_5_paid_amount": "{month_5} – paid (CZK)",
+          "month_5_confirm": "{month_5} – confirm full payment",
+          "month_6_amount": "{month_6} – advance (CZK)",
+          "month_6_paid_amount": "{month_6} – paid (CZK)",
+          "month_6_confirm": "{month_6} – confirm full payment",
+          "month_7_amount": "{month_7} – advance (CZK)",
+          "month_7_paid_amount": "{month_7} – paid (CZK)",
+          "month_7_confirm": "{month_7} – confirm full payment",
+          "month_8_amount": "{month_8} – advance (CZK)",
+          "month_8_paid_amount": "{month_8} – paid (CZK)",
+          "month_8_confirm": "{month_8} – confirm full payment",
+          "month_9_amount": "{month_9} – advance (CZK)",
+          "month_9_paid_amount": "{month_9} – paid (CZK)",
+          "month_9_confirm": "{month_9} – confirm full payment",
+          "month_10_amount": "{month_10} – advance (CZK)",
+          "month_10_paid_amount": "{month_10} – paid (CZK)",
+          "month_10_confirm": "{month_10} – confirm full payment",
+          "month_11_amount": "{month_11} – advance (CZK)",
+          "month_11_paid_amount": "{month_11} – paid (CZK)",
+          "month_11_confirm": "{month_11} – confirm full payment",
+          "month_12_amount": "{month_12} – advance (CZK)",
+          "month_12_paid_amount": "{month_12} – paid (CZK)",
+          "month_12_confirm": "{month_12} – confirm full payment",
+          "month_13_amount": "{month_13} – advance (CZK)",
+          "month_13_paid_amount": "{month_13} – paid (CZK)",
+          "month_13_confirm": "{month_13} – confirm full payment",
+          "month_14_amount": "{month_14} – advance (CZK)",
+          "month_14_paid_amount": "{month_14} – paid (CZK)",
+          "month_14_confirm": "{month_14} – confirm full payment"
         },
         "data_description": {
-          "automatic_advances": "Disabled by default. Mid-month opt-in starts next month. Only known advances are confirmed; historical and partial payments are preserved."
+          "same_amount": "Enabled: the common amount applies to every month. Disabled: use the individual monthly amounts.",
+          "automatic_advances": "Disabled by default. Mid-month opt-in starts next month. Only known advances are confirmed; manual corrections and partial payments are preserved."
         }
       },
       "accounting_history": {
@@ -217,13 +251,6 @@
           "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning.",
           "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first.",
           "configure_accounting": "Independent settings using existing import, cost and EDC income statistics. Preserves original entities and schedules."
-        }
-      },
-      "advance_month": {
-        "title": "Select an advance month",
-        "description": "Choose a month, then edit its amount and full or partial payment. Months save individually; an unknown month is not a zero advance.",
-        "data": {
-          "month": "Month"
         }
       },
       "history_auto": {
@@ -266,8 +293,8 @@
       "invalid_accounting_dates": "Enter valid dates and a billing period of at most 370 days.",
       "pricing_required": "Configure and enable full pricing first.",
       "invalid_monetary_entity": "Select a CZK sensor or an EDC financial statistic source.",
-      "invalid_advances": "Amounts must be nonnegative; paid cannot exceed planned total.",
-      "invalid_accounting_history": "Check the reading date, amounts and JSON format against documentation."
+      "invalid_advances": "Enter nonnegative advance amounts. Paid money cannot exceed the advance; common mode requires a common amount.",
+      "invalid_accounting_history": "Check the date within this period, imported kWh and costs in CZK. Do not replace unknown amounts with zero."
     }
   },
   "entity": {

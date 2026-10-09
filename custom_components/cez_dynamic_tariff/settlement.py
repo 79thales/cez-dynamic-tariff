@@ -18,6 +18,8 @@ SETTLEMENT_DEFAULTS = {
     "advance_total": 0.0,
     "advance_paid": 0.0,
     "monthly_advances": "[]",
+    "advance_same_amount": False,
+    "advance_common_amount": None,
     "automatic_advances": False,
     "automatic_advances_from": "",
     "accounting_energy_entity": "",
@@ -169,6 +171,72 @@ def automatic_from(today: date) -> str:
     if today.day != 1:
         first = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
     return first.strftime("%Y-%m")
+
+
+def update_advance_plan(values, data, today: date):
+    """Save one page atomically; common amounts never fabricate paid money."""
+    default_start, default_end = default_period(today)
+    start = date.fromisoformat(values.get("billing_start") or default_start)
+    end = date.fromisoformat(values.get("billing_end") or default_end)
+    rows = {
+        r["month"]: r
+        for r in period_advances(values.get("monthly_advances", "[]"), start, end)
+    }
+    same = bool(data.get("same_amount", False))
+    common = data.get("common_amount")
+    if same and (
+        common is None or not isfinite(float(common)) or not 0 <= float(common) <= 1e9
+    ):
+        raise ValueError("common_amount")
+    candidate = dict(values)
+    for i, month_start in enumerate(month_starts(start, end), 1):
+        month = month_start.strftime("%Y-%m")
+        old = rows.get(month)
+        amount_key, paid_key, confirm_key = (
+            f"month_{i}_{suffix}" for suffix in ("amount", "paid_amount", "confirm")
+        )
+        change = {"month": month}
+        if same:
+            change["amount"] = common
+        elif amount_key in data:
+            change["amount"] = data[amount_key]
+        elif old:
+            change["amount"] = old["amount"]
+        paid = data.get(paid_key)
+        if paid is not None and (
+            float(paid) != (advance_paid_amount(old) if old else 0)
+        ):
+            change["paid_amount"] = paid
+        if data.get(confirm_key):
+            change["confirm"] = True
+        if "amount" not in change:
+            if change.get("paid_amount") or change.get("confirm"):
+                raise ValueError(amount_key)
+            continue
+        if old and change["amount"] == old["amount"] and len(change) == 2:
+            continue
+        try:
+            candidate.update(update_advance_options(candidate, change, today))
+        except (ValueError, KeyError, TypeError) as exc:
+            raise ValueError(paid_key) from exc
+    # The only editable plan consists of monthly entries. Old aggregate options
+    # remain stored for compatibility but are never added to this plan.
+    changes = {
+        "monthly_advances": candidate.get("monthly_advances", "[]"),
+        "advance_mode": "monthly",
+        "advance_same_amount": same,
+        "advance_common_amount": common
+        if common is not None
+        else values.get("advance_common_amount"),
+        "automatic_advances": bool(
+            data.get("automatic_advances", values.get("automatic_advances", False))
+        ),
+    }
+    if changes["automatic_advances"] != bool(values.get("automatic_advances", False)):
+        changes["automatic_advances_from"] = (
+            automatic_from(today) if changes["automatic_advances"] else ""
+        )
+    return changes
 
 
 def confirm_due_advances(rows, today: date, enabled: bool, enabled_from: str):

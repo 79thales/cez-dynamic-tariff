@@ -89,17 +89,6 @@ class CezAdvancesCard extends HTMLElement {
       return;
     }
     card.append(this._node("p", `${a.billing_start} → ${a.billing_end}`));
-    const modeLabel = this._node("label", undefined, "settings");
-    const useMonthly = this._node("input");
-    useMonthly.type = "checkbox";
-    useMonthly.checked = this._monthlyChoice ?? (a.advance_mode === "monthly");
-    useMonthly.addEventListener("change", () => { this._monthlyChoice = useMonthly.checked; });
-    const modeText = this._node("span", "Použít měsíční zálohy pro výpočet");
-    modeText.append(this._node("small", "Zapněte, pokud má vyúčtování používat součet vyplněných měsíců. Volba se uloží s měsíční částkou."));
-    modeLabel.append(useMonthly, modeText);
-    card.append(modeLabel);
-    if (a.advance_mode === "annual") card.append(this._node("p", "Výpočet zatím používá samostatně zadaný roční součet. Měsíční řádky mohou být vyplněné nezávisle."));
-
     const autoLabel = this._node("label", undefined, "settings");
     const auto = this._node("input");
     auto.type = "checkbox";
@@ -158,7 +147,7 @@ class CezAdvancesCard extends HTMLElement {
           this._render();
           return null;
         }
-        return { month, amount, ...(confirm ? { confirm: true } : { paid_amount: paidAmount }), use_monthly: useMonthly.checked };
+        return { month, amount, ...(confirm ? { confirm: true } : { paid_amount: paidAmount }), use_monthly: true };
       };
       const save = this._node("button", "Uložit");
       save.addEventListener("click", () => { const d = data(false); if (d) this._call("update_advance", d, month); });

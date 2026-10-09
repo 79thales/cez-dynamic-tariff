@@ -17,6 +17,20 @@ TZ = ZoneInfo("Europe/Prague")
 
 
 class SettlementTests(unittest.TestCase):
+    def test_common_plan_preserves_payment_provenance_and_other_periods(self):
+        old = {"month": "2025-10", "amount": 100, "paid": True}
+        paid = {"month": "2026-10", "amount": 100, "paid": True, "paid_amount": 100,
+                "paid_source": "automatic", "confirmed_on": "2026-10-01"}
+        values = {**s.SETTLEMENT_DEFAULTS, "billing_start": "2026-10-01", "billing_end": "2026-11-30",
+                  "monthly_advances": json.dumps([old, paid])}
+        changes = s.update_advance_plan(values, {"same_amount": True, "common_amount": 100, "month_1_paid_amount": 100}, date(2026, 10, 9))
+        rows = json.loads(changes["monthly_advances"])
+        self.assertIn(old, rows)
+        self.assertIn(paid, rows)
+        self.assertEqual(s.advances({**values, **changes}, date(2026, 10, 1), date(2026, 11, 30)), (200, 100, []))
+        with self.assertRaises(ValueError):
+            s.update_advance_plan(values, {"same_amount": True}, date(2026, 10, 9))
+
     def test_changing_period_retains_but_does_not_add_previous_payments(self):
         old = {"month": "2025-10", "amount": 100, "paid": True}
         values = {

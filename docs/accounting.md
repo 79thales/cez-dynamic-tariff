@@ -8,15 +8,17 @@ Výchozí zúčtovací období je 1. duben až 31. březen. Začátek i konec lz
 
 Dokud není určený smluvní režim (finální / na zkoušku), účetnictví může zobrazit známý odběr a profil, ale neoznačí neověřený cenový model jako skutečný náklad nebo výsledek budoucího vyúčtování.
 
-## Jednoduché zadání v nastavení (od 1.0.5)
+## Jedna stránka záloh v nastavení (od 1.0.6)
 
-Otevřete **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff & Accounting → Konfigurovat**. Vyberte úlohu; změna zálohy už nevyžaduje průchod obdobím ani historií.
+Otevřete **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff & Accounting → Nastavit → Zálohy**. Celé zúčtovací období se upravuje a ukládá na jedné stránce, bez výběru jednotlivého měsíce a bez samostatného ročního součtu.
 
-- **Zálohy po měsících – částka a potvrzení**: vyberte měsíc, zadejte zálohu a dosud zaplacenou částku. **Potvrdit plnou úhradu** doplní zaplacenou část do výše zálohy. Odeslat uloží pouze tento měsíc a zapne měsíční výpočet; dříve uložené roční součty se nesčítají s měsíci. Zde lze také zapnout automatické potvrzení k prvnímu dni měsíce.
-- **Zálohy souhrnem za celé období**: volitelná alternativa, pokud znáte pouze celkový plán a zaplacený součet. Uložení tohoto formuláře zapne souhrnný režim. Měsíční řádky zůstanou zachované.
-- **Zpětný dopočet a počáteční stav**: historie se přebírá automaticky. Pokud chybí starší údaje, zvolte **Zadat ověřený součet z faktury / ČEZ** a opište datum, kWh a náklady včetně jističe a poplatků pro stejné zúčtovací období. Nepatří sem stav elektroměru, zálohy ani faktura z jiného období. Součet se převezme jednou a novější historie se přičte od následujícího dne.
+- **Použít stejnou částku pro všechny měsíce** a **Společná měsíční záloha** nastaví jednotný plán. Po vypnutí této volby použijete jednotlivé částky u všech měsíců.
+- Každý měsíc má **Záloha**, **Zaplaceno** a **Potvrdit plnou úhradu**. Zaškrtnutí potvrzení je ruční akce při odeslání; dříve uložená zaplacená částka je předvyplněná. Pro opravu úhrady upravte zaplacenou částku.
+- **Automaticky potvrdit k 1. dni měsíce** je na stejné stránce. Zapnutí uprostřed měsíce začne příštím měsícem. Nepřepisuje ruční opravy ani částečné úhrady.
 
-Neznámý odečet nemá předvyplněné nulové částky. **Použít historii Home Assistantu** vypne ruční počáteční stav a používá dostupné statistiky. Původní senzory a historie zůstávají zachované. Ruční součet lze opsat z PDF; tato volba sama PDF neskenuje. JSON není součástí běžného nastavení.
+**Odeslat** uloží celý přehled najednou. Chyba v jednom řádku neuloží dřívější řádky částečně. Změna společné zálohy nevytváří zaplacené peníze: skutečné úhrady, jejich zdroj a datum se zachovají, pokud je výslovně neupravíte. Zaplacená částka nesmí být vyšší než nový plán. Prázdné pole zachová uloženou hodnotu; dosud nezadaný měsíc není nula. Součty za období se převezmou z měsíčních řádků.
+
+**Zpětný dopočet a počáteční stav** je samostatná volba. Historie se přebírá automaticky. Pokud chybí starší údaje, opište datum, kWh a náklady včetně jističe a poplatků pro stejné zúčtovací období z PDF nebo aplikace ČEZ. Součet se převezme jednou a novější historie se přičte od následujícího dne. Neznámý odečet nemá předvyplněné nuly; JSON není potřeba. Tato volba sama PDF neskenuje.
 
 ## Měsíční karta záloh (od 1.0.4)
 
@@ -28,7 +30,7 @@ entity: sensor.cez_dynamic_tariff_accounting_status
 title: Zálohy
 ```
 
-Každý měsíc má **Záloha**, **Zaplaceno**, zbývající částku, **Uložit** a **Potvrdit**. Uložit zachová i částečnou úhradu (např. z 2 500 Kč zaplaceno 1 700 Kč, zbývá 800 Kč); Potvrdit označí celou částku. Opravu nebo zrušení provedete změnou zaplacené částky a uložením. Nezadávané měsíce nejsou nuly. Měsíční plán začne ovlivňovat odhad po výslovném zapnutí volby použití měsíčních záloh a uložení řádku; dosavadní roční součet se na měsíce nerozpočítává.
+Každý měsíc má **Záloha**, **Zaplaceno**, zbývající částku, **Uložit** a **Potvrdit**. Uložit zachová i částečnou úhradu (např. z 2 500 Kč zaplaceno 1 700 Kč, zbývá 800 Kč); Potvrdit označí celou částku. Opravu nebo zrušení provedete změnou zaplacené částky a uložením. Nezadávané měsíce nejsou nuly. Od 1.0.6 uložení řádku používá měsíční plán; není třeba druhý přepínač režimu. Běžné zadání celého období je v nastavení integrace. Pomocnou kartu je vhodné umístit na podstránku, hlavní dashboard používat jako přehled výsledků.
 
 **Automatické potvrzení k prvnímu dni v měsíci** je výchozí vypnuté. Zapnutí uprostřed měsíce platí od příštího měsíce; zapnutí prvního platí už pro tento měsíc. Po výpadku HA se doplní jen splatné známé měsíce od tohoto zapnutí. Minulé platby před zapnutím, neurčené částky, ruční opravy a částečné úhrady se nepřepisují. Opakovaná aktualizace nebo restart nepřičte stejnou platbu znovu. Karta rozlišuje **Zaplaceno**, **Částečně zaplaceno**, **Nezaplaceno**, **Automaticky potvrzeno** a **Nezadáno**.
 
@@ -54,7 +56,7 @@ Ve finálním režimu nové účetnictví používá nastavenou dynamickou cenu.
 
 ## Zálohy
 
-Zvolte součet za celé období a již zaplacenou část, nebo jednotlivé měsíce. Platby se samy neoznačují jako zaplacené. V měsíčním režimu nevyplněný měsíc znamená chybějící údaj; nula výslovně žádnou zálohu. Dokud některý měsíc chybí, nezobrazuje se výsledný přeplatek, který by vycházel jen z částečného plánu. Roční součet umožňuje zadat ověřený úplný plán bez vymýšlení měsíčních dat.
+Zadejte společnou částku nebo jednotlivé měsíce na jedné stránce nastavení. Platby se označí ručně nebo pomocí výslovně zapnutého automatického potvrzení. V měsíčním režimu nevyplněný měsíc znamená chybějící údaj; nula výslovně žádnou zálohu. Dokud některý měsíc chybí, nezobrazuje se výsledný přeplatek, který by vycházel jen z částečného plánu. Samostatný roční formulář už není v nabídce. Dříve uložené souhrnné hodnoty zůstávají zachované pro kompatibilitu, ale po uložení měsíčního přehledu se k němu nepřičítají.
 
 `forecast_balance = advance_payments_total - forecast_net_cost`: kladná částka je předpokládaný přeplatek, záporná nedoplatek. Již zaplacené zálohy jsou samostatný senzor; plán není stavem bankovních plateb.
 
@@ -62,7 +64,17 @@ Zvolte součet za celé období a již zaplacenou část, nebo jednotlivé měs�
 
 Přepínač **Odečíst již vypočtený příjem ze sdílení** je ruční. Vyberte peněžní senzor nebo EDC zdroj s atributem `energy_revenue_statistic_id`. Integrace čte jeho existující finanční statistiku v CZK; nepřepočítává sdílené kWh prodejní cenou a nesčítá příjem všech příjemců podruhé. Vybraný zdroj má odpovídat placeným příjemcům.
 
+Pokud není zdroj vybraný, formulář navrhne souhrnný zdroj EDC s atributem `energy_revenue_statistic_id`. Datumový diagnostický senzor může tento atribut poskytovat i bez peněžního stavu. Jednotliví příjemci se k souhrnu znovu nepřičítají; při více různých souhrnných skupinách se zdroj nehádá. Existující ruční volba se nepřepisuje a odečítání se samo nezapne.
+
 Příjem se přiřazuje ke dni, ke kterému náleží. Předvčerejší příjem se nikdy neodečte od dneška. Bez dnešních dat je dnešní čistý náklad neznámý. Pro celkové období a výhled se odečítá pouze známý příjem a zobrazuje datum jeho dostupnosti. Budoucí příjem se neodhaduje. Náklady elektřiny a výnos ze sdílení zůstávají oddělené položky.
+
+### Vstup do základního panelu Energie
+
+V **Nastavení → Ovládací panely → Energie → Připojení k síti** zvolte pod **Kompenzace exportu** možnost **Použít entitu sledující celkovou kompenzaci**. Do položky **Entita s celkovou kompenzací** vyberte existující peněžní statistiku EDC **Selected paid supply points – Sharing income (Energy)** pro odpovídající skupinu. Tento výběr přijímá i externí statistiku integrace; diagnostický senzor s datumovým stavem se sem jako peněžní hodnota nezadává. [Home Assistant používá obdobné přímé statistiky nákladů a kompenzace například u Opower](https://www.home-assistant.io/integrations/opower/).
+
+Panel Energie počítá změnu peněžního součtu za vybraný den, týden, měsíc nebo vlastní interval. Používá čas původní statistiky EDC, takže opožděný import patří k původnímu období. Není potřeba nová kopie příjmu ani jeho přepočet z kWh. Senzory `daily_shared_income` a `period_shared_income` jsou přehledy dneška a zúčtovacího období; výběr data v Energii jejich stav nepřepíná.
+
+K nákladům na odběr použijte zdroj **před odečtením sdílení**; Energie odečte kompenzaci samostatně. Čistý náklad po sdílení spolu s touž kompenzací by příjem odečetl dvakrát. Ruční přepínač odečítání v účetnictví ČEZ řídí jeho vlastní přehledy a nemění konfiguraci panelu Energie. Upozornění na dostupnost dnešních dat zůstává důležité: EDC má zpoždění a den bez dosud importovaných údajů není potvrzenou nulou.
 
 ## Ověřený odečet a předchozí vyúčtování
 

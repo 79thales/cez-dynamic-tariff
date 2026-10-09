@@ -32,8 +32,7 @@
         "title": "Nastavení ČEZ Dynamic Tariff & Accounting",
         "description": "Vyberte, co chcete upravit. Každá volba se ukládá samostatně.",
         "menu_options": {
-          "advance_month": "Zálohy po měsících – částka a potvrzení",
-          "advances": "Zálohy souhrnem za celé období",
+          "monthly_advances": "Zálohy",
           "accounting": "Období, tarif a zdroje spotřeby",
           "accounting_history": "Zpětný dopočet a počáteční stav",
           "price_list": "Načíst ceník ČEZ z PDF",
@@ -162,34 +161,69 @@
           "dynamic_contract_mode": "Smluvní režim Dynamického tarifu",
           "current_price_start": "Skutečný začátek platnosti současného ceníku",
           "deduct_shared_income": "Odečíst již vypočtený příjem ze sdílení",
-          "shared_income_entity": "Existující příjem ze sdílení nebo EDC zdroj statistik",
+          "shared_income_entity": "Příjem ze sdílení – navržená entita EDC Share",
           "historical_cost_entity": "Existující náklady pouze za odběr (volitelné)",
           "accounting_energy_entity": "Elektroměr importu pro účetnictví (volitelné)"
         },
         "data_description": {
           "dynamic_contract_mode": "Na zkoušku: fakturovaný odběr používá standardní ceny NT/VT. Budoucí dodatečně vyplacená úspora není automaticky odečtená; její výpočet vyžaduje smluvní váženou obchodní cenu a celé zkušební období. Finální: hodinová procenta upravují pouze obchodní složku.",
-          "accounting_energy_entity": "Prázdná volba přebírá dosavadní elektroměr. Můžete vybrat stejný Meter Total Energy (import) jako v Energy. Původní entity se nemění a náklady z jiného elektroměru se nepřebírají."
-        }
-      },
-      "advances": {
-        "title": "Zálohy za celé období",
-        "description": "Alternativa k měsíčnímu zadání: zadejte plánovaný roční součet a již zaplacený součet. Odeslat zapne tento souhrnný režim. Pro jednotlivé splátky zvolte v úvodní nabídce „Zálohy po měsících“. Historii tady nezadáváte.",
-        "data": {
-          "advance_total": "Součet záloh za celé období (Kč)",
-          "advance_paid": "Již zaplacené zálohy (Kč)"
+          "accounting_energy_entity": "Prázdná volba přebírá dosavadní elektroměr. Můžete vybrat stejný Meter Total Energy (import) jako v Energy. Původní entity se nemění a náklady z jiného elektroměru se nepřebírají.",
+          "shared_income_entity": "Navrhne se existující zdroj s peněžní statistikou příjmů EDC. Přebírá se příjem v Kč od příjemců, ne sdílené kWh ani cena za kWh. Více odlišných statistik vyžaduje ruční výběr. Odečítání zapněte samostatným přepínačem."
         }
       },
       "monthly_advances": {
-        "title": "Záloha a úhrada",
-        "description": "**Měsíc: {month}**. Zadejte zálohu a částku již zaplacenou. Zaškrtnutí „Potvrdit plnou úhradu“ doplní zaplacenou částku do výše zálohy. Odeslat uloží tento měsíc a použije měsíční zálohy ve vyúčtování. Roční součty zůstávají uložené; při měsíčním výpočtu se nepřičítají. Pro další měsíc znovu otevřete nastavení záloh.",
+        "title": "Zálohy a potvrzení úhrad",
+        "description": "**Období: {start} → {end}.**\n\nPro jednu částku zaškrtněte společnou zálohu a vyplňte ji nahoře. Pro různé částky tuto volbu vypněte a vyplňte měsíce. U každého měsíce můžete zadat zaplacenou část nebo potvrdit plnou úhradu. Automatické potvrzení je na této stránce.\n\nOdeslat uloží celý přehled najednou; součty se dopočítají z měsíců. Prázdné pole ponechá dříve uloženou hodnotu; dosud nezadaný měsíc zůstane nezadaný.",
         "data": {
-          "amount": "Záloha (Kč)",
-          "paid_amount": "Dosud zaplaceno (Kč)",
-          "confirm_paid": "Potvrdit plnou úhradu této zálohy",
-          "automatic_advances": "Automaticky potvrdit zálohy k 1. dni měsíce"
+          "same_amount": "Použít stejnou částku pro všechny měsíce",
+          "common_amount": "Společná měsíční záloha (Kč)",
+          "automatic_advances": "Automaticky potvrdit zálohy k 1. dni měsíce",
+          "month_1_amount": "{month_1} – záloha (Kč)",
+          "month_1_paid_amount": "{month_1} – zaplaceno (Kč)",
+          "month_1_confirm": "{month_1} – potvrdit plnou úhradu",
+          "month_2_amount": "{month_2} – záloha (Kč)",
+          "month_2_paid_amount": "{month_2} – zaplaceno (Kč)",
+          "month_2_confirm": "{month_2} – potvrdit plnou úhradu",
+          "month_3_amount": "{month_3} – záloha (Kč)",
+          "month_3_paid_amount": "{month_3} – zaplaceno (Kč)",
+          "month_3_confirm": "{month_3} – potvrdit plnou úhradu",
+          "month_4_amount": "{month_4} – záloha (Kč)",
+          "month_4_paid_amount": "{month_4} – zaplaceno (Kč)",
+          "month_4_confirm": "{month_4} – potvrdit plnou úhradu",
+          "month_5_amount": "{month_5} – záloha (Kč)",
+          "month_5_paid_amount": "{month_5} – zaplaceno (Kč)",
+          "month_5_confirm": "{month_5} – potvrdit plnou úhradu",
+          "month_6_amount": "{month_6} – záloha (Kč)",
+          "month_6_paid_amount": "{month_6} – zaplaceno (Kč)",
+          "month_6_confirm": "{month_6} – potvrdit plnou úhradu",
+          "month_7_amount": "{month_7} – záloha (Kč)",
+          "month_7_paid_amount": "{month_7} – zaplaceno (Kč)",
+          "month_7_confirm": "{month_7} – potvrdit plnou úhradu",
+          "month_8_amount": "{month_8} – záloha (Kč)",
+          "month_8_paid_amount": "{month_8} – zaplaceno (Kč)",
+          "month_8_confirm": "{month_8} – potvrdit plnou úhradu",
+          "month_9_amount": "{month_9} – záloha (Kč)",
+          "month_9_paid_amount": "{month_9} – zaplaceno (Kč)",
+          "month_9_confirm": "{month_9} – potvrdit plnou úhradu",
+          "month_10_amount": "{month_10} – záloha (Kč)",
+          "month_10_paid_amount": "{month_10} – zaplaceno (Kč)",
+          "month_10_confirm": "{month_10} – potvrdit plnou úhradu",
+          "month_11_amount": "{month_11} – záloha (Kč)",
+          "month_11_paid_amount": "{month_11} – zaplaceno (Kč)",
+          "month_11_confirm": "{month_11} – potvrdit plnou úhradu",
+          "month_12_amount": "{month_12} – záloha (Kč)",
+          "month_12_paid_amount": "{month_12} – zaplaceno (Kč)",
+          "month_12_confirm": "{month_12} – potvrdit plnou úhradu",
+          "month_13_amount": "{month_13} – záloha (Kč)",
+          "month_13_paid_amount": "{month_13} – zaplaceno (Kč)",
+          "month_13_confirm": "{month_13} – potvrdit plnou úhradu",
+          "month_14_amount": "{month_14} – záloha (Kč)",
+          "month_14_paid_amount": "{month_14} – zaplaceno (Kč)",
+          "month_14_confirm": "{month_14} – potvrdit plnou úhradu"
         },
         "data_description": {
-          "automatic_advances": "Výchozí vypnuto. Zapnutí uprostřed měsíce začne příštím měsícem. Potvrzuje jen známé zálohy; historii ani částečné úhrady nepřepisuje."
+          "same_amount": "Zapnuto: částka nahoře platí pro všechny měsíce. Vypnuto: použijí se částky jednotlivých měsíců.",
+          "automatic_advances": "Výchozí vypnuto. Zapnutí uprostřed měsíce začne příštím měsícem. Potvrzuje jen známé zálohy; ruční opravy a částečné úhrady nepřepisuje."
         }
       },
       "accounting_history": {
@@ -217,13 +251,6 @@
           "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné.",
           "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce.",
           "configure_accounting": "Samostatné nastavení; používá existující statistiky odběru, nákladů a příjmů EDC. Původní entity ani rozvrhy nemění."
-        }
-      },
-      "advance_month": {
-        "title": "Vybrat měsíc zálohy",
-        "description": "Vyberte měsíc. V dalším kroku zadáte částku a potvrdíte plnou nebo částečnou úhradu. Měsíce se ukládají jednotlivě; nezadaný měsíc není nulová záloha.",
-        "data": {
-          "month": "Měsíc"
         }
       },
       "history_auto": {
@@ -266,8 +293,8 @@
       "invalid_accounting_dates": "Zadejte platná data a období nejvýše 370 dní.",
       "pricing_required": "Nejprve nastavte a zapněte plnou cenu.",
       "invalid_monetary_entity": "Vyberte existující senzor v CZK nebo EDC zdroj peněžních statistik.",
-      "invalid_advances": "Částky musí být nezáporné; zaplaceno nesmí přesáhnout plánovaný součet.",
-      "invalid_accounting_history": "Zkontrolujte datum odečtu, částky a formát JSON podle dokumentace."
+      "invalid_advances": "Zadejte nezápornou zálohu. Zaplaceno nesmí přesáhnout částku zálohy; při společné částce musí být vyplněná společná záloha.",
+      "invalid_accounting_history": "Ověřte datum v tomto období, odběr v kWh a náklady v Kč. Neznámé údaje nenahrazujte nulou."
     }
   },
   "entity": {

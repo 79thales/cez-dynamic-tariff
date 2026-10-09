@@ -16,6 +16,7 @@ TO_REDACT = {
     "advance_total",
     "advance_paid",
     "monthly_advances",
+    "advance_common_amount",
     "settled_bills",
     "reference_energy",
     "reference_cost",

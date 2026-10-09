@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.6 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Další zjednodušení výrazného updatu **ČEZ Dynamic Tariff & Accounting**: jediná stránka záloh přímo v nastavení. Jedna společná částka pro všechny měsíce nebo částky po měsících; zaplacené částky, ruční potvrzení plné úhrady a automatické potvrzení k prvnímu dni měsíce na stejné stránce. Bez rolovacího výběru měsíce a bez mezikroku.
+- Odstraněno samostatné zadávání ročních součtů z nabídky. Plán i úhrady se sčítají z měsíců. Vše se uloží jednou; neplatný řádek neuloží část přehledu. Změna plánované částky nevytváří nové úhrady a zachovává původ platby i datum.
+- Automatický návrh existujícího souhrnného peněžního zdroje EDC Share. Využije jeho již vypočtenou statistiku příjmů v Kč, preferuje souhrn před jednotlivými příjemci, nepřičítá duplicitní statistiky a nepřepočítává kWh podruhé. Více odlišných souhrnů vyžaduje výběr; uložený zdroj a ruční zapnutí odečítání zůstávají zachované.
+- Dokumentace vysvětluje přímý vstup příjmu EDC do základního panelu Energie jako celkovou kompenzaci. Výběr dne nebo období používá existující časovou statistiku; denní souhrnný senzor se nepoužívá jako její náhrada a sdílení se neodečítá dvakrát.
+- Pomocná karta jednotlivých záloh zůstává dostupná pro podstránku. Její uložení nevyžaduje další přepínač režimu. Původní entity, jejich ID, dříve uložené údaje a načtená historie se zachovávají.
+
+### English
+
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Continues the substantial Accounting update with one native settings page: a common amount or individual monthly amounts, partial payments, manual full-payment confirmation and optional first-of-month confirmation. No month dropdown or intermediate step.
+- Removes annual-total entry from the menu. Planned and paid totals come from monthly rows. Atomic saves reject the entire edit on an invalid row; planned changes preserve real payments, their source and dates.
+- Suggests an existing aggregate EDC monetary revenue source, preferring the aggregate over its recipients. Reuses calculated CZK statistics without duplicate sources or recalculating shared kWh. Multiple distinct aggregates require selection; saved sources and manual deduction choices are preserved.
+- Documents the direct EDC revenue statistic as total compensation in the standard Energy dashboard. Date selection uses existing timestamped statistics, not a daily summary or a second deduction from net costs.
+- The optional individual-payment card remains suitable for a subview and no longer needs a second mode switch. Original entities, IDs, stored data and cached history are preserved.
+
 ## 1.0.5 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

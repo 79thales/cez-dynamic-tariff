@@ -27,16 +27,16 @@ from .const import (
     DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
+from .edc_source import suggest_edc_income
 from .pricing import PROFILE_DEFAULTS, finite_number
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
 from .settlement import (
     SETTLEMENT_DEFAULTS,
     advance_paid_amount,
-    automatic_from,
     default_period,
     month_starts,
     period_advances,
-    update_advance_options,
+    update_advance_plan,
 )
 
 SCHEDULE_OPTIONS = (
@@ -300,7 +300,6 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         self._pending_options = {}
         self._restore_schedules = False
         self._price_list_info = None
-        self._advance_month = None
 
     async def async_step_init(self, user_input=None):
         """Open the requested task without requiring unrelated financial forms."""
@@ -309,8 +308,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_menu(
             step_id="init",
             menu_options=[
-                "advance_month",
-                "advances",
+                "monthly_advances",
                 "accounting",
                 "accounting_history",
                 "price_list",
@@ -794,8 +792,11 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 )
                 return self._finish_options()
         schema = {}
+        proposed_income = suggest_edc_income(self.hass.states.async_all("sensor"))
         for key in keys:
             value = _option_default(self._config_entry, user_input, key, defaults[key])
+            if key == "shared_income_entity" and not value and user_input is None:
+                value = proposed_income or ""
             marker = (
                 vol.Required(key, default=value)
                 if key
@@ -840,151 +841,100 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             step_id="accounting", data_schema=vol.Schema(schema), errors=errors
         )
 
-    async def async_step_advance_month(self, user_input=None):
-        """Choose a real month before showing its saved amount and confirmation."""
+    async def async_step_monthly_advances(self, user_input=None):
+        """One page: common or individual amounts and every payment confirmation."""
         from datetime import date
 
         from homeassistant.helpers import selector
         from homeassistant.util import dt as dt_util
 
         values = self._accounting_values()
-        months = [
-            d.strftime("%Y-%m")
-            for d in month_starts(
-                date.fromisoformat(values["billing_start"]),
-                date.fromisoformat(values["billing_end"]),
-            )
-        ]
-        if user_input is not None and user_input.get("month") in months:
-            self._advance_month = user_input["month"]
-            return await self.async_step_monthly_advances()
-        names = (
-            "leden",
-            "únor",
-            "březen",
-            "duben",
-            "květen",
-            "červen",
-            "červenec",
-            "srpen",
-            "září",
-            "říjen",
-            "listopad",
-            "prosinec",
+        start, end = (
+            date.fromisoformat(values[k]) for k in ("billing_start", "billing_end")
         )
-        options = [
-            {"value": m, "label": f"{names[int(m[5:]) - 1]} {m[:4]}"} for m in months
-        ]
-        current = dt_util.now().strftime("%Y-%m")
-        return self.async_show_form(
-            step_id="advance_month",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        "month", default=current if current in months else months[0]
-                    ): selector.SelectSelector(
-                        selector.SelectSelectorConfig(options=options)
-                    )
-                }
-            ),
-            errors={"base": "invalid_advances"} if user_input is not None else {},
-        )
-
-    async def async_step_monthly_advances(self, user_input=None):
-        """Edit a single month in native Home Assistant settings, without JSON."""
-        from datetime import date
-
-        from homeassistant.util import dt as dt_util
-
-        if self._advance_month is None:
-            return await self.async_step_advance_month()
-        values = self._accounting_values()
+        months = list(month_starts(start, end))
+        rows = {
+            r["month"]: r
+            for r in period_advances(values["monthly_advances"], start, end)
+        }
         errors = {}
         if user_input is not None:
             try:
-                data = {
-                    "month": self._advance_month,
-                    "amount": user_input["amount"],
-                    "paid_amount": user_input.get("paid_amount", 0),
-                    "use_monthly": True,
-                }
-                if user_input.get("confirm_paid"):
-                    data["confirm"] = True
-                changes = update_advance_options(values, data, dt_util.now().date())
-                enabled = bool(user_input.get("automatic_advances", False))
-                changes["automatic_advances"] = enabled
-                if enabled != bool(values["automatic_advances"]):
-                    changes["automatic_advances_from"] = (
-                        automatic_from(dt_util.now().date()) if enabled else ""
-                    )
-            except (ValueError, KeyError, TypeError):
-                errors["base"] = "invalid_advances"
+                changes = update_advance_plan(values, user_input, dt_util.now().date())
+            except (ValueError, KeyError, TypeError) as exc:
+                field = str(exc)
+                errors[
+                    field
+                    if field == "common_amount" or field.startswith("month_")
+                    else "base"
+                ] = "invalid_advances"
             else:
                 self._pending_options.update(changes)
                 return self._finish_options()
-        rows = period_advances(
-            values["monthly_advances"],
-            date.fromisoformat(values["billing_start"]),
-            date.fromisoformat(values["billing_end"]),
+
+        amounts = {r["amount"] for r in rows.values()}
+        saved_same = self._config_entry.options.get(
+            "advance_same_amount", len(amounts) <= 1
         )
-        row = next((r for r in rows if r["month"] == self._advance_month), None)
+        if len(amounts) > 1:
+            saved_same = False
+        saved_common = values.get("advance_common_amount")
+        if saved_common is None and len(amounts) == 1:
+            saved_common = next(iter(amounts))
         submitted = user_input or {}
-        amount = submitted.get("amount", row["amount"] if row else None)
-        paid = submitted.get("paid_amount", advance_paid_amount(row) if row else 0)
+        same = bool(submitted.get("same_amount", saved_same))
+        common = submitted.get("common_amount", saved_common)
+        number = selector.NumberSelector(
+            selector.NumberSelectorConfig(
+                min=0,
+                max=1e9,
+                step=0.01,
+                mode=selector.NumberSelectorMode.BOX,
+                unit_of_measurement="Kč",
+            )
+        )
+        schema = {
+            vol.Required("same_amount", default=same): bool,
+            vol.Optional(
+                "common_amount",
+                description={"suggested_value": common} if common is not None else {},
+            ): number,
+            vol.Required(
+                "automatic_advances",
+                default=bool(
+                    submitted.get("automatic_advances", values["automatic_advances"])
+                ),
+            ): bool,
+        }
+        placeholders = {"start": start.isoformat(), "end": end.isoformat()}
+        for i, month in enumerate(months, 1):
+            row = rows.get(month.strftime("%Y-%m"))
+            placeholders[f"month_{i}"] = month.strftime("%m/%Y")
+            for suffix, saved in (
+                ("amount", row["amount"] if row else None),
+                ("paid_amount", advance_paid_amount(row) if row else None),
+            ):
+                key = f"month_{i}_{suffix}"
+                value = submitted.get(key, saved)
+                schema[
+                    vol.Optional(
+                        key,
+                        description={"suggested_value": value}
+                        if value is not None
+                        else {},
+                    )
+                ] = number
+            schema[
+                vol.Required(
+                    f"month_{i}_confirm",
+                    default=bool(submitted.get(f"month_{i}_confirm", False)),
+                )
+            ] = bool
         return self.async_show_form(
             step_id="monthly_advances",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        "amount",
-                        description={"suggested_value": amount}
-                        if amount is not None
-                        else {},
-                    ): vol.All(vol.Coerce(float), vol.Range(min=0, max=1e9)),
-                    vol.Required("paid_amount", default=paid): vol.All(
-                        vol.Coerce(float), vol.Range(min=0, max=1e9)
-                    ),
-                    vol.Required(
-                        "confirm_paid",
-                        default=bool(submitted.get("confirm_paid", False)),
-                    ): bool,
-                    vol.Required(
-                        "automatic_advances",
-                        default=bool(
-                            submitted.get(
-                                "automatic_advances", values["automatic_advances"]
-                            )
-                        ),
-                    ): bool,
-                }
-            ),
+            data_schema=vol.Schema(schema),
             errors=errors,
-            description_placeholders={"month": self._advance_month},
-        )
-
-    async def async_step_advances(self, user_input=None):
-        """Optional annual aggregate is independent of monthly entries and history."""
-        errors = {}
-        if user_input is not None:
-            total, paid = (
-                finite_number(user_input.get(k))
-                for k in ("advance_total", "advance_paid")
-            )
-            if total is None or paid is None or not 0 <= paid <= total:
-                errors["base"] = "invalid_advances"
-            else:
-                self._pending_options.update(
-                    advance_mode="annual", advance_total=total, advance_paid=paid
-                )
-                return self._finish_options()
-        schema = {
-            vol.Required(
-                k, default=_option_default(self._config_entry, user_input, k, 0.0)
-            ): vol.All(vol.Coerce(float), vol.Range(min=0))
-            for k in ("advance_total", "advance_paid")
-        }
-        return self.async_show_form(
-            step_id="advances", data_schema=vol.Schema(schema), errors=errors
+            description_placeholders=placeholders,
         )
 
     async def async_step_accounting_history(self, user_input=None):

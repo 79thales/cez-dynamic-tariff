@@ -33,7 +33,7 @@ async def choose(hass, entry, task):
     return await manager.async_configure(first["flow_id"], {"next_step_id": task})
 
 
-async def test_native_month_partial_confirm_and_auto_preserve_other_options(hass):
+async def test_one_page_common_individual_confirmation_and_atomic_save(hass):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options=OPTIONS)
     entry.add_to_hass(hass)
     manager = hass.config_entries.options
@@ -41,56 +41,103 @@ async def test_native_month_partial_confirm_and_auto_preserve_other_options(hass
         "homeassistant.util.dt.now",
         return_value=datetime(2026, 10, 9, tzinfo=timezone.utc),
     ):
-        form = await choose(hass, entry, "advance_month")
-        form = await manager.async_configure(form["flow_id"], {"month": "2026-10"})
+        form = await choose(hass, entry, "monthly_advances")
         assert form["step_id"] == "monthly_advances"
-        assert form["description_placeholders"]["month"] == "2026-10"
+        keys = {str(k): k for k in form["data_schema"].schema}
+        assert "month" not in keys
+        assert all(
+            f"month_{i}_amount" in keys and f"month_{i}_confirm" in keys
+            for i in range(1, 13)
+        )
+        assert form["description_placeholders"]["month_7"] == "10/2026"
         result = await manager.async_configure(
             form["flow_id"],
             {
-                "amount": 100,
-                "paid_amount": 40,
-                "confirm_paid": False,
+                "same_amount": True,
+                "common_amount": 100,
+                "month_7_paid_amount": 40,
                 "automatic_advances": True,
             },
         )
         assert result["type"] == "create_entry"
         rows = json.loads(entry.options["monthly_advances"])
-        assert rows[0]["paid_amount"] == 40 and rows[0]["paid"] is False
+        assert len(rows) == 12 and all(r["amount"] == 100 for r in rows)
+        assert rows[6]["paid_amount"] == 40 and rows[6]["paid"] is False
         assert entry.options["advance_mode"] == "monthly"
         assert entry.options["automatic_advances_from"] == "2026-11"
         assert all(
             entry.options[k] == v for k, v in OPTIONS.items() if k != "advance_mode"
         )
 
-        form = await choose(hass, entry, "advance_month")
-        form = await manager.async_configure(form["flow_id"], {"month": "2026-10"})
-        keys = {str(k): k for k in form["data_schema"].schema}
-        assert keys["paid_amount"].default() == 40
-        bad = await manager.async_configure(
-            form["flow_id"],
-            {
-                "amount": 100,
-                "paid_amount": 101,
-                "confirm_paid": False,
-                "automatic_advances": True,
-            },
-        )
-        assert bad["errors"] == {"base": "invalid_advances"}
-        assert json.loads(entry.options["monthly_advances"])[0]["paid_amount"] == 40
+        form = await choose(hass, entry, "monthly_advances")
         result = await manager.async_configure(
             form["flow_id"],
             {
-                "amount": 100,
-                "paid_amount": 40,
-                "confirm_paid": True,
+                "same_amount": False,
+                "month_2_amount": 160,
+                "month_2_paid_amount": 80,
+                "month_7_confirm": True,
                 "automatic_advances": True,
             },
         )
         assert result["type"] == "create_entry"
-        row = json.loads(entry.options["monthly_advances"])[0]
-        assert row["paid_amount"] == 100 and row["paid"] is True
+        rows = json.loads(entry.options["monthly_advances"])
+        assert rows[1]["amount"] == 160 and rows[1]["paid_amount"] == 80
+        assert rows[6]["paid_amount"] == 100 and rows[6]["paid"] is True
         assert entry.options["automatic_advances_from"] == "2026-11"
+        before = dict(entry.options)
+        form = await choose(hass, entry, "monthly_advances")
+        bad = await manager.async_configure(
+            form["flow_id"],
+            {
+                "same_amount": True,
+                "common_amount": 90,
+                "automatic_advances": True,
+            },
+        )
+        assert bad["errors"] == {"month_7_paid_amount": "invalid_advances"}
+        assert (
+            entry.options == before
+        )  # No earlier month can be saved before the error.
+
+
+async def test_edc_income_is_suggested_without_enabling_or_overwriting(hass):
+    hass.states.async_set(
+        "sensor.site_edc_data_available_since",
+        "2026-07-01",
+        {
+            "energy_revenue_statistic_id": "edc_sharing:site_revenue",
+        },
+    )
+    hass.states.async_set("sensor.shared_kwh", 12, {"unit_of_measurement": "kWh"})
+    hass.states.async_set(
+        "sensor.site_recipient",
+        "meter",
+        {
+            "role": "target",
+            "energy_revenue_statistic_id": "edc_sharing:recipient_revenue",
+        },
+    )
+    entry = MockConfigEntry(domain=DOMAIN, data={}, options=OPTIONS)
+    entry.add_to_hass(hass)
+    form = await choose(hass, entry, "accounting")
+    fields = {str(k): k for k in form["data_schema"].schema}
+    assert (
+        fields["shared_income_entity"].description["suggested_value"]
+        == "sensor.site_edc_data_available_since"
+    )
+    assert fields["deduct_shared_income"].default() is False
+    assert not entry.options.get("shared_income_entity")
+    hass.states.async_set(
+        "sensor.other_site_edc_data_available_since",
+        "2026-07-01",
+        {
+            "energy_revenue_statistic_id": "edc_sharing:other_site_revenue",
+        },
+    )
+    form = await choose(hass, entry, "accounting")
+    fields = {str(k): k for k in form["data_schema"].schema}
+    assert not fields["shared_income_entity"].description
 
 
 async def test_native_checkpoint_has_no_json_and_rejects_other_period(hass):

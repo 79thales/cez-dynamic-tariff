@@ -26,6 +26,8 @@ PAYMENT_OPTIONS = {
     "advance_total",
     "advance_paid",
     "monthly_advances",
+    "advance_same_amount",
+    "advance_common_amount",
     "automatic_advances",
     "automatic_advances_from",
 }
