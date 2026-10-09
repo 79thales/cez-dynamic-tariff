@@ -428,6 +428,9 @@
           "history_unavailable": "Historie nedostupná",
           "contract_unconfirmed": "Smluvní režim zatím neurčen"
         }
+      },
+      "accounting_price": {
+        "name": "Cena kWh pro účetnictví"
       }
     },
     "binary_sensor": {

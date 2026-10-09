@@ -6,7 +6,7 @@
 
 ### Čeština
 
-**Výrazné rozšíření aktualizace 1.0.0: ČEZ Dynamic Tariff & Accounting.** Doména a všech 39 původních entit, jejich ID, unique ID a význam zůstávají zachovány. Účetnictví přidává 17 volitelných senzorů.
+**Výrazné rozšíření aktualizace 1.0.0: ČEZ Dynamic Tariff & Accounting.** Doména a všech 39 původních entit, jejich ID, unique ID a význam zůstávají zachovány. Účetnictví přidává 18 volitelných senzorů.
 
 - Nastavitelné zúčtovací období, výchozí 1. duben až 31. březen; zálohy jako úplný součet nebo jednotlivé měsíce se skutečným označením zaplacení.
 - Zpětný odběr používá existující opravené statistiky Recorderu. Již spočítané náklady se převezmou; chybějící se ocení jen při dostupném historickém HDO, cenách a smluvním datu aktivace. Dnešek se doplňuje od půlnoci pomocí existujících pětiminutových statistik, s veřejně uvedeným časem pokrytí. Žádné nové statistiky se do Recorderu neimportují a původní náklady se nepřepisují.
@@ -19,7 +19,7 @@
 
 ### English
 
-**A substantial extension of the 1.0.0 update: ČEZ Dynamic Tariff & Accounting.** Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce) for public NT/VT schedules and validity. All 39 existing entities retain their IDs, unique IDs and meaning; accounting adds 17 optional sensors.
+**A substantial extension of the 1.0.0 update: ČEZ Dynamic Tariff & Accounting.** Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce) for public NT/VT schedules and validity. All 39 existing entities retain their IDs, unique IDs and meaning; accounting adds 18 optional sensors.
 
 - Configurable billing periods (default April–March), annual advance aggregates or individually recorded monthly planned/paid payments.
 - Reuses corrected Recorder import increments and existing monetary costs. Only missing costs are reconstructed where historical HDO, prices and contractual dates are available. Today is backfilled from midnight using existing five-minute statistics; coverage timestamps and gaps are explicit. Does not rewrite or import energy statistics.
@@ -231,3 +231,4 @@
 ## 0.1.4
 
 - předchozí vydání integrace.
+

@@ -106,6 +106,7 @@ class PublicContractTests(unittest.TestCase):
             "forecast_balance",
             "consumption_profile",
             "accounting_status",
+            "accounting_price",
         }
         actual = _description_keys(
             "sensor.py",

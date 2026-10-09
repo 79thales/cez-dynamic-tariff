@@ -428,6 +428,9 @@
           "history_unavailable": "History unavailable",
           "contract_unconfirmed": "Contract mode not confirmed"
         }
+      },
+      "accounting_price": {
+        "name": "Invoiced kWh accounting price"
       }
     },
     "binary_sensor": {

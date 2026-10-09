@@ -324,6 +324,25 @@ ACCOUNTING_DESCRIPTIONS = tuple(
 )
 
 
+def _invoice_price(data):
+    billing = data.billing or {}
+    mode = billing.get("settlement", {}).get("metadata", {}).get("dynamic_contract_mode")
+    if mode == "trial" or not billing.get("metadata", {}).get("dynamic_pricing"):
+        return billing.get("price_without_dynamic")
+    return billing.get("total_price") if mode == "regular" else None
+
+
+ACCOUNTING_DESCRIPTIONS += (
+    CezDynamicTariffSensorDescription(
+        key="accounting_price",
+        translation_key="accounting_price",
+        native_unit_of_measurement="CZK/kWh",
+        suggested_display_precision=3,
+        value_fn=_invoice_price,
+    ),
+)
+
+
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up sensors for a config entry."""
     coordinator: CezDynamicTariffCoordinator = entry.runtime_data

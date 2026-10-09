@@ -14,10 +14,28 @@ from custom_components.cez_dynamic_tariff.billing import ElectricityBilling
 from custom_components.cez_dynamic_tariff.config_flow import CezDynamicTariffOptionsFlow
 from custom_components.cez_dynamic_tariff.const import DOMAIN
 from custom_components.cez_dynamic_tariff.pricing import PROFILE_DEFAULTS, PriceProfile
+from custom_components.cez_dynamic_tariff.sensor import _invoice_price
 from custom_components.cez_dynamic_tariff.settlement import SETTLEMENT_DEFAULTS
 from custom_components.cez_dynamic_tariff.settlement_history import SettlementHistory
 
 TZ = ZoneInfo("Europe/Prague")
+
+
+def test_invoice_price_reuses_selected_existing_price_and_rejects_unknown_contract():
+    billing = {
+        "total_price": 5,
+        "price_without_dynamic": 4,
+        "metadata": {"dynamic_pricing": True},
+        "settlement": {"metadata": {"dynamic_contract_mode": "unknown"}},
+    }
+    data = SimpleNamespace(billing=billing)
+    assert _invoice_price(data) is None
+    billing["settlement"]["metadata"]["dynamic_contract_mode"] = "trial"
+    assert _invoice_price(data) == 4
+    billing["settlement"]["metadata"]["dynamic_contract_mode"] = "regular"
+    assert _invoice_price(data) == 5
+    billing["metadata"]["dynamic_pricing"] = False
+    assert _invoice_price(data) == 4
 
 
 @pytest.fixture
@@ -86,7 +104,7 @@ async def test_enabled_accounting_lifecycle_reads_real_recorder_and_adds_only_ne
         for s in hass.states.async_all()
         if s.entity_id.startswith((f"sensor.{DOMAIN}_", f"binary_sensor.{DOMAIN}_"))
     ]
-    assert len(states) == 56
+    assert len(states) == 57
     assert hass.states.get(f"sensor.{DOMAIN}_accounting_status").state == "incomplete"
     assert hass.states.get(f"sensor.{DOMAIN}_actual_cost").state == "0.0"
     assert hass.states.get(f"sensor.{DOMAIN}_daily_cost_backfilled").state == "unknown"
