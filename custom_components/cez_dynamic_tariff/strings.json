@@ -29,22 +29,15 @@
   "options": {
     "step": {
       "init": {
-        "title": "General options",
-        "description": "Set the base trading price and holiday handling. Continue to the next step to configure tariff thresholds.",
-        "data": {
-          "base_price_kwh": "Base trading price (CZK/kWh)",
-          "include_holidays": "Treat Czech public holidays as weekend/holiday",
-          "reset_schedules": "Restore bundled default schedules",
-          "configure_pricing": "Configure full prices and savings",
-          "import_price_list": "Import a ČEZ price list PDF",
-          "configure_accounting": "Configure accounting, advances and history"
-        },
-        "data_description": {
-          "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
-          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults.",
-          "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning.",
-          "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first.",
-          "configure_accounting": "Independent settings using existing import, cost and EDC income statistics. Preserves original entities and schedules."
+        "title": "Nastavení ČEZ Dynamic Tariff & Accounting",
+        "description": "Choose what to edit. Each task saves independently.",
+        "menu_options": {
+          "advance_month": "Monthly advances – amount and confirmation",
+          "advances": "Annual advance totals",
+          "accounting": "Billing period, contract and consumption sources",
+          "accounting_history": "Backfill and starting totals",
+          "price_list": "Import a CEZ price-list PDF",
+          "general": "Tariff schedules and other settings"
         }
       },
       "thresholds": {
@@ -168,81 +161,82 @@
           "dynamic_start": "Contractual Dynamic Tariff start",
           "dynamic_contract_mode": "Dynamic Tariff contract mode",
           "current_price_start": "Actual current price-list start",
-          "advance_mode": "Advance input mode",
           "deduct_shared_income": "Deduct already calculated sharing income",
           "shared_income_entity": "Existing sharing income or EDC statistic source",
           "historical_cost_entity": "Existing import-only costs (optional)",
-          "automatic_advances": "Automatically confirm advances on the first day of each month",
           "accounting_energy_entity": "Accounting grid import meter (optional)"
         },
         "data_description": {
           "dynamic_contract_mode": "Trial: invoiced import uses standard NT/VT prices. The future separately paid refund is not automatically deducted; it requires the contractual weighted trading price and the full trial period. Final: hourly modifiers apply only to the trading component.",
-          "automatic_advances": "Off by default. Mid-month opt-in starts next month. Does not verify bank payments or overwrite manual or partial payments.",
           "accounting_energy_entity": "Empty reuses the existing meter. Select the Meter Total Energy (import) used in Energy if required. Original entities are unchanged; costs from a different meter are not reused."
         }
       },
       "advances": {
         "title": "Full period advances",
-        "description": "Enter the full period planned total and the amount already paid. Payments are never automatically marked paid.",
+        "description": "Alternative to monthly entry: enter the planned and paid annual totals. Submit enables annual accounting. Use Monthly advances for individual payments. No history is required here.",
         "data": {
           "advance_total": "Total planned advances for full period (CZK)",
           "advance_paid": "Already paid advances (CZK)"
         }
       },
       "monthly_advances": {
-        "title": "Monthly advances",
-        "description": "Month order: {months}. An empty amount means unknown; zero explicitly means no payment. Check paid only for received payments.",
+        "title": "Advance and payment",
+        "description": "**Month: {month}**. Enter the advance and amount already paid. Full-payment confirmation sets the paid amount to the advance. Submit saves this month and uses monthly advances for accounting. Annual totals remain saved and are not added to monthly payments. Reopen advance settings for another month.",
         "data": {
-          "month_1_amount": "Month 1: amount (CZK)",
-          "month_1_paid": "Month 1: paid",
-          "month_2_amount": "Month 2: amount (CZK)",
-          "month_2_paid": "Month 2: paid",
-          "month_3_amount": "Month 3: amount (CZK)",
-          "month_3_paid": "Month 3: paid",
-          "month_4_amount": "Month 4: amount (CZK)",
-          "month_4_paid": "Month 4: paid",
-          "month_5_amount": "Month 5: amount (CZK)",
-          "month_5_paid": "Month 5: paid",
-          "month_6_amount": "Month 6: amount (CZK)",
-          "month_6_paid": "Month 6: paid",
-          "month_7_amount": "Month 7: amount (CZK)",
-          "month_7_paid": "Month 7: paid",
-          "month_8_amount": "Month 8: amount (CZK)",
-          "month_8_paid": "Month 8: paid",
-          "month_9_amount": "Month 9: amount (CZK)",
-          "month_9_paid": "Month 9: paid",
-          "month_10_amount": "Month 10: amount (CZK)",
-          "month_10_paid": "Month 10: paid",
-          "month_11_amount": "Month 11: amount (CZK)",
-          "month_11_paid": "Month 11: paid",
-          "month_12_amount": "Month 12: amount (CZK)",
-          "month_12_paid": "Month 12: paid",
-          "month_13_amount": "Month 13: amount (CZK)",
-          "month_13_paid": "Month 13: paid",
-          "month_1_paid_amount": "Month 1: amount already paid (CZK)",
-          "month_2_paid_amount": "Month 2: amount already paid (CZK)",
-          "month_3_paid_amount": "Month 3: amount already paid (CZK)",
-          "month_4_paid_amount": "Month 4: amount already paid (CZK)",
-          "month_5_paid_amount": "Month 5: amount already paid (CZK)",
-          "month_6_paid_amount": "Month 6: amount already paid (CZK)",
-          "month_7_paid_amount": "Month 7: amount already paid (CZK)",
-          "month_8_paid_amount": "Month 8: amount already paid (CZK)",
-          "month_9_paid_amount": "Month 9: amount already paid (CZK)",
-          "month_10_paid_amount": "Month 10: amount already paid (CZK)",
-          "month_11_paid_amount": "Month 11: amount already paid (CZK)",
-          "month_12_paid_amount": "Month 12: amount already paid (CZK)",
-          "month_13_paid_amount": "Month 13: amount already paid (CZK)"
+          "amount": "Advance (CZK)",
+          "paid_amount": "Already paid (CZK)",
+          "confirm_paid": "Confirm this advance is fully paid",
+          "automatic_advances": "Automatically confirm advances on the first of the month"
+        },
+        "data_description": {
+          "automatic_advances": "Disabled by default. Mid-month opt-in starts next month. Only known advances are confirmed; historical and partial payments are preserved."
         }
       },
       "accounting_history": {
-        "title": "History and verified provider reading",
-        "description": "The provider reading reuses known costs and import through that day; history is added only from the following day. Settled bills also supply monthly seasonality when statistics lack complete days. JSON may remain []. See documentation for the format. Future costs use seasonal demand and the current forecast mean price; future prices and sharing revenue are not guaranteed.",
+        "title": "Backfill and starting totals",
+        "description": "Existing Home Assistant data already backfills history. If older data is missing, use a verified cumulative total from an invoice or the CEZ app. No JSON is needed.",
+        "menu_options": {
+          "history_auto": "Use Home Assistant history",
+          "history_reading": "Enter a verified invoice / CEZ total"
+        }
+      },
+      "general": {
+        "title": "General options",
+        "description": "Set the base trading price and holiday handling. Continue to the next step to configure tariff thresholds.",
         "data": {
-          "reference_date": "Latest provider reading date (optional)",
-          "reference_energy": "Period import through provider reading (kWh)",
-          "reference_cost": "Period costs through provider reading including standing fees (CZK)",
-          "settled_bills": "Verified settled bills and monthly import (JSON)",
-          "historical_profiles": "Older complete price profiles with validity (JSON)"
+          "base_price_kwh": "Base trading price (CZK/kWh)",
+          "include_holidays": "Treat Czech public holidays as weekend/holiday",
+          "reset_schedules": "Restore bundled default schedules",
+          "configure_pricing": "Configure full prices and savings",
+          "import_price_list": "Import a ČEZ price list PDF",
+          "configure_accounting": "Configure accounting, advances and history"
+        },
+        "data_description": {
+          "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
+          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults.",
+          "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning.",
+          "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first.",
+          "configure_accounting": "Independent settings using existing import, cost and EDC income statistics. Preserves original entities and schedules."
+        }
+      },
+      "advance_month": {
+        "title": "Select an advance month",
+        "description": "Choose a month, then edit its amount and full or partial payment. Months save individually; an unknown month is not a zero advance.",
+        "data": {
+          "month": "Month"
+        }
+      },
+      "history_auto": {
+        "title": "Automatic historical backfill",
+        "description": "Reuse existing consumption and calculated costs. Reconstruct missing costs only with valid historical prices and HDO. Submit disables the manual starting checkpoint without changing original sensors or history. Missing data is not zero."
+      },
+      "history_reading": {
+        "title": "Starting totals from an invoice or CEZ",
+        "description": "**Billing period: {start} → {end}.** Enter verified cumulative consumption and costs from the start through the selected date, copied from an invoice PDF or CEZ app. Do not enter a meter reading or advance payments. This total is reused once; newer consumption starts the next day. Do not use an invoice for another period or replace unknown values with zero.",
+        "data": {
+          "reference_date": "Totals through date",
+          "reference_energy": "Imported energy since period start (kWh)",
+          "reference_cost": "Costs since period start, including standing fees (CZK)"
         }
       }
     },

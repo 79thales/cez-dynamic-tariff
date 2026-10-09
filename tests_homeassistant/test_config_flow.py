@@ -35,6 +35,7 @@ async def test_install_edit_and_reset(hass: HomeAssistant) -> None:
         assert entry.unique_id == DOMAIN
 
         result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], user_input={
                 "base_price_kwh": 5.0, "include_holidays": False,
@@ -64,6 +65,7 @@ async def test_install_edit_and_reset(hass: HomeAssistant) -> None:
         assert entry.options["winter_workday_schedule"] == "00:00=-50, 06:00=+10"
 
         result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], user_input={
                 "base_price_kwh": 5.0, "include_holidays": False,

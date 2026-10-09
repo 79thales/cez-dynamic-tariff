@@ -13,11 +13,12 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .settlement import (
-    advance_paid_amount,
     automatic_from,
     confirm_due_advances,
     default_period,
-    parse_advances,
+    period_advances,
+    stored_advances,
+    update_advance_options,
 )
 
 PAYMENT_OPTIONS = {
@@ -47,54 +48,12 @@ def register_services(hass):
         if not any(k in call.data for k in ("amount", "paid_amount", "confirm")):
             raise ServiceValidationError("Enter an amount or a payment confirmation")
         values = dict(entry.options)
-        default_start, default_end = default_period(dt_util.now().date())
         try:
-            start = date.fromisoformat(values.get("billing_start") or default_start)
-            end = date.fromisoformat(values.get("billing_end") or default_end)
-            month = date.fromisoformat(call.data["month"] + "-01")
-            if not start.replace(day=1) <= month <= end:
-                raise ValueError
-            rows = parse_advances(values.get("monthly_advances", "[]"), start, end)
-            saved = next((r for r in rows if r["month"] == call.data["month"]), None)
-            row = dict(saved) if saved else {"month": call.data["month"], "paid": False}
-            if "amount" in call.data:
-                row["amount"] = call.data["amount"]
-            if "amount" not in row:
-                raise ValueError
-            paid = advance_paid_amount(saved) if saved else 0
-            if "paid_amount" in call.data:
-                paid = call.data["paid_amount"]
-            if "confirm" in call.data:
-                paid = row["amount"] if call.data["confirm"] else 0
-            row.update(paid_amount=paid, paid=paid == row["amount"])
-            if "paid_amount" in call.data or "confirm" in call.data:
-                undone = ("confirm" in call.data and not call.data["confirm"]) or (
-                    "paid_amount" in call.data
-                    and paid == 0
-                    and saved
-                    and advance_paid_amount(saved) > 0
-                )
-                row.update(
-                    paid_source="manual"
-                    if paid > 0 or undone
-                    else row.get("paid_source", "planned"),
-                    confirmed_on=dt_util.now().date().isoformat() if paid else None,
-                    auto_skip=bool(row.get("auto_skip") or undone or paid > 0),
-                )
-            candidate = [r for r in rows if r["month"] != row["month"]] + [row]
-            parse_advances(json.dumps(candidate), start, end)
+            changes = update_advance_options(values, call.data, dt_util.now().date())
         except (ValueError, KeyError, TypeError):
             raise ServiceValidationError(
                 "Enter a month within the period and 0 <= paid amount <= advance amount"
             ) from None
-        # Annual totals cannot be silently reassigned to fabricated months.
-        # A monthly action edits its row but changes accounting mode only when
-        # the caller explicitly chooses the monthly workflow.
-        changes = {
-            "monthly_advances": json.dumps(sorted(candidate, key=lambda r: r["month"]))
-        }
-        if call.data.get("use_monthly"):
-            changes["advance_mode"] = "monthly"
         hass.config_entries.async_update_entry(entry, options={**values, **changes})
 
     async def automatic(call: ServiceCall):
@@ -156,7 +115,8 @@ async def process_due(coordinator, now):
     if not values["automatic_advances"]:
         return
     start, end = default_period(now.date())
-    rows = parse_advances(
+    saved = stored_advances(values["monthly_advances"])
+    rows = period_advances(
         values["monthly_advances"],
         date.fromisoformat(values["billing_start"] or start),
         date.fromisoformat(values["billing_end"] or end),
@@ -168,7 +128,13 @@ async def process_due(coordinator, now):
         values["automatic_advances_from"],
     )
     if changed:
-        text = json.dumps(rows)
+        months = {r["month"] for r in rows}
+        text = json.dumps(
+            sorted(
+                [r for r in saved if r["month"] not in months] + rows,
+                key=lambda r: r["month"],
+            )
+        )
         values["monthly_advances"] = text
         coordinator.hass.config_entries.async_update_entry(
             coordinator.entry,

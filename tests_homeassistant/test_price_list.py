@@ -59,6 +59,7 @@ async def start_import(hass):
     )
     entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={

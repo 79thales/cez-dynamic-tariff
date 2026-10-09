@@ -126,9 +126,9 @@ views:
               {% set interval = item['start'] ~ '-' ~ item['end'] %}
               {% set mod = item['modifier_percent'] | int %}
               {% if interval == current %}
-              ➡️ **{{ item['token'] }} {{ item['start'] }}–{{ item['end'] }} · {{ '+' if mod > 0 else '' }}{{ mod }} % · TEĎ**
+              ➡️ **{{ item.get('display_token', item['token']) }} {{ item['start'] }}–{{ item['end'] }} · {{ '+' if mod > 0 else '' }}{{ mod }} % · TEĎ**
               {% else %}
-              {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+              {{ item.get('display_token', item['token']) }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
               {% endif %}
               {% endfor %}
 
@@ -147,7 +147,7 @@ views:
 
               {% for item in schedule %}
               {% set mod = item['modifier_percent'] | int %}
-              {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+              {{ item.get('display_token', item['token']) }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
               {% endfor %}
 
     cards: []

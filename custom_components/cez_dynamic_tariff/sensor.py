@@ -34,6 +34,7 @@ from .const import (
     DOMAIN,
 )
 from .coordinator import CezDynamicTariffCoordinator, TariffSnapshot
+from .presentation import traffic_light_map
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -326,7 +327,9 @@ ACCOUNTING_DESCRIPTIONS = tuple(
 
 def _invoice_price(data):
     billing = data.billing or {}
-    mode = billing.get("settlement", {}).get("metadata", {}).get("dynamic_contract_mode")
+    mode = (
+        billing.get("settlement", {}).get("metadata", {}).get("dynamic_contract_mode")
+    )
     if mode == "trial" or not billing.get("metadata", {}).get("dynamic_pricing"):
         return billing.get("price_without_dynamic")
     return billing.get("total_price") if mode == "regular" else None
@@ -454,6 +457,7 @@ class CezDynamicTariffSensor(
                 ATTR_DAY_TYPE: data.day_type,
                 ATTR_DAY_TYPE_CODE: data.day_type_code,
                 ATTR_DISPLAY_MAP: data.today_display_map,
+                "traffic_light_map": traffic_light_map(data.today_schedule),
                 ATTR_LEGEND: data.today_legend,
                 ATTR_SCHEDULE: data.today_schedule,
                 ATTR_SCHEDULE_REVISION: data.today_schedule_revision,
@@ -467,6 +471,7 @@ class CezDynamicTariffSensor(
                 ATTR_DAY_TYPE: data.tomorrow_day_type,
                 ATTR_DAY_TYPE_CODE: data.tomorrow_day_type_code,
                 ATTR_DISPLAY_MAP: data.tomorrow_display_map,
+                "traffic_light_map": traffic_light_map(data.tomorrow_schedule),
                 ATTR_LEGEND: data.tomorrow_legend,
                 ATTR_SCHEDULE: data.tomorrow_schedule,
                 ATTR_SCHEDULE_REVISION: data.tomorrow_schedule_revision,
@@ -484,7 +489,13 @@ class CezDynamicTariffSensor(
         if key != "current_modifier":
             return None
 
+        active = next(
+            (r for r in data.today_schedule if r["start"] == data.current_window_start),
+            {},
+        )
         return {
+            "display_token": active.get("display_token"),
+            "color": active.get("color"),
             ATTR_BASE_PRICE_KWH: data.base_price_kwh,
             ATTR_CURRENT_WINDOW_START: data.current_window_start,
             ATTR_CURRENT_WINDOW_END: data.current_window_end,

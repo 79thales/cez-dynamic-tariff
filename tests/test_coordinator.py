@@ -81,7 +81,7 @@ def _load_coordinator_module():
     component_path = (
         Path(__file__).parents[1] / "custom_components" / "cez_dynamic_tariff"
     )
-    for module_basename in ("const", "schedule", "coordinator"):
+    for module_basename in ("const", "schedule", "presentation", "coordinator"):
         module_name = f"{package_name}.{module_basename}"
         spec = importlib.util.spec_from_file_location(
             module_name,
@@ -116,6 +116,17 @@ class _FakeHass:
 
 
 class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
+    async def test_traffic_light_metadata_preserves_legacy_contract(self) -> None:
+        snapshot = await self._snapshot(datetime(2026, 10, 9, 12, tzinfo=PRAGUE_TIMEZONE))
+        expected = {-50: ("🟢", "green"), -10: ("⚪", "white"), 10: ("🟠", "orange"), 25: ("🔴", "red")}
+        for row in snapshot.today_schedule + snapshot.tomorrow_schedule:
+            self.assertEqual((row["display_token"], row["color"]), expected[row["modifier_percent"]])
+            if row["modifier_percent"] == 10:
+                self.assertEqual(row["token"], "⬜")
+        custom = await self._snapshot(datetime(2026, 10, 9, 12, tzinfo=PRAGUE_TIMEZONE), options={"winter_workday_schedule": "00:00=0"})
+        self.assertEqual(custom.today_schedule[0]["display_token"], "🔘")
+        self.assertFalse(custom.cheap_now)
+
     """Verify calculated tariff states and boundaries."""
 
     async def _snapshot(self, when: datetime, options=None, holidays=None):

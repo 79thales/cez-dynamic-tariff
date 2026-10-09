@@ -54,9 +54,9 @@ def standing_fees(start: date, end: date, monthly_at) -> float:
     return total
 
 
-def parse_advances(text: str, start: date, end: date) -> list[dict]:
+def parse_advances(text: str, start: date, end: date, *, limit=24) -> list[dict]:
     rows = json.loads(text)
-    if not isinstance(rows, list) or len(rows) > 24:
+    if not isinstance(rows, list) or len(rows) > limit:
         raise ValueError("invalid advances")
     seen = set()
     for row in rows:
@@ -78,10 +78,29 @@ def parse_advances(text: str, start: date, end: date) -> list[dict]:
     return rows
 
 
+def stored_advances(text):
+    """Validate retained payments without assigning another period's amounts."""
+    rows = json.loads(text)
+    if not isinstance(rows, list) or len(rows) > 120:
+        raise ValueError("invalid advances")
+    if not rows:
+        return []
+    months = [date.fromisoformat(r["month"] + "-01") for r in rows]
+    return parse_advances(text, min(months), max(months), limit=120)
+
+
+def period_advances(text, start: date, end: date):
+    return [
+        r
+        for r in stored_advances(text)
+        if start.strftime("%Y-%m") <= r["month"] <= end.strftime("%Y-%m")
+    ]
+
+
 def advances(values, start: date, end: date):
     if values["advance_mode"] == "annual":
         return float(values["advance_total"]), float(values["advance_paid"]), []
-    rows = parse_advances(values["monthly_advances"], start, end)
+    rows = period_advances(values["monthly_advances"], start, end)
     missing = [
         d.strftime("%Y-%m")
         for d in month_starts(start, end)
@@ -97,6 +116,51 @@ def advances(values, start: date, end: date):
 def advance_paid_amount(row):
     """Preserve legacy confirmed payments; support a partial payment once."""
     return float(row.get("paid_amount", row["amount"] if row.get("paid") else 0))
+
+
+def update_advance_options(values, data, today: date):
+    """Edit one payment for both native settings and the existing card service."""
+    default_start, default_end = default_period(today)
+    start = date.fromisoformat(values.get("billing_start") or default_start)
+    end = date.fromisoformat(values.get("billing_end") or default_end)
+    month = date.fromisoformat(data["month"] + "-01")
+    if not start.replace(day=1) <= month <= end:
+        raise ValueError("month outside billing period")
+    rows = stored_advances(values.get("monthly_advances", "[]"))
+    saved = next((r for r in rows if r["month"] == data["month"]), None)
+    row = dict(saved) if saved else {"month": data["month"], "paid": False}
+    if "amount" in data:
+        row["amount"] = data["amount"]
+    if "amount" not in row:
+        raise ValueError("advance amount required")
+    paid = advance_paid_amount(saved) if saved else 0
+    if "paid_amount" in data:
+        paid = data["paid_amount"]
+    if "confirm" in data:
+        paid = row["amount"] if data["confirm"] else 0
+    row.update(paid_amount=paid, paid=paid == row["amount"])
+    if "paid_amount" in data or "confirm" in data:
+        undone = ("confirm" in data and not data["confirm"]) or (
+            "paid_amount" in data
+            and paid == 0
+            and saved
+            and advance_paid_amount(saved) > 0
+        )
+        row.update(
+            paid_source="manual"
+            if paid > 0 or undone
+            else row.get("paid_source", "planned"),
+            confirmed_on=today.isoformat() if paid else None,
+            auto_skip=bool(row.get("auto_skip") or undone or paid > 0),
+        )
+    candidate = [r for r in rows if r["month"] != row["month"]] + [row]
+    stored_advances(json.dumps(candidate))
+    changes = {
+        "monthly_advances": json.dumps(sorted(candidate, key=lambda r: r["month"]))
+    }
+    if data.get("use_monthly"):
+        changes["advance_mode"] = "monthly"
+    return changes
 
 
 def automatic_from(today: date) -> str:

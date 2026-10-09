@@ -29,22 +29,15 @@
   "options": {
     "step": {
       "init": {
-        "title": "Základní nastavení",
-        "description": "Nastav základní obchodní cenu a zohlednění svátků. V dalším kroku se nastavují prahy tarifních pásem.",
-        "data": {
-          "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
-          "include_holidays": "Brát české státní svátky jako víkend/svátek",
-          "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
-          "configure_pricing": "Nastavit celkovou cenu a úspory",
-          "import_price_list": "Importovat ceník ČEZ z PDF",
-          "configure_accounting": "Nastavit účetnictví, zálohy a historii"
-        },
-        "data_description": {
-          "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
-          "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu.",
-          "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné.",
-          "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce.",
-          "configure_accounting": "Samostatné nastavení; používá existující statistiky odběru, nákladů a příjmů EDC. Původní entity ani rozvrhy nemění."
+        "title": "Nastavení ČEZ Dynamic Tariff & Accounting",
+        "description": "Vyberte, co chcete upravit. Každá volba se ukládá samostatně.",
+        "menu_options": {
+          "advance_month": "Zálohy po měsících – částka a potvrzení",
+          "advances": "Zálohy souhrnem za celé období",
+          "accounting": "Období, tarif a zdroje spotřeby",
+          "accounting_history": "Zpětný dopočet a počáteční stav",
+          "price_list": "Načíst ceník ČEZ z PDF",
+          "general": "Tarifní rozvrhy a další nastavení"
         }
       },
       "thresholds": {
@@ -168,81 +161,82 @@
           "dynamic_start": "Smluvní začátek Dynamického tarifu",
           "dynamic_contract_mode": "Smluvní režim Dynamického tarifu",
           "current_price_start": "Skutečný začátek platnosti současného ceníku",
-          "advance_mode": "Zadání záloh",
           "deduct_shared_income": "Odečíst již vypočtený příjem ze sdílení",
           "shared_income_entity": "Existující příjem ze sdílení nebo EDC zdroj statistik",
           "historical_cost_entity": "Existující náklady pouze za odběr (volitelné)",
-          "automatic_advances": "Automaticky potvrdit zálohu k 1. dni měsíce",
           "accounting_energy_entity": "Elektroměr importu pro účetnictví (volitelné)"
         },
         "data_description": {
           "dynamic_contract_mode": "Na zkoušku: fakturovaný odběr používá standardní ceny NT/VT. Budoucí dodatečně vyplacená úspora není automaticky odečtená; její výpočet vyžaduje smluvní váženou obchodní cenu a celé zkušební období. Finální: hodinová procenta upravují pouze obchodní složku.",
-          "automatic_advances": "Výchozí vypnuto. Zapnutí uprostřed měsíce začne příštím měsícem. Neověřuje bankovní platbu; ruční a částečné úhrady nepřepisuje.",
           "accounting_energy_entity": "Prázdná volba přebírá dosavadní elektroměr. Můžete vybrat stejný Meter Total Energy (import) jako v Energy. Původní entity se nemění a náklady z jiného elektroměru se nepřebírají."
         }
       },
       "advances": {
         "title": "Zálohy za celé období",
-        "description": "Zadejte plánovaný součet za celé období a část již zaplacenou. Platby se samy neoznačují jako zaplacené.",
+        "description": "Alternativa k měsíčnímu zadání: zadejte plánovaný roční součet a již zaplacený součet. Odeslat zapne tento souhrnný režim. Pro jednotlivé splátky zvolte v úvodní nabídce „Zálohy po měsících“. Historii tady nezadáváte.",
         "data": {
           "advance_total": "Součet záloh za celé období (Kč)",
           "advance_paid": "Již zaplacené zálohy (Kč)"
         }
       },
       "monthly_advances": {
-        "title": "Měsíční zálohy",
-        "description": "Pořadí měsíců: {months}. Nevyplněná částka znamená nezadaný měsíc; nula znamená výslovně žádnou zálohu. Zaškrtnutí znamená skutečně zaplacenou částku.",
+        "title": "Záloha a úhrada",
+        "description": "**Měsíc: {month}**. Zadejte zálohu a částku již zaplacenou. Zaškrtnutí „Potvrdit plnou úhradu“ doplní zaplacenou částku do výše zálohy. Odeslat uloží tento měsíc a použije měsíční zálohy ve vyúčtování. Roční součty zůstávají uložené; při měsíčním výpočtu se nepřičítají. Pro další měsíc znovu otevřete nastavení záloh.",
         "data": {
-          "month_1_amount": "1. měsíc: částka (Kč)",
-          "month_1_paid": "1. měsíc: zaplaceno",
-          "month_2_amount": "2. měsíc: částka (Kč)",
-          "month_2_paid": "2. měsíc: zaplaceno",
-          "month_3_amount": "3. měsíc: částka (Kč)",
-          "month_3_paid": "3. měsíc: zaplaceno",
-          "month_4_amount": "4. měsíc: částka (Kč)",
-          "month_4_paid": "4. měsíc: zaplaceno",
-          "month_5_amount": "5. měsíc: částka (Kč)",
-          "month_5_paid": "5. měsíc: zaplaceno",
-          "month_6_amount": "6. měsíc: částka (Kč)",
-          "month_6_paid": "6. měsíc: zaplaceno",
-          "month_7_amount": "7. měsíc: částka (Kč)",
-          "month_7_paid": "7. měsíc: zaplaceno",
-          "month_8_amount": "8. měsíc: částka (Kč)",
-          "month_8_paid": "8. měsíc: zaplaceno",
-          "month_9_amount": "9. měsíc: částka (Kč)",
-          "month_9_paid": "9. měsíc: zaplaceno",
-          "month_10_amount": "10. měsíc: částka (Kč)",
-          "month_10_paid": "10. měsíc: zaplaceno",
-          "month_11_amount": "11. měsíc: částka (Kč)",
-          "month_11_paid": "11. měsíc: zaplaceno",
-          "month_12_amount": "12. měsíc: částka (Kč)",
-          "month_12_paid": "12. měsíc: zaplaceno",
-          "month_13_amount": "13. měsíc: částka (Kč)",
-          "month_13_paid": "13. měsíc: zaplaceno",
-          "month_1_paid_amount": "1. měsíc: dosud zaplaceno (Kč)",
-          "month_2_paid_amount": "2. měsíc: dosud zaplaceno (Kč)",
-          "month_3_paid_amount": "3. měsíc: dosud zaplaceno (Kč)",
-          "month_4_paid_amount": "4. měsíc: dosud zaplaceno (Kč)",
-          "month_5_paid_amount": "5. měsíc: dosud zaplaceno (Kč)",
-          "month_6_paid_amount": "6. měsíc: dosud zaplaceno (Kč)",
-          "month_7_paid_amount": "7. měsíc: dosud zaplaceno (Kč)",
-          "month_8_paid_amount": "8. měsíc: dosud zaplaceno (Kč)",
-          "month_9_paid_amount": "9. měsíc: dosud zaplaceno (Kč)",
-          "month_10_paid_amount": "10. měsíc: dosud zaplaceno (Kč)",
-          "month_11_paid_amount": "11. měsíc: dosud zaplaceno (Kč)",
-          "month_12_paid_amount": "12. měsíc: dosud zaplaceno (Kč)",
-          "month_13_paid_amount": "13. měsíc: dosud zaplaceno (Kč)"
+          "amount": "Záloha (Kč)",
+          "paid_amount": "Dosud zaplaceno (Kč)",
+          "confirm_paid": "Potvrdit plnou úhradu této zálohy",
+          "automatic_advances": "Automaticky potvrdit zálohy k 1. dni měsíce"
+        },
+        "data_description": {
+          "automatic_advances": "Výchozí vypnuto. Zapnutí uprostřed měsíce začne příštím měsícem. Potvrzuje jen známé zálohy; historii ani částečné úhrady nepřepisuje."
         }
       },
       "accounting_history": {
-        "title": "Historie a ověřený odečet",
-        "description": "Odečet dodavatele převezme již spočtené náklady a odběr do uvedeného dne; historie se přičítá až od následujícího dne. Starší vyúčtování poslouží také pro měsíční profil, když chybí úplné dny ve statistikách. JSON lze ponechat jako []. Formát je popsán v dokumentaci. Odhad budoucích nákladů používá sezónní spotřebu a průměr současného cenového výhledu; budoucí ceny ani výnosy ze sdílení nejsou zaručené.",
+        "title": "Zpětný dopočet a počáteční stav",
+        "description": "Historie se už dopočítává z existujících dat Home Assistantu. Pokud některé starší údaje chybí, můžete místo nich zadat ověřený součet z faktury nebo aplikace ČEZ. Žádný JSON není potřeba.",
+        "menu_options": {
+          "history_auto": "Použít historii Home Assistantu",
+          "history_reading": "Zadat ověřený součet z faktury / ČEZ"
+        }
+      },
+      "general": {
+        "title": "Základní nastavení",
+        "description": "Nastav základní obchodní cenu a zohlednění svátků. V dalším kroku se nastavují prahy tarifních pásem.",
         "data": {
-          "reference_date": "Datum posledního odečtu dodavatele (volitelné)",
-          "reference_energy": "Odběr od začátku období k odečtu (kWh)",
-          "reference_cost": "Náklady od začátku období k odečtu včetně stálých plateb (Kč)",
-          "settled_bills": "Ověřená starší vyúčtování a měsíční odběr (JSON)",
-          "historical_profiles": "Starší úplné cenové profily s platností (JSON)"
+          "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
+          "include_holidays": "Brát české státní svátky jako víkend/svátek",
+          "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
+          "configure_pricing": "Nastavit celkovou cenu a úspory",
+          "import_price_list": "Importovat ceník ČEZ z PDF",
+          "configure_accounting": "Nastavit účetnictví, zálohy a historii"
+        },
+        "data_description": {
+          "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
+          "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu.",
+          "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné.",
+          "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce.",
+          "configure_accounting": "Samostatné nastavení; používá existující statistiky odběru, nákladů a příjmů EDC. Původní entity ani rozvrhy nemění."
+        }
+      },
+      "advance_month": {
+        "title": "Vybrat měsíc zálohy",
+        "description": "Vyberte měsíc. V dalším kroku zadáte částku a potvrdíte plnou nebo částečnou úhradu. Měsíce se ukládají jednotlivě; nezadaný měsíc není nulová záloha.",
+        "data": {
+          "month": "Měsíc"
+        }
+      },
+      "history_auto": {
+        "title": "Automatický dopočet z historie",
+        "description": "Použije existující spotřebu a již spočtené náklady. Chybějící náklady dopočítá jen při dostupných tehdejších cenách a HDO. Odeslat vypne použití ručního počátečního odečtu; původní senzory a historie se nemění. Chybějící údaje nejsou nuly."
+      },
+      "history_reading": {
+        "title": "Počáteční stav podle faktury nebo ČEZ",
+        "description": "**Sledované období: {start} → {end}.** Zadejte ověřený součet odběru a nákladů od jeho začátku do zvoleného dne. Můžete opsat částky z PDF nebo aplikace ČEZ. Nezadávejte stav elektroměru ani zaplacené zálohy. Tento součet se převezme jednou; od následujícího dne se přidá novější spotřeba. Starou fakturu za jiné období sem nepřenášejte. Neznámou částku nenahrazujte nulou.",
+        "data": {
+          "reference_date": "Součet je platný ke dni",
+          "reference_energy": "Odběr od začátku období (kWh)",
+          "reference_cost": "Náklady od začátku období včetně jističe a poplatků (Kč)"
         }
       }
     },

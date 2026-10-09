@@ -25,7 +25,7 @@ from .settlement import (
     advances,
     consumption_profile,
     default_period,
-    parse_advances,
+    period_advances,
     remaining_import,
     standing_fees,
 )
@@ -963,7 +963,7 @@ class SettlementHistory:
                 if hasattr(self.coordinator, "entry")
                 else None,
                 "advance_mode": self.values["advance_mode"],
-                "monthly_advances": parse_advances(
+                "monthly_advances": period_advances(
                     self.values["monthly_advances"], start, end
                 ),
                 "automatic_advances": self.values["automatic_advances"],

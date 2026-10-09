@@ -2,11 +2,21 @@
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce), zapnutou plnou cenu a měřič importu.** ČEZ HDO ani jeho entity se nemění.
 
-V nastavení zvolte **Nastavit účetnictví, zálohy a historii**. Nové senzory se přidají až po zapnutí účetnictví. Původních 39 entit zachovává ID, unique ID i význam. Doména zůstává `cez_dynamic_tariff`; mění se pouze název integrace na **ČEZ Dynamic Tariff & Accounting**.
+V nastavení otevřete **Období, tarif a zdroje spotřeby**. Nové senzory se přidají až po zapnutí účetnictví. Původních 39 entit zachovává ID, unique ID i význam. Doména zůstává `cez_dynamic_tariff`; mění se pouze název integrace na **ČEZ Dynamic Tariff & Accounting**.
 
 Výchozí zúčtovací období je 1. duben až 31. březen. Začátek i konec lze změnit; konečný den se zahrnuje. Zadejte skutečné smluvní datum aktivace dynamického tarifu a skutečný začátek použití ceníku. Datum vytištěné na ceníku nemusí být začátkem vaší smlouvy.
 
 Dokud není určený smluvní režim (finální / na zkoušku), účetnictví může zobrazit známý odběr a profil, ale neoznačí neověřený cenový model jako skutečný náklad nebo výsledek budoucího vyúčtování.
+
+## Jednoduché zadání v nastavení (od 1.0.5)
+
+Otevřete **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff & Accounting → Konfigurovat**. Vyberte úlohu; změna zálohy už nevyžaduje průchod obdobím ani historií.
+
+- **Zálohy po měsících – částka a potvrzení**: vyberte měsíc, zadejte zálohu a dosud zaplacenou částku. **Potvrdit plnou úhradu** doplní zaplacenou část do výše zálohy. Odeslat uloží pouze tento měsíc a zapne měsíční výpočet; dříve uložené roční součty se nesčítají s měsíci. Zde lze také zapnout automatické potvrzení k prvnímu dni měsíce.
+- **Zálohy souhrnem za celé období**: volitelná alternativa, pokud znáte pouze celkový plán a zaplacený součet. Uložení tohoto formuláře zapne souhrnný režim. Měsíční řádky zůstanou zachované.
+- **Zpětný dopočet a počáteční stav**: historie se přebírá automaticky. Pokud chybí starší údaje, zvolte **Zadat ověřený součet z faktury / ČEZ** a opište datum, kWh a náklady včetně jističe a poplatků pro stejné zúčtovací období. Nepatří sem stav elektroměru, zálohy ani faktura z jiného období. Součet se převezme jednou a novější historie se přičte od následujícího dne.
+
+Neznámý odečet nemá předvyplněné nulové částky. **Použít historii Home Assistantu** vypne ruční počáteční stav a používá dostupné statistiky. Původní senzory a historie zůstávají zachované. Ruční součet lze opsat z PDF; tato volba sama PDF neskenuje. JSON není součástí běžného nastavení.
 
 ## Měsíční karta záloh (od 1.0.4)
 
@@ -58,15 +68,7 @@ Příjem se přiřazuje ke dni, ke kterému náleží. Předvčerejší příjem
 
 Volitelný odečet dodavatele zadává kumulovaný odběr a kumulované náklady **včetně stálých plateb**, od začátku právě vybraného období do uvedeného dne. Tyto již spočítané hodnoty se převezmou; statistiky se přidávají až od následujícího dne. Při změně začátku období se starý odečet nepřenáší. Pokud vypnete stálé platby, jejich známá historická část se z převzatého nákladu odečte.
 
-Starší ověřená vyúčtování lze zapsat jako JSON. Osobní údaje, EAN, číslo účtu ani číslo faktury nejsou potřeba:
-
-```json
-[{"start":"2024-04-01","end":"2025-03-31","energy_kwh":1200,"cost":5000,"paid":6000,"fixed_cost":1000,"months":[{"month":"2024-04","nt_kwh":90,"vt_kwh":10}]}]
-```
-
-Částky jsou v CZK s DPH. `fixed_cost` je ověřený součet položek nezávislých na množství. Ucelené staré vyúčtování se převezme jako skutečný výsledek, nepřeceňuje se dnešními sazbami. Měsíční odběr doplňuje spotřební profil, pokud pro daný měsíc chybí úplné dny statistik.
-
-Starší cenové profily se zapisují jako pole `[{"start":"YYYY-MM-DD","end":"YYYY-MM-DD","rates":{...}}]`. `rates` musí výslovně obsahovat všechny částky: `trade_vt`, `trade_nt`, `distribution_vt`, `distribution_nt`, `electricity_tax`, `system_services`, `poze_kwh`, `supplier_monthly`, `breaker_monthly`, `infrastructure_monthly`, `other_kwh`, `other_monthly`. Nepřebírají se automaticky dnešní chybějící historické částky. Pole lze nechat `[]`.
+Dříve uložená ověřená vyúčtování, měsíční profily a historické ceníky zůstávají zachované. Změna zálohy ani počátečního stavu je nepřepisuje. Již ověřené faktury se nepřeceňují současným ceníkem. Pro běžný zpětný dopočet ani pro zálohy nemusíte připravovat JSON.
 
 ## Odhad a jeho meze
 

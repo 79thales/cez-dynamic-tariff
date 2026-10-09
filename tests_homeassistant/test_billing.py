@@ -131,6 +131,7 @@ async def test_options_pricing_steps_preserve_existing_values(hass: HomeAssistan
     entry.add_to_hass(hass)
     with patch("custom_components.cez_dynamic_tariff.async_reload_entry"):
         result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "general"})
         result = await hass.config_entries.options.async_configure(
             result["flow_id"],
             user_input={

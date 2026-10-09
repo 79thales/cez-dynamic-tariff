@@ -157,7 +157,7 @@ Po zařazení do výchozího katalogu HACS bude možné přeskočit krok s vlast
 
 ## Nastavení tarifních pásem
 
-Otevři **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**. Nastavení je rozdělené do tří kroků:
+Otevři **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**. V nabídce zvolte **Tarifní rozvrhy a další nastavení**. Nastavení je rozdělené do tří kroků:
 
 1. základní cena, zohlednění svátků a případná volba obnovení výchozích rozvrhů,
 2. prahy super levného, levného, drahého a velmi drahého pásma,
@@ -456,6 +456,12 @@ entities:
     name: Velmi drahé pásmo právě teď
 ```
 
+## Semafor pásem od 1.0.5
+
+Při výchozích prazích: **🟢 −50 % · ⚪ −10 % · 🟠 +10 % · 🔴 +25 %**. Neutrální pásmo (např. 0 %) má šedý symbol 🔘. Procento je vždy uvedené, bílý kruh má viditelný obrys. Barva vyjadřuje kategorii změny **obchodní složky**; skutečné NT/VT a celková cena za kWh jsou samostatné údaje. Vlastní prahy a rozvrhy se nadále respektují.
+
+Mapy dneška a zítřka poskytují `traffic_light_map`. Položky `schedule` a `legend` mají navíc `display_token` a `color`. Původní `token`, `label`, `display_map`, stavy entit i ID zůstávají zachované; doporučené karty níže používají nové barevné symboly.
+
 ## Grafické mapy pásem v Lovelace
 
 Integrace vystavuje dva senzory:
@@ -478,10 +484,10 @@ title: Dnešní mapa tarifu
 content: |
   **{{ states('sensor.cez_dynamic_tariff_today_tariff_map') }}**
 
-  {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
+  {{ state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'traffic_light_map') or state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'display_map') }}
 
   {% for item in state_attr('sensor.cez_dynamic_tariff_today_tariff_map', 'legend') or [] %}
-  `{{ item['token'] }} {{ item['modifier_percent'] }} %`
+  `{{ item.get('display_token', item['token']) }} {{ item['modifier_percent'] }} %`
   {% endfor %}
 ```
 
@@ -622,9 +628,9 @@ sections:
           {% set interval = item['start'] ~ '-' ~ item['end'] %}
           {% set mod = item['modifier_percent'] | int %}
           {% if interval == current %}
-          ➡️ **{{ item['token'] }} {{ item['start'] }}–{{ item['end'] }} · {{ '+' if mod > 0 else '' }}{{ mod }} % · TEĎ**
+          ➡️ **{{ item.get('display_token', item['token']) }} {{ item['start'] }}–{{ item['end'] }} · {{ '+' if mod > 0 else '' }}{{ mod }} % · TEĎ**
           {% else %}
-          {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+          {{ item.get('display_token', item['token']) }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
           {% endif %}
           {% endfor %}
 
@@ -643,7 +649,7 @@ sections:
 
           {% for item in schedule %}
           {% set mod = item['modifier_percent'] | int %}
-          {{ item['token'] }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
+          {{ item.get('display_token', item['token']) }} **{{ item['start'] }}–{{ item['end'] }}** · `{{ '+' if mod > 0 else '' }}{{ mod }} %`
           {% endfor %}
 
 cards: []

@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.5 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Semafor tarifních pásem podle [návrhu v diskusi #2](https://github.com/79thales/cez-dynamic-tariff/discussions/2): při výchozích prazích 🟢 −50 %, ⚪ −10 %, 🟠 +10 %, 🔴 +25 %. Neutrální pásmo je šedé, vlastní prahy se respektují. Procento zůstává uvedené; barva popisuje obchodní složku, NT/VT a celková cena zůstávají samostatně. Nové prezentační atributy a vzorové karty zachovávají původní tokeny, stavy a ID.
+- Zjednodušení výrazného updatu **ČEZ Dynamic Tariff & Accounting**: měsíční zálohy lze zadávat přímo v nastavení integrace. Vyberte měsíc, částku, dosud zaplacenou část a potvrzení plné úhrady; zde je také volitelné automatické potvrzení k prvnímu dni měsíce.
+- Nastavení otevírá přímou nabídku úloh. Uložení jedné zálohy nevyžaduje zadání ročních součtů ani průchod historií. Souhrnné roční zadání zůstává samostatnou alternativou; oba režimy se nesčítají.
+- Zpětný dopočet používá existující statistiky a již spočtené náklady. Volitelný počáteční stav má pouze datum, odběr a ověřené náklady od začátku stejného období, které lze opsat z PDF nebo aplikace ČEZ. Součet se převezme jednou a naváže na něj novější historie. Neznámé částky nemají předvyplněné nuly; běžné formuláře nevyžadují JSON.
+- Dříve uložené zálohy, vyúčtování a cenové profily se zachovávají. Nastavení a karta používají stejné ukládání záloh bez opakovaného výpočtu. Původní entity, ID a význam se nemění.
+
+### English
+
+- Traffic-light tariff presentation from [discussion #2](https://github.com/79thales/cez-dynamic-tariff/discussions/2): default thresholds show green −50%, white −10%, orange +10%, red +25%; neutral bands are gray and custom thresholds are respected. Explicit percentages remain visible. Trading modifiers, NT/VT and total kWh prices stay separate; new presentation attributes preserve legacy tokens, states and IDs.
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Simplifies the substantial Accounting update with monthly advance entry directly in integration settings: choose a month, edit its amount and partial payment, confirm full payment and optionally enable first-of-month confirmation.
+- Direct task menu and independent saves replace the chained financial forms. Monthly entries do not require annual totals or history. Annual aggregates remain a separate alternative, without double counting.
+- Historical backfill reuses existing statistics and monetary costs. An optional verified starting total requires only a date, energy and costs for the same billing period, copied from an invoice PDF or CEZ app. Reused once, followed by newer history; no default zeros for unknown values and no JSON in routine forms.
+- Existing advances, settled bills, historical profiles and original entities are preserved. Settings and the bundled card share the same payment update logic.
+
 ## 1.0.4 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

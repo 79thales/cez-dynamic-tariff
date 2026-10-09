@@ -17,6 +17,17 @@ TZ = ZoneInfo("Europe/Prague")
 
 
 class SettlementTests(unittest.TestCase):
+    def test_changing_period_retains_but_does_not_add_previous_payments(self):
+        old = {"month": "2025-10", "amount": 100, "paid": True}
+        values = {
+            **s.SETTLEMENT_DEFAULTS, "advance_mode": "monthly",
+            "billing_start": "2026-10-01", "billing_end": "2026-10-31",
+            "monthly_advances": json.dumps([old]),
+        }
+        changes = s.update_advance_options(values, {"month": "2026-10", "amount": 200, "confirm": True}, date(2026, 10, 9))
+        self.assertIn(old, json.loads(changes["monthly_advances"]))
+        self.assertEqual(s.advances({**values, **changes}, date(2026, 10, 1), date(2026, 10, 31)), (200, 200, []))
+
     def test_partial_payment_and_legacy_paid_flag_are_counted_once(self):
         rows = [
             {"month": "2026-10", "amount": 2500, "paid": False, "paid_amount": 1700},

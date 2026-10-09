@@ -35,6 +35,7 @@ from .const import (
     DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
+from .presentation import band_presentation
 from .schedule import DEFAULT_SCHEDULES, TariffWindow, classify_modifier, parse_schedule
 
 _LOGGER = logging.getLogger(__name__)
@@ -299,6 +300,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
                     "modifier_percent": window.modifier_percent,
                     "level": level,
                     "token": token,
+                    **band_presentation(level),
                     "label": (
                         f"{token} {self._format_minute(window.start_minute)}-"
                         f"{self._format_minute(window.end_minute)} ({modifier_label})"
@@ -356,6 +358,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             legend.append(
                 {
                     "token": token,
+                    **band_presentation(level),
                     "level": level,
                     "label": level.replace("_", " "),
                     "modifier_percent": f"{modifier_percent:+d}",

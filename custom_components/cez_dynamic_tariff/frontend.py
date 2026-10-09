@@ -22,5 +22,5 @@ async def async_register_card(hass):
             )
         ]
     )
-    add_extra_js_url(hass, url + "?v=1.0.4")
+    add_extra_js_url(hass, url + "?v=1.0.5")
     hass.data[DOMAIN + "_card_registered"] = True

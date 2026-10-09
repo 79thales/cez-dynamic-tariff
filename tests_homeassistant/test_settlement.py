@@ -387,52 +387,25 @@ async def test_accounting_options_preserve_original_values_and_unpaid_months(has
         "pricing_enabled": True,
         "base_price_kwh": 99,
         "winter_workday_schedule": "00:00=-50",
+        "monthly_advances": '[{"month":"2026-05","amount":100,"paid":true}]',
+        "advance_total": 1200,
+        "reference_date": "2026-09-30",
+        "reference_energy": 20,
+        "reference_cost": 100,
+        "settled_bills": "[]",
     }
     entry = MockConfigEntry(domain=DOMAIN, data={}, options=old)
     entry.add_to_hass(hass)
     manager = hass.config_entries.options
     first = await manager.async_init(entry.entry_id)
-    first = await manager.async_configure(
-        first["flow_id"], {"configure_accounting": True}
-    )
-    assert first["step_id"] == "accounting"
-    result = await manager.async_configure(
-        first["flow_id"],
-        {
-            "accounting_enabled": True,
-            "billing_start": "2026-04-01",
-            "billing_end": "2027-03-31",
-            "advance_mode": "monthly",
-            "deduct_shared_income": False,
-        }
-    )
-    assert result["step_id"] == "monthly_advances"
-    result = await manager.async_configure(
-        result["flow_id"],
-        {
-            "month_2_amount": 100,
-            "month_2_paid": True,
-            "month_3_amount": 80,
-            "month_3_paid": False,
-        }
-    )
-    assert result["step_id"] == "accounting_history"
-    result = await manager.async_configure(
-        result["flow_id"],
-        {
-            "reference_energy": 0,
-            "reference_cost": 0,
-            "settled_bills": "[]",
-            "historical_profiles": "[]",
-        }
-    )
+    assert first["type"] == "menu"
+    result = await manager.async_configure(first["flow_id"], {"next_step_id": "accounting"})
+    result = await manager.async_configure(result["flow_id"], {
+        "accounting_enabled": True, "billing_start": "2026-04-01",
+        "billing_end": "2027-03-31", "deduct_shared_income": False,
+    })
     assert result["type"] == "create_entry"
     assert all(result["data"][k] == v for k, v in old.items())
-    rows = json.loads(result["data"]["monthly_advances"])
-    assert rows == [
-        {"month": "2026-05", "amount": 100, "paid": True},
-        {"month": "2026-06", "amount": 80, "paid": False},
-    ]
 
 
 async def test_provider_checkpoint_fees_and_edc_revenue_are_counted_once(hass):
