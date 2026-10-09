@@ -17,6 +17,51 @@ TZ = ZoneInfo("Europe/Prague")
 
 
 class SettlementTests(unittest.TestCase):
+    def test_partial_payment_and_legacy_paid_flag_are_counted_once(self):
+        rows = [
+            {"month": "2026-10", "amount": 2500, "paid": False, "paid_amount": 1700},
+            {"month": "2026-11", "amount": 2500, "paid": True},
+        ]
+        values = {
+            **s.SETTLEMENT_DEFAULTS,
+            "advance_mode": "monthly",
+            "monthly_advances": json.dumps(rows),
+        }
+        self.assertEqual(
+            s.advances(values, date(2026, 10, 1), date(2026, 11, 30)), (5000, 4200, [])
+        )
+        for bad in [-1, 2501, float("nan")]:
+            with self.assertRaises(ValueError):
+                s.parse_advances(
+                    json.dumps([{**rows[0], "paid_amount": bad}]),
+                    date(2026, 10, 1),
+                    date(2026, 11, 30),
+                )
+
+    def test_automatic_confirmation_starts_prospectively_and_is_idempotent(self):
+        self.assertEqual(s.automatic_from(date(2026, 12, 2)), "2027-01")
+        self.assertEqual(s.automatic_from(date(2026, 12, 1)), "2026-12")
+        rows = [
+            {"month": m, "amount": 100, "paid": False}
+            for m in ["2026-10", "2026-11", "2026-12", "2027-01"]
+        ]
+        rows[2].update(paid_amount=30, paid_source="manual")
+        got, changed = s.confirm_due_advances(rows, date(2027, 1, 1), True, "2026-11")
+        self.assertTrue(changed)
+        self.assertFalse(got[0]["paid"])
+        self.assertTrue(got[1]["paid"])
+        self.assertFalse(got[2]["paid"])
+        self.assertTrue(got[3]["paid"])
+        self.assertEqual(got[1]["paid_source"], "automatic")
+        self.assertEqual(
+            s.confirm_due_advances(got, date(2027, 1, 2), True, "2026-11"), (got, False)
+        )
+        self.assertFalse(rows[1]["paid"])
+        got[1].update(paid=False, paid_amount=0, auto_skip=True)
+        self.assertFalse(
+            s.confirm_due_advances(got, date(2027, 1, 2), True, "2026-11")[0][1]["paid"]
+        )
+
     def test_default_period_crosses_year(self):
         self.assertEqual(
             s.default_period(date(2026, 1, 2)), ("2025-04-01", "2026-03-31")

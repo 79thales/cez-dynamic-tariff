@@ -21,9 +21,11 @@ from .const import DOMAIN
 from .pricing import PriceProfile, finite_number, parse_hdo_schedule, price_timeline
 from .settlement import (
     SETTLEMENT_DEFAULTS,
+    advance_paid_amount,
     advances,
     consumption_profile,
     default_period,
+    parse_advances,
     remaining_import,
     standing_fees,
 )
@@ -50,6 +52,13 @@ class SettlementHistory:
         return self.values["dynamic_contract_mode"] == "trial"
 
     @property
+    def meter_id(self):
+        return (
+            self.values["accounting_energy_entity"]
+            or self.billing.values["import_energy_entity"]
+        )
+
+    @property
     def contract_known(self):
         return (
             not self.billing.values["dynamic_pricing"]
@@ -72,7 +81,7 @@ class SettlementHistory:
         )
 
     def _read(self, now, start, revenue_id):
-        meter = self.billing.values["import_energy_entity"]
+        meter = self.meter_id
         cost = self.values["historical_cost_entity"] or f"sensor.{DOMAIN}_actual_cost"
         ids = {meter, cost}
         unpriced_id = f"sensor.{DOMAIN}_unpriced_energy"
@@ -87,6 +96,9 @@ class SettlementHistory:
         # Never consume a monetary statistic as energy, or multiply an already
         # monetary EDC statistic by the selling price.
         units = {k: meta[1].get("unit_of_measurement") for k, meta in metadata.items()}
+        reuse_default = meter == self.billing.values["import_energy_entity"]
+        if not reuse_default and not self.values["historical_cost_entity"]:
+            valid_ids.difference_update({cost, savings_id, unpriced_id})
         if units.get(meter) not in ("Wh", "kWh", "MWh"):
             valid_ids.discard(meter)
         for monetary in (cost, revenue_id, savings_id):
@@ -123,8 +135,10 @@ class SettlementHistory:
             if valid_ids
             else {}
         )
-        entities = [meter, cost]
-        if not self.values["historical_cost_entity"]:
+        entities = [meter]
+        if reuse_default or self.values["historical_cost_entity"]:
+            entities.append(cost)
+        if reuse_default and not self.values["historical_cost_entity"]:
             entities.append(savings_id)
         history = get_significant_states(
             self.hass,
@@ -319,12 +333,10 @@ class SettlementHistory:
         15-minute gap, reset, DST and uniform-interval rules. Only missing costs
         are valued; this ledger is ephemeral and never added to live totals.
         """
-        if self.raw.get("short_today", {}).get(
-            self.billing.values["import_energy_entity"]
-        ):
+        if self.raw.get("short_today", {}).get(self.meter_id):
             return self._today_statistics(now, schedules)
         midnight = self.raw["midnight"]
-        meter_id = self.billing.values["import_energy_entity"]
+        meter_id = self.meter_id
         meter_states = list(self.raw["history"].get(meter_id, []))
         live = self.hass.states.get(meter_id)
         if live:
@@ -418,9 +430,7 @@ class SettlementHistory:
     def _today_statistics(self, now, schedules):
         """Reuse existing five-minute increments, including valid zero import."""
         stats = self.raw["short_today"]
-        rows = sorted(
-            stats[self.billing.values["import_energy_entity"]], key=lambda r: r["start"]
-        )
+        rows = sorted(stats[self.meter_id], key=lambda r: r["start"])
         costs = {
             r["start"]: r.get("change") for r in stats.get(self.raw["cost_id"], [])
         }
@@ -492,7 +502,7 @@ class SettlementHistory:
 
     def _calculate(self, now, start, end):
         raw = self.raw
-        meter = self.billing.values["import_energy_entity"]
+        meter = self.meter_id
         schedules = self._intervals(now)
         today, today_complete, reused = self._today(now, schedules)
         include_fixed = self.billing.values["include_standing_fees"]
@@ -883,8 +893,8 @@ class SettlementHistory:
             )
             planned_running += row["amount"]
             advance_planned_series.append([timestamp, planned_running])
-            if row["paid"]:
-                paid_running += row["amount"]
+            if advance_paid_amount(row) > 0:
+                paid_running += advance_paid_amount(row)
                 advance_paid_series.append([timestamp, paid_running])
         if self.values["advance_mode"] == "annual" and (
             abs(planned_running - paid_total) > 1e-6 or abs(paid_running - paid) > 1e-6
@@ -949,6 +959,16 @@ class SettlementHistory:
             else "incomplete",
             "metadata": {
                 "billing_start": start.isoformat(),
+                "entry_id": self.coordinator.entry.entry_id
+                if hasattr(self.coordinator, "entry")
+                else None,
+                "advance_mode": self.values["advance_mode"],
+                "monthly_advances": parse_advances(
+                    self.values["monthly_advances"], start, end
+                ),
+                "automatic_advances": self.values["automatic_advances"],
+                "automatic_advances_from": self.values["automatic_advances_from"]
+                or None,
                 "billing_end": end.isoformat(),
                 "dynamic_start": self.values["dynamic_start"] or None,
                 "dynamic_contract_mode": self.values["dynamic_contract_mode"],
@@ -973,6 +993,8 @@ class SettlementHistory:
                 "reused_today_intervals": reused,
                 "energy_source": meter,
                 "cost_source": raw["cost_id"],
+                "default_cost_source_matches_energy": meter
+                == self.billing.values["import_energy_entity"],
                 "shared_income_statistic_id": raw["revenue_id"],
                 "shared_income_known_until": revenue_until,
                 "shared_income_forecast_method": "known_revenue_only_no_future_income_assumed",

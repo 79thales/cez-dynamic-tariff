@@ -2,7 +2,8 @@
   "domain": "cez_dynamic_tariff",
   "name": "ČEZ Dynamic Tariff & Accounting",
   "after_dependencies": [
-    "recorder"
+    "recorder",
+    "frontend"
   ],
   "codeowners": [
     "@79thales"
@@ -20,5 +21,5 @@
     "pypdf==6.19.0"
   ],
   "single_config_entry": true,
-  "version": "1.0.3"
+  "version": "1.0.4"
 }

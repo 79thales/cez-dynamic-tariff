@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.4 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Rozšíření výrazného updatu **ČEZ Dynamic Tariff & Accounting**: přehledná karta záloh po měsících, editace částky, částečně zaplacené částky, zbývajícího doplatku a jednotlivé potvrzení plné zálohy. Součást integrace; nevyžaduje další instalaci karty přes HACS.
+- Volitelné automatické potvrzení vždy k prvnímu dni měsíce, výchozí vypnuté. Zapnutí uprostřed měsíce začne příštím měsícem. Nepotvrzuje starou historii ani nezadané zálohy, nepřepisuje ruční opravy a částečné úhrady; opakování a restart nezapočtou platbu dvakrát. Automatické označení je odlišitelné od ručního potvrzení a neověřuje bankovní platbu.
+- Samostatná volba správného elektroměru pro účetnictví. Přebírá existující statistiky a náklady jen ze shodného zdroje; původní entity a zdroj původního monitoringu zůstávají zachované.
+- Editace záloh aktualizuje výpočet bez zbytečného načítání historie Recorderu a bez restartu integrace. Dosavadní roční součet se nerozpočítává na vymyšlené měsíce. Soukromá finanční data nejsou obsahem instalačního balíčku.
+
+### English
+
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Extends the substantial **ČEZ Dynamic Tariff & Accounting** update with a bundled monthly advances card: edit amounts, partial payments, remaining balances and confirm each payment.
+- Optional first-of-month automatic confirmation, disabled by default. Mid-month opt-in starts next month. No retroactive history confirmation, unknown amounts or duplicate payments; manual corrections and partial payments are retained. Automatic bookkeeping is labeled and does not verify bank transactions.
+- Independent accounting import-meter selection reuses existing statistics, without changing original entities or their source. Monetary costs from a different meter are not reused.
+- Payment edits refresh calculations without rereading Recorder history or reloading the integration. Annual aggregates are never distributed to invented months; installers contain no private financial data.
+
 ## 1.0.3 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

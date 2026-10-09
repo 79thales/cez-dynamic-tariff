@@ -1,0 +1,7 @@
+# ČEZ Dynamic Tariff & Accounting >= 1.0.4, accounting enabled.
+# The bundled card loads after updating the integration and refreshing HA.
+type: custom:cez-advances-card
+entity: sensor.cez_dynamic_tariff_accounting_status
+title: Zálohy
+grid_options:
+  columns: full

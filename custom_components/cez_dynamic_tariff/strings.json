@@ -171,10 +171,14 @@
           "advance_mode": "Advance input mode",
           "deduct_shared_income": "Deduct already calculated sharing income",
           "shared_income_entity": "Existing sharing income or EDC statistic source",
-          "historical_cost_entity": "Existing import-only costs (optional)"
+          "historical_cost_entity": "Existing import-only costs (optional)",
+          "automatic_advances": "Automatically confirm advances on the first day of each month",
+          "accounting_energy_entity": "Accounting grid import meter (optional)"
         },
         "data_description": {
-          "dynamic_contract_mode": "Trial: invoiced import uses standard NT/VT prices. The future separately paid refund is not automatically deducted; it requires the contractual weighted trading price and the full trial period. Final: hourly modifiers apply only to the trading component."
+          "dynamic_contract_mode": "Trial: invoiced import uses standard NT/VT prices. The future separately paid refund is not automatically deducted; it requires the contractual weighted trading price and the full trial period. Final: hourly modifiers apply only to the trading component.",
+          "automatic_advances": "Off by default. Mid-month opt-in starts next month. Does not verify bank payments or overwrite manual or partial payments.",
+          "accounting_energy_entity": "Empty reuses the existing meter. Select the Meter Total Energy (import) used in Energy if required. Original entities are unchanged; costs from a different meter are not reused."
         }
       },
       "advances": {
@@ -214,7 +218,20 @@
           "month_12_amount": "Month 12: amount (CZK)",
           "month_12_paid": "Month 12: paid",
           "month_13_amount": "Month 13: amount (CZK)",
-          "month_13_paid": "Month 13: paid"
+          "month_13_paid": "Month 13: paid",
+          "month_1_paid_amount": "Month 1: amount already paid (CZK)",
+          "month_2_paid_amount": "Month 2: amount already paid (CZK)",
+          "month_3_paid_amount": "Month 3: amount already paid (CZK)",
+          "month_4_paid_amount": "Month 4: amount already paid (CZK)",
+          "month_5_paid_amount": "Month 5: amount already paid (CZK)",
+          "month_6_paid_amount": "Month 6: amount already paid (CZK)",
+          "month_7_paid_amount": "Month 7: amount already paid (CZK)",
+          "month_8_paid_amount": "Month 8: amount already paid (CZK)",
+          "month_9_paid_amount": "Month 9: amount already paid (CZK)",
+          "month_10_paid_amount": "Month 10: amount already paid (CZK)",
+          "month_11_paid_amount": "Month 11: amount already paid (CZK)",
+          "month_12_paid_amount": "Month 12: amount already paid (CZK)",
+          "month_13_paid_amount": "Month 13: amount already paid (CZK)"
         }
       },
       "accounting_history": {

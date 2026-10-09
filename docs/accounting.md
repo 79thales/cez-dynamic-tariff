@@ -8,6 +8,24 @@ Výchozí zúčtovací období je 1. duben až 31. březen. Začátek i konec lz
 
 Dokud není určený smluvní režim (finální / na zkoušku), účetnictví může zobrazit známý odběr a profil, ale neoznačí neověřený cenový model jako skutečný náklad nebo výsledek budoucího vyúčtování.
 
+## Měsíční karta záloh (od 1.0.4)
+
+Karta je součástí integrace a načte se při instalaci aktualizace; další frontend balíček není potřeba. Po aktualizaci obnovte stránku HA a přidejte:
+
+```yaml
+type: custom:cez-advances-card
+entity: sensor.cez_dynamic_tariff_accounting_status
+title: Zálohy
+```
+
+Každý měsíc má **Záloha**, **Zaplaceno**, zbývající částku, **Uložit** a **Potvrdit**. Uložit zachová i částečnou úhradu (např. z 2 500 Kč zaplaceno 1 700 Kč, zbývá 800 Kč); Potvrdit označí celou částku. Opravu nebo zrušení provedete změnou zaplacené částky a uložením. Nezadávané měsíce nejsou nuly. Měsíční plán začne ovlivňovat odhad po výslovném zapnutí volby použití měsíčních záloh a uložení řádku; dosavadní roční součet se na měsíce nerozpočítává.
+
+**Automatické potvrzení k prvnímu dni v měsíci** je výchozí vypnuté. Zapnutí uprostřed měsíce platí od příštího měsíce; zapnutí prvního platí už pro tento měsíc. Po výpadku HA se doplní jen splatné známé měsíce od tohoto zapnutí. Minulé platby před zapnutím, neurčené částky, ruční opravy a částečné úhrady se nepřepisují. Opakovaná aktualizace nebo restart nepřičte stejnou platbu znovu. Karta rozlišuje **Zaplaceno**, **Částečně zaplaceno**, **Nezaplaceno**, **Automaticky potvrzeno** a **Nezadáno**.
+
+Potvrzení je evidence v HA, ne bankovní platba ani ověření přijetí platby u ČEZ. Částky zůstávají lokálně. Akce `cez_dynamic_tariff.update_advance` a `cez_dynamic_tariff.set_automatic_advances` jsou dostupné i pro automatizace; služby nevytvářejí další elektroměry ani nemění původní entity.
+
+Volba **Elektroměr importu pro účetnictví** umožní vybrat stejné měření jako v Energy, například „Meter Total Energy (import)“, a zachovat zdroj původního monitoringu. Náklady původního monitoringu se přebírají pouze při shodném elektroměru; náklady z jiného zdroje by zkreslovaly výsledek.
+
 ## Co se přebírá a co se dopočítává
 
 Import v kWh používá již opravené přírůstky dlouhodobých statistik Home Assistantu. Neresetuje ani nekopíruje původní elektroměr. Automatický zdroj nákladů přebírá již vypočtené peněžní statistiky `actual_cost`; záznamy s neoceněným odběrem a první částečná hodina se nepovažují za plně oceněné.

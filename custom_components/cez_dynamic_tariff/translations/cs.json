@@ -171,10 +171,14 @@
           "advance_mode": "Zadání záloh",
           "deduct_shared_income": "Odečíst již vypočtený příjem ze sdílení",
           "shared_income_entity": "Existující příjem ze sdílení nebo EDC zdroj statistik",
-          "historical_cost_entity": "Existující náklady pouze za odběr (volitelné)"
+          "historical_cost_entity": "Existující náklady pouze za odběr (volitelné)",
+          "automatic_advances": "Automaticky potvrdit zálohu k 1. dni měsíce",
+          "accounting_energy_entity": "Elektroměr importu pro účetnictví (volitelné)"
         },
         "data_description": {
-          "dynamic_contract_mode": "Na zkoušku: fakturovaný odběr používá standardní ceny NT/VT. Budoucí dodatečně vyplacená úspora není automaticky odečtená; její výpočet vyžaduje smluvní váženou obchodní cenu a celé zkušební období. Finální: hodinová procenta upravují pouze obchodní složku."
+          "dynamic_contract_mode": "Na zkoušku: fakturovaný odběr používá standardní ceny NT/VT. Budoucí dodatečně vyplacená úspora není automaticky odečtená; její výpočet vyžaduje smluvní váženou obchodní cenu a celé zkušební období. Finální: hodinová procenta upravují pouze obchodní složku.",
+          "automatic_advances": "Výchozí vypnuto. Zapnutí uprostřed měsíce začne příštím měsícem. Neověřuje bankovní platbu; ruční a částečné úhrady nepřepisuje.",
+          "accounting_energy_entity": "Prázdná volba přebírá dosavadní elektroměr. Můžete vybrat stejný Meter Total Energy (import) jako v Energy. Původní entity se nemění a náklady z jiného elektroměru se nepřebírají."
         }
       },
       "advances": {
@@ -214,7 +218,20 @@
           "month_12_amount": "12. měsíc: částka (Kč)",
           "month_12_paid": "12. měsíc: zaplaceno",
           "month_13_amount": "13. měsíc: částka (Kč)",
-          "month_13_paid": "13. měsíc: zaplaceno"
+          "month_13_paid": "13. měsíc: zaplaceno",
+          "month_1_paid_amount": "1. měsíc: dosud zaplaceno (Kč)",
+          "month_2_paid_amount": "2. měsíc: dosud zaplaceno (Kč)",
+          "month_3_paid_amount": "3. měsíc: dosud zaplaceno (Kč)",
+          "month_4_paid_amount": "4. měsíc: dosud zaplaceno (Kč)",
+          "month_5_paid_amount": "5. měsíc: dosud zaplaceno (Kč)",
+          "month_6_paid_amount": "6. měsíc: dosud zaplaceno (Kč)",
+          "month_7_paid_amount": "7. měsíc: dosud zaplaceno (Kč)",
+          "month_8_paid_amount": "8. měsíc: dosud zaplaceno (Kč)",
+          "month_9_paid_amount": "9. měsíc: dosud zaplaceno (Kč)",
+          "month_10_paid_amount": "10. měsíc: dosud zaplaceno (Kč)",
+          "month_11_paid_amount": "11. měsíc: dosud zaplaceno (Kč)",
+          "month_12_paid_amount": "12. měsíc: dosud zaplaceno (Kč)",
+          "month_13_paid_amount": "13. měsíc: dosud zaplaceno (Kč)"
         }
       },
       "accounting_history": {

@@ -94,6 +94,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize coordinator."""
         self.entry = entry
+        self.options_snapshot = dict(entry.options)
         self._holidays = None
         self.billing = None
 
@@ -450,6 +451,10 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         current_window = self._current_window(now)
         billing_data = None
         if self.billing:
+            if self.billing.settlement is not None:
+                from .advance_payments import process_due
+
+                await process_due(self, now.astimezone(self._local_tz()))
             billing_data = self.billing.calculate(now, current_window.modifier_percent)
             if self.billing.settlement is not None:
                 await self.billing.settlement.async_refresh(now)

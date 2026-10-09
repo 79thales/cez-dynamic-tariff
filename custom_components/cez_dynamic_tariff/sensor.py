@@ -434,6 +434,7 @@ class CezDynamicTariffSensor(
                     "months",
                     "history_months",
                     "cost_actual_series",
+                    "monthly_advances",
                     "cost_forecast_series",
                     "advance_paid_series",
                     "advance_planned_series",

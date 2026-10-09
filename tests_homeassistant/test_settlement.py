@@ -362,6 +362,25 @@ async def test_historical_dynamic_date_and_price_validity(hass):
         assert timeline.call_args.args[5] is True
 
 
+async def test_accounting_meter_override_does_not_reuse_another_meters_costs(hass):
+    obj = adapter(hass, {"accounting_energy_entity": "sensor.correct_meter"})
+    now = datetime(2026, 10, 9, 12, tzinfo=TZ)
+    metadata = {
+        "sensor.correct_meter": (0, {"has_sum": True, "unit_of_measurement": "kWh"}),
+        "sensor.cez_dynamic_tariff_actual_cost": (1, {"has_sum": True, "unit_of_measurement": "CZK"}),
+        "sensor.cez_dynamic_tariff_realized_savings": (2, {"has_sum": True, "unit_of_measurement": "CZK"}),
+    }
+    with (
+        patch("custom_components.cez_dynamic_tariff.settlement_history.get_metadata", return_value=metadata),
+        patch("custom_components.cez_dynamic_tariff.settlement_history.statistics_during_period", return_value={}) as stats,
+        patch("custom_components.cez_dynamic_tariff.settlement_history.get_significant_states", return_value={}) as history,
+    ):
+        obj._read(now, now - timedelta(days=1), "")
+    assert stats.call_args_list[0].args[3] == {"sensor.correct_meter"}
+    assert history.call_args_list[0].kwargs["entity_ids"] == ["sensor.correct_meter"]
+    assert obj.billing.values["import_energy_entity"] == "sensor.import"
+
+
 async def test_accounting_options_preserve_original_values_and_unpaid_months(hass):
     old = {
         "pricing_enabled": True,

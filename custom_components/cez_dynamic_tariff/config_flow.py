@@ -31,6 +31,8 @@ from .pricing import PROFILE_DEFAULTS, finite_number
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
 from .settlement import (
     SETTLEMENT_DEFAULTS,
+    advance_paid_amount,
+    automatic_from,
     default_period,
     month_starts,
     parse_advances,
@@ -703,6 +705,8 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             "dynamic_contract_mode",
             "current_price_start",
             "advance_mode",
+            "automatic_advances",
+            "accounting_energy_entity",
             "deduct_shared_income",
             "shared_income_entity",
             "historical_cost_entity",
@@ -747,10 +751,26 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 "shared_income_entity"
             ):
                 errors["shared_income_entity"] = "missing_entity"
+            energy = user_input.get("accounting_energy_entity")
+            energy_state = self.hass.states.get(energy) if energy else None
+            if energy and (
+                energy_state is None
+                or energy_state.attributes.get("unit_of_measurement")
+                not in ("Wh", "kWh", "MWh")
+            ):
+                errors["accounting_energy_entity"] = "invalid_energy_entity"
             if not errors:
                 self._pending_options.update(
                     {k: user_input.get(k, defaults[k]) for k in keys}
                 )
+                if user_input.get(
+                    "automatic_advances"
+                ) and not self._config_entry.options.get("automatic_advances"):
+                    self._pending_options["automatic_advances_from"] = automatic_from(
+                        dt_util.now().date()
+                    )
+                elif not user_input.get("automatic_advances"):
+                    self._pending_options["automatic_advances_from"] = ""
                 return await self.async_step_advances()
         schema = {}
         for key in keys:
@@ -763,6 +783,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     "current_price_start",
                     "historical_cost_entity",
                     "shared_income_entity",
+                    "accounting_energy_entity",
                 )
                 else vol.Optional(
                     key, description={"suggested_value": value} if value else {}
@@ -834,6 +855,35 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     for i, m in enumerate(months, 1)
                     if f"month_{i}_amount" in user_input
                 ]
+                saved_rows = {
+                    r["month"]: r
+                    for r in json.loads(
+                        self._config_entry.options.get("monthly_advances", "[]")
+                    )
+                }
+                for i, m in enumerate(months, 1):
+                    row = next(
+                        (r for r in rows if r["month"] == m.strftime("%Y-%m")), None
+                    )
+                    if row is None:
+                        continue
+                    key = f"month_{i}_paid_amount"
+                    if key in user_input:
+                        paid_amount = row["amount"] if row["paid"] else user_input[key]
+                        row.update(
+                            paid_amount=paid_amount, paid=paid_amount == row["amount"]
+                        )
+                    old_row = saved_rows.get(row["month"], {})
+                    if advance_paid_amount(row) == advance_paid_amount(
+                        old_row or {"amount": 0}
+                    ):
+                        row.update(
+                            {
+                                k: v
+                                for k, v in old_row.items()
+                                if k not in ("amount", "paid", "paid_amount", "month")
+                            }
+                        )
                 try:
                     parse_advances(json.dumps(rows), start, end)
                     self._pending_options["monthly_advances"] = json.dumps(rows)
@@ -878,6 +928,17 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                         ),
                     )
                 ] = bool
+                paid_value = (user_input or {}).get(
+                    f"month_{i}_paid_amount", row.get("paid_amount")
+                )
+                schema[
+                    vol.Optional(
+                        f"month_{i}_paid_amount",
+                        description={"suggested_value": paid_value}
+                        if paid_value is not None
+                        else {},
+                    )
+                ] = vol.All(vol.Coerce(float), vol.Range(min=0))
         return self.async_show_form(
             step_id="advances" if mode == "annual" else "monthly_advances",
             data_schema=vol.Schema(schema),

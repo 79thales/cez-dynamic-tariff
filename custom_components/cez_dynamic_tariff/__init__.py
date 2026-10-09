@@ -16,6 +16,9 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: cv.config_entry_only_config_schema}, extra=v
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration from YAML."""
+    from .advance_payments import register_services
+
+    register_services(hass)
     return True
 
 
@@ -25,6 +28,9 @@ async def async_setup_entry(
 ) -> bool:
     """Set up ČEZ Dynamic Tariff from a config entry."""
     coordinator = CezDynamicTariffCoordinator(hass, entry)
+    from .frontend import async_register_card
+
+    await async_register_card(hass)
     if coordinator._option("pricing_enabled", False):
         coordinator.billing = ElectricityBilling(coordinator)
         await coordinator.billing.async_setup()
@@ -55,4 +61,19 @@ async def async_reload_entry(
     entry: CezDynamicTariffConfigEntry,
 ) -> None:
     """Reload config entry."""
+    from .advance_payments import PAYMENT_OPTIONS
+
+    coordinator = getattr(entry, "runtime_data", None)
+    if coordinator is not None and coordinator.billing is not None:
+        old = coordinator.options_snapshot
+        new = dict(entry.options)
+        changed = {k for k in old.keys() | new.keys() if old.get(k) != new.get(k)}
+        obj = coordinator.billing.settlement
+        if obj is not None and changed <= PAYMENT_OPTIONS:
+            coordinator.options_snapshot = new
+            for key in PAYMENT_OPTIONS:
+                if key in new:
+                    obj.values[key] = new[key]
+            await coordinator.async_request_refresh()
+            return
     await hass.config_entries.async_reload(entry.entry_id)

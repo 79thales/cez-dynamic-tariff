@@ -1,0 +1,50 @@
+update_advance:
+  name: Upravit nebo potvrdit měsíční zálohu
+  description: Pouze evidence záloh v Home Assistantu. Neprovádí bankovní platbu. Roční součet se nepřevádí na měsíce automaticky.
+  fields:
+    entry_id:
+      name: ID položky integrace
+      selector:
+        text:
+    month:
+      name: Měsíc (YYYY-MM)
+      required: true
+      selector:
+        text:
+    amount:
+      name: Celková záloha v Kč
+      selector:
+        number:
+          min: 0
+          max: 1000000000
+          step: 0.01
+          mode: box
+    paid_amount:
+      name: Dosud zaplaceno v Kč
+      selector:
+        number:
+          min: 0
+          max: 1000000000
+          step: 0.01
+          mode: box
+    confirm:
+      name: Potvrdit plnou částku (vypnutí ruší potvrzení)
+      selector:
+        boolean:
+    use_monthly:
+      name: Použít měsíční plán místo ročního součtu
+      selector:
+        boolean:
+set_automatic_advances:
+  name: Automaticky potvrzovat zálohy
+  description: Označí známé zálohy jako automaticky potvrzené k prvnímu dni měsíce od zapnutí volby. Neověřuje příjem platby u ČEZ a nepotvrzuje historii před zapnutím.
+  fields:
+    entry_id:
+      name: ID položky integrace
+      selector:
+        text:
+    enabled:
+      name: Zapnout automatické potvrzení
+      required: true
+      selector:
+        boolean:

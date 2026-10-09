@@ -18,6 +18,9 @@ SETTLEMENT_DEFAULTS = {
     "advance_total": 0.0,
     "advance_paid": 0.0,
     "monthly_advances": "[]",
+    "automatic_advances": False,
+    "automatic_advances_from": "",
+    "accounting_energy_entity": "",
     "deduct_shared_income": False,
     "shared_income_entity": "",
     "historical_cost_entity": "",
@@ -59,12 +62,16 @@ def parse_advances(text: str, start: date, end: date) -> list[dict]:
     for row in rows:
         month = date.fromisoformat(row["month"] + "-01")
         amount = float(row["amount"])
+        paid_amount = advance_paid_amount(row)
         if (
             not start.replace(day=1) <= month <= end
             or row["month"] in seen
             or not isfinite(amount)
             or amount < 0
             or not isinstance(row.get("paid"), bool)
+            or not isfinite(paid_amount)
+            or not 0 <= paid_amount <= amount
+            or ("paid_amount" in row and row["paid"] != (paid_amount == amount))
         ):
             raise ValueError("invalid advances")
         seen.add(row["month"])
@@ -82,9 +89,48 @@ def advances(values, start: date, end: date):
     ]
     return (
         sum(float(r["amount"]) for r in rows),
-        sum(float(r["amount"]) for r in rows if r["paid"]),
+        sum(advance_paid_amount(r) for r in rows),
         missing,
     )
+
+
+def advance_paid_amount(row):
+    """Preserve legacy confirmed payments; support a partial payment once."""
+    return float(row.get("paid_amount", row["amount"] if row.get("paid") else 0))
+
+
+def automatic_from(today: date) -> str:
+    """Opting in mid-month never confirms an earlier instalment retroactively."""
+    first = today.replace(day=1)
+    if today.day != 1:
+        first = (first.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return first.strftime("%Y-%m")
+
+
+def confirm_due_advances(rows, today: date, enabled: bool, enabled_from: str):
+    """Catch up only scheduled months since opt-in, without overriding manual edits."""
+    changed = False
+    if not enabled or not enabled_from:
+        return rows, changed
+    current = today.strftime("%Y-%m")
+    result = [dict(r) for r in rows]
+    for row in result:
+        if (
+            enabled_from <= row["month"] <= current
+            and not row.get("auto_skip")
+            and not row.get("paid")
+            and advance_paid_amount(row) == 0
+            and row["amount"] > 0
+        ):
+            row.update(
+                paid=True,
+                paid_amount=float(row["amount"]),
+                paid_source="automatic",
+                confirmed_on=today.isoformat(),
+                scheduled_on=row["month"] + "-01",
+            )
+            changed = True
+    return result, changed
 
 
 def consumption_profile(rows, now: datetime, tz):
