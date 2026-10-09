@@ -6,6 +6,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from aiohttp.resolver import ThreadedResolver
 from homeassistant.components.file_upload import FileUploadData
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -24,6 +25,13 @@ spec = importlib.util.spec_from_file_location(
 fixture_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture_module)
 make_pdf = fixture_module.make_pdf
+
+
+@pytest.fixture
+def mock_dns_resolver():
+    """Mocked HTTP never resolves DNS; avoid native resolver shutdown threads."""
+    with patch("aiohttp.connector.DefaultResolver", ThreadedResolver):
+        yield
 
 
 def upload(hass, tmp_path, pdf):
@@ -153,7 +161,7 @@ async def test_invalid_future_and_double_sources_do_not_save(hass, tmp_path, fre
     assert entry.options == original
 
 
-async def test_download_only_follows_cez_redirects(hass, aioclient_mock):
+async def test_download_only_follows_cez_redirects(hass, aioclient_mock, mock_dns_resolver):
     url = "https://www.cez.cz/original.pdf"
     target = "https://www.cez.cz/updated.pdf"
     pdf = make_pdf()
@@ -170,7 +178,7 @@ async def test_download_only_follows_cez_redirects(hass, aioclient_mock):
     assert aioclient_mock.call_count == 1
 
 
-async def test_download_rejects_oversized_pdf(hass, aioclient_mock):
+async def test_download_rejects_oversized_pdf(hass, aioclient_mock, mock_dns_resolver):
     url = "https://www.cez.cz/oversized.pdf"
     aioclient_mock.get(url, content=b"%PDF-" + b"x" * MAX_PDF_BYTES)
     with pytest.raises(PriceListError, match="price_list_too_large"):
