@@ -124,7 +124,7 @@
       },
       "price_list": {
         "title": "Read a ČEZ price list",
-        "description": "Upload a PDF OR enter its direct HTTPS PDF URL on www.cez.cz. Supports the standard ČEZ Prodej household table for ČEZ Distribuce, one price period, including 21% VAT. Maximum 5 MB and 6 pages. Scans and other layouts are rejected. Rates are reviewed before saving and apply immediately; future-effective lists are rejected.",
+        "description": "Upload a PDF OR enter its direct HTTPS PDF URL on {cez_website}. Supports the standard ČEZ Prodej household table for ČEZ Distribuce, one price period, including 21% VAT. Maximum 5 MB and 6 pages. Scans and other layouts are rejected. Rates are reviewed before saving and apply immediately; future-effective lists are rejected.",
         "data": {
           "price_list_file": "Price list PDF",
           "price_list_url": "ČEZ PDF HTTPS URL",
@@ -167,7 +167,7 @@
       "invalid_price": "Enter a finite nonnegative number.",
       "invalid_energy_entity": "Select cumulative grid import in Wh, kWh or MWh.",
       "choose_one_price_list_source": "Choose exactly one source: an uploaded PDF or HTTPS URL.",
-      "invalid_price_list_url": "Use a direct HTTPS PDF URL on cez.cz or www.cez.cz.",
+      "invalid_price_list_url": "Use a direct HTTPS PDF URL on the official ČEZ website.",
       "invalid_price_list_pdf": "The file is not a readable unencrypted ČEZ price-list PDF. Upload it again.",
       "price_list_too_large": "The PDF exceeds 5 MB.",
       "cannot_download_price_list": "Cannot download the ČEZ PDF. Download it locally and upload the file.",

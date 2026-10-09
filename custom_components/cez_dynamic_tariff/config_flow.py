@@ -599,7 +599,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             ): vol.All(vol.Coerce(float), vol.Range(min=0)),
         }
         return self.async_show_form(
-            step_id="price_list", data_schema=vol.Schema(schema), errors=errors
+            step_id="price_list",
+            data_schema=vol.Schema(schema),
+            errors=errors,
+            description_placeholders={"cez_website": "https://www.cez.cz"},
         )
 
     async def async_step_price_list_review(self, user_input=None):

@@ -124,7 +124,7 @@
       },
       "price_list": {
         "title": "Načíst ceník ČEZ",
-        "description": "Nahrajte PDF nebo zadejte přímý HTTPS odkaz na PDF z www.cez.cz (pouze jeden zdroj). Podporován je standardní ceník ČEZ Prodej pro domácnosti na území ČEZ Distribuce s jedním cenovým obdobím a cenami včetně 21 % DPH. Nejvýše 5 MB a 6 stran. Skeny a odlišné tabulky se odmítnou. Ceny se ještě neuloží; následuje kontrola. Změna je účinná při uložení, ceník s budoucí účinností se odmítne.",
+        "description": "Nahrajte PDF nebo zadejte přímý HTTPS odkaz na PDF z {cez_website} (pouze jeden zdroj). Podporován je standardní ceník ČEZ Prodej pro domácnosti na území ČEZ Distribuce s jedním cenovým obdobím a cenami včetně 21 % DPH. Nejvýše 5 MB a 6 stran. Skeny a odlišné tabulky se odmítnou. Ceny se ještě neuloží; následuje kontrola. Změna je účinná při uložení, ceník s budoucí účinností se odmítne.",
         "data": {
           "price_list_file": "PDF ceníku",
           "price_list_url": "HTTPS odkaz na PDF ČEZ",
@@ -167,7 +167,7 @@
       "invalid_price": "Zadejte konečné nezáporné číslo.",
       "invalid_energy_entity": "Vyberte kumulativní odběr ze sítě v Wh, kWh nebo MWh.",
       "choose_one_price_list_source": "Vyberte právě jeden zdroj: PDF soubor nebo HTTPS odkaz.",
-      "invalid_price_list_url": "Použijte přímý HTTPS odkaz na PDF z cez.cz nebo www.cez.cz.",
+      "invalid_price_list_url": "Použijte přímý HTTPS odkaz na PDF z oficiálního webu ČEZ.",
       "invalid_price_list_pdf": "Soubor není čitelné nešifrované PDF ceníku ČEZ. Nahrajte jej znovu.",
       "price_list_too_large": "PDF překračuje limit 5 MB.",
       "cannot_download_price_list": "PDF se nepodařilo stáhnout z ČEZ. Stáhněte jej do počítače a nahrajte jako soubor.",
