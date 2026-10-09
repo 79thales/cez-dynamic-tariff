@@ -3,7 +3,8 @@
   "name": "ČEZ Dynamic Tariff & Accounting",
   "after_dependencies": [
     "recorder",
-    "frontend"
+    "frontend",
+    "http"
   ],
   "codeowners": [
     "@79thales"
