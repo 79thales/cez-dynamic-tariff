@@ -72,7 +72,7 @@ For manual installation from the installer ZIP, extract its contents directly in
 **Nové volitelné rozšíření:** [Celková cena, ČEZ HDO a úspory](docs/full-electricity-price.md)
 popisuje připravený profil D57d / 3×25 A, přepínání variant s Dynamickým tarifem
 a bez něj, výpočet nákladů a nový samostatný [přehled](examples/full_price_dashboard.yaml).
-Od 1.1.0 lze v nastavení načíst PDF ceníku ČEZ z počítače nebo přímého HTTPS
+Od 1.0.1 lze v nastavení načíst PDF ceníku ČEZ z počítače nebo přímého HTTPS
 odkazu na `www.cez.cz`, zkontrolovat rozpoznané částky a aktualizovat nový cenový
 profil. Podmínky podporovaných ceníků a postup jsou ve stejné dokumentaci.
 Původní entity i entity cizí integrace ČEZ HDO zůstávají zachované.

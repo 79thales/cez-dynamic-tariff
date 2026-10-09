@@ -61,7 +61,7 @@ pásem, která lze stále upravovat v původním nastavení.
    ze stejného zařízení a pro stejné odběrné místo jako elektroměr.
 6. Potvrdit částky z ceníku v kroku **Složky ceny včetně DPH**.
 
-### Aktualizace cen z PDF ČEZ (od 1.1.0)
+### Aktualizace cen z PDF ČEZ (od 1.0.1)
 
 V **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff → Nastavit** zaškrtnout
 **Importovat ceník ČEZ z PDF**. Otevře se samostatný import, který zachová
