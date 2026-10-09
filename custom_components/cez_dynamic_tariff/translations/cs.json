@@ -34,11 +34,13 @@
         "data": {
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
-          "reset_schedules": "Obnovit výchozí rozvrhy z projektu"
+          "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
+          "configure_pricing": "Nastavit celkovou cenu a úspory"
         },
         "data_description": {
           "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
-          "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu."
+          "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu.",
+          "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné."
         }
       },
       "thresholds": {
@@ -79,6 +81,44 @@
         "data": {
           "confirm_reset": "Rozumím a chci obnovit všechny výchozí rozvrhy"
         }
+      },
+      "pricing": {
+        "title": "Celková cena a zdroj HDO",
+        "description": "Vyberte entity nainstalované integrace ČEZ HDO. Volba Dynamického tarifu určí skutečnou cenu; obě varianty se vždy porovnávají. Výchozí ceník: D57d, 3×25 A, Elektřina na 2 roky v akci z 30. 1. 2026. Změna sazby nebo jističe sama nevyhledává nové ceny, upravte je v dalším kroku.",
+        "data": {
+          "pricing_enabled": "Zapnout nové cenové a úsporové senzory",
+          "dynamic_pricing": "Použít Dynamický tarif pro skutečnou cenu",
+          "include_standing_fees": "Zahrnout stálé platby do nákladů",
+          "distribution_rate": "Distribuční sazba (údaj profilu)",
+          "breaker_amperes": "Hodnota jističe (A)",
+          "breaker_phases": "Počet fází jističe",
+          "hdo_entity": "Existující HDO: nízký tarif aktivní",
+          "hdo_schedule_entity": "Existující HDO: rozvrh",
+          "hdo_valid_entity": "Existující HDO: platnost dat",
+          "import_energy_entity": "Elektroměr odběru ze sítě (volitelné)",
+          "annual_import_kwh": "Odhad ročního odběru ze sítě (kWh; 0 = nezadaný)"
+        },
+        "data_description": {
+          "annual_import_kwh": "Stálé platby se rozpočítají podle ročního odběru. Odhad není cenou další odebrané kWh."
+        }
+      },
+      "price_rates": {
+        "title": "Složky ceny včetně DPH",
+        "description": "Všechny ceny zadávejte VČETNĚ DPH. Kč/MWh vydělte 1000. Dynamické procento mění pouze obchodní cenu. Výchozí POZE je 0: nižší z platby podle jističe (0) a podle spotřeby. U jiného ceníku s nenulovým stropem POZE je nutné použít efektivní sazbu a ročně ji vyrovnat.",
+        "data": {
+          "trade_vt": "Obchodní cena VT (Kč/kWh)",
+          "trade_nt": "Obchodní cena NT (Kč/kWh)",
+          "distribution_vt": "Distribuce VT (Kč/kWh)",
+          "distribution_nt": "Distribuce NT (Kč/kWh)",
+          "electricity_tax": "Daň z elektřiny (Kč/kWh)",
+          "system_services": "Systémové služby (Kč/kWh)",
+          "poze_kwh": "Efektivní POZE (Kč/kWh)",
+          "supplier_monthly": "Stálá platba dodavateli (Kč/měsíc)",
+          "breaker_monthly": "Platba za jistič (Kč/měsíc)",
+          "infrastructure_monthly": "Nesíťová infrastruktura (Kč/měsíc)",
+          "other_kwh": "Ostatní platby podle odběru (Kč/kWh)",
+          "other_monthly": "Ostatní stálé platby (Kč/měsíc)"
+        }
       }
     },
     "error": {
@@ -86,34 +126,133 @@
       "cheap_not_below_expensive": "Práh levného pásma musí být nižší než práh drahého pásma.",
       "expensive_not_below_very_expensive": "Práh drahého pásma musí být nižší než práh velmi drahého pásma.",
       "invalid_schedule": "Použij položky `HH:MM=změna` seřazené podle času a oddělené čárkou; první musí být `00:00=...` a každá změna musí být celé číslo.",
-      "confirm_reset": "Potvrď, že chceš obnovit všechny výchozí rozvrhy projektu."
+      "confirm_reset": "Potvrď, že chceš obnovit všechny výchozí rozvrhy projektu.",
+      "missing_entity": "Vyberte existující entitu.",
+      "invalid_price": "Zadejte konečné nezáporné číslo.",
+      "invalid_energy_entity": "Vyberte kumulativní odběr ze sítě v Wh, kWh nebo MWh."
     }
   },
   "entity": {
     "sensor": {
-      "current_cheap_end": {"name": "Konec aktuálního levného období"},
-      "current_modifier": {"name": "Změna ceny"},
-      "current_band": {"name": "Aktuální pásmo"},
-      "cheap_threshold": {"name": "Práh levného pásma"},
-      "super_cheap_threshold": {"name": "Práh super levného pásma"},
-      "expensive_threshold": {"name": "Práh drahého pásma"},
-      "very_expensive_threshold": {"name": "Práh velmi drahého pásma"},
-      "season": {"name": "Sezóna"},
-      "day_type": {"name": "Typ dne"},
-      "effective_price": {"name": "Efektivní cena"},
-      "next_cheap_start": {"name": "Začátek dalšího levného pásma"},
-      "next_cheap_end": {"name": "Konec dalšího levného pásma"},
-      "next_cheap_modifier": {"name": "Změna ceny v dalším levném pásmu"},
-      "next_change": {"name": "Další změna tarifu"},
-      "next_modifier": {"name": "Změna ceny po další změně"},
-      "today_tariff_map": {"name": "Dnešní mapa tarifu"},
-      "tomorrow_tariff_map": {"name": "Zítřejší mapa tarifu"}
+      "current_cheap_end": {
+        "name": "Konec aktuálního levného období"
+      },
+      "current_modifier": {
+        "name": "Změna ceny"
+      },
+      "current_band": {
+        "name": "Aktuální pásmo"
+      },
+      "cheap_threshold": {
+        "name": "Práh levného pásma"
+      },
+      "super_cheap_threshold": {
+        "name": "Práh super levného pásma"
+      },
+      "expensive_threshold": {
+        "name": "Práh drahého pásma"
+      },
+      "very_expensive_threshold": {
+        "name": "Práh velmi drahého pásma"
+      },
+      "season": {
+        "name": "Sezóna"
+      },
+      "day_type": {
+        "name": "Typ dne"
+      },
+      "effective_price": {
+        "name": "Efektivní cena"
+      },
+      "next_cheap_start": {
+        "name": "Začátek dalšího levného pásma"
+      },
+      "next_cheap_end": {
+        "name": "Konec dalšího levného pásma"
+      },
+      "next_cheap_modifier": {
+        "name": "Změna ceny v dalším levném pásmu"
+      },
+      "next_change": {
+        "name": "Další změna tarifu"
+      },
+      "next_modifier": {
+        "name": "Změna ceny po další změně"
+      },
+      "today_tariff_map": {
+        "name": "Dnešní mapa tarifu"
+      },
+      "tomorrow_tariff_map": {
+        "name": "Zítřejší mapa tarifu"
+      },
+      "total_price": {
+        "name": "Cena odebrané elektřiny"
+      },
+      "price_without_dynamic": {
+        "name": "Cena bez Dynamického tarifu"
+      },
+      "price_with_dynamic": {
+        "name": "Cena s Dynamickým tarifem"
+      },
+      "allocated_price": {
+        "name": "Odhad ceny včetně stálých plateb"
+      },
+      "monthly_fixed_cost": {
+        "name": "Stálé platby měsíčně"
+      },
+      "minimum_price": {
+        "name": "Nejnižší cena do konce zítřka"
+      },
+      "best_price_start": {
+        "name": "Nejlevnější odběr od"
+      },
+      "next_price_change": {
+        "name": "Další změna celkové ceny"
+      },
+      "price_forecast": {
+        "name": "Úplnost cenového výhledu"
+      },
+      "actual_cost": {
+        "name": "Odhad nákladů na odběr"
+      },
+      "total_cost": {
+        "name": "Celkový odhad nákladů dle nastavení"
+      },
+      "dynamic_savings": {
+        "name": "Srovnání úspory Dynamického tarifu"
+      },
+      "realized_savings": {
+        "name": "Dosažená úspora proti běžnému tarifu"
+      },
+      "potential_savings": {
+        "name": "Teoretická další úspora přesunem odběru"
+      },
+      "unpriced_energy": {
+        "name": "Odběr bez určené ceny"
+      },
+      "daily_cost": {
+        "name": "Náklady na elektřinu dnes"
+      },
+      "daily_fixed_cost": {
+        "name": "Stálé platby na dnešní den"
+      },
+      "daily_savings": {
+        "name": "Dosažená úspora dnes"
+      }
     },
     "binary_sensor": {
-      "cheap_now": {"name": "Právě probíhá levné pásmo"},
-      "super_cheap_now": {"name": "Právě probíhá super levné pásmo"},
-      "expensive_now": {"name": "Právě probíhá drahé pásmo"},
-      "very_expensive_now": {"name": "Právě probíhá velmi drahé pásmo"}
+      "cheap_now": {
+        "name": "Právě probíhá levné pásmo"
+      },
+      "super_cheap_now": {
+        "name": "Právě probíhá super levné pásmo"
+      },
+      "expensive_now": {
+        "name": "Právě probíhá drahé pásmo"
+      },
+      "very_expensive_now": {
+        "name": "Právě probíhá velmi drahé pásmo"
+      }
     }
   }
 }

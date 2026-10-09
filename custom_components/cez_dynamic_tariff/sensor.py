@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, time
 from typing import Any
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
+    SensorStateClass,
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
@@ -146,13 +148,147 @@ SENSOR_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
 )
 
 
+def _billing_value(key):
+    return lambda data: (data.billing or {}).get(key)
+
+
+PRICING_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
+    CezDynamicTariffSensorDescription(
+        key="daily_cost",
+        translation_key="daily_cost",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("daily_cost"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="daily_fixed_cost",
+        translation_key="daily_fixed_cost",
+        native_unit_of_measurement="CZK",
+        value_fn=_billing_value("daily_fixed_cost"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="daily_savings",
+        translation_key="daily_savings",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("daily_savings"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="total_price",
+        translation_key="total_price",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("total_price"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="price_without_dynamic",
+        translation_key="price_without_dynamic",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("price_without_dynamic"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="price_with_dynamic",
+        translation_key="price_with_dynamic",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("price_with_dynamic"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="allocated_price",
+        translation_key="allocated_price",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("allocated_price"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="monthly_fixed_cost",
+        translation_key="monthly_fixed_cost",
+        native_unit_of_measurement="CZK",
+        value_fn=_billing_value("monthly_fixed_cost"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="minimum_price",
+        translation_key="minimum_price",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("minimum_price"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="best_price_start",
+        translation_key="best_price_start",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_billing_value("best_price_start"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="next_price_change",
+        translation_key="next_price_change",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value_fn=_billing_value("next_price_change"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="price_forecast",
+        translation_key="price_forecast",
+        value_fn=_billing_value("price_forecast"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="actual_cost",
+        translation_key="actual_cost",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("actual_cost"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="total_cost",
+        translation_key="total_cost",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("total_cost"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="dynamic_savings",
+        translation_key="dynamic_savings",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("dynamic_savings"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="realized_savings",
+        translation_key="realized_savings",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("realized_savings"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="potential_savings",
+        translation_key="potential_savings",
+        native_unit_of_measurement="CZK",
+        device_class=SensorDeviceClass.MONETARY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("potential_savings"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="unpriced_energy",
+        translation_key="unpriced_energy",
+        native_unit_of_measurement="kWh",
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL,
+        value_fn=_billing_value("unpriced_energy"),
+    ),
+)
+
+
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up sensors for a config entry."""
     coordinator: CezDynamicTariffCoordinator = entry.runtime_data
 
+    descriptions = SENSOR_DESCRIPTIONS
+    if coordinator.billing is not None:
+        descriptions += PRICING_DESCRIPTIONS
     async_add_entities(
         CezDynamicTariffSensor(coordinator, entry, description)
-        for description in SENSOR_DESCRIPTIONS
+        for description in descriptions
     )
 
 
@@ -185,7 +321,24 @@ class CezDynamicTariffSensor(
         """Return the sensor value."""
         if self.coordinator.data is None:
             return None
-        return self.entity_description.value_fn(self.coordinator.data)
+        value = self.entity_description.value_fn(self.coordinator.data)
+        if self.entity_description in PRICING_DESCRIPTIONS and isinstance(value, float):
+            return round(value, 6)
+        return value
+
+    @property
+    def last_reset(self):
+        """Daily monetary totals reset at the local calendar midnight."""
+        if self.entity_description.key in ("daily_cost", "daily_savings"):
+            data = self.coordinator.data
+            day = (data.billing or {}).get("metadata", {}).get("day") if data else None
+            if day:
+                return datetime.combine(
+                    datetime.fromisoformat(day).date(),
+                    time.min,
+                    tzinfo=self.coordinator._local_tz(),
+                )
+        return None
 
     @property
     def extra_state_attributes(self):
@@ -195,6 +348,13 @@ class CezDynamicTariffSensor(
 
         data = self.coordinator.data
         key = self.entity_description.key
+
+        if key in {description.key for description in PRICING_DESCRIPTIONS}:
+            billing = data.billing or {}
+            attributes = dict(billing.get("metadata", {}))
+            if key in ("total_price", "price_forecast"):
+                attributes["forecast"] = billing.get("forecast", [])
+            return attributes
 
         if key == "today_tariff_map":
             return {

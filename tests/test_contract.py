@@ -56,6 +56,11 @@ class PublicContractTests(unittest.TestCase):
             "next_modifier",
             "today_tariff_map",
             "tomorrow_tariff_map",
+            "total_price", "price_without_dynamic", "price_with_dynamic", "allocated_price",
+            "daily_cost", "daily_fixed_cost", "daily_savings",
+            "monthly_fixed_cost", "minimum_price", "best_price_start", "next_price_change",
+            "price_forecast", "actual_cost", "total_cost", "dynamic_savings", "realized_savings",
+            "potential_savings", "unpriced_energy",
         }
         actual = _description_keys(
             "sensor.py",

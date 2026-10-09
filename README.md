@@ -17,6 +17,11 @@
 
 ### Features
 
+- Optional full electricity pricing with public ČEZ HDO entities, VAT-inclusive
+  distribution and regulated charges, standing fees, today/tomorrow forecasts,
+  selectable pricing with or without Dynamic Tariff, and persisted consumption-based
+  cost and savings estimates. See the [full-price design and setup](docs/full-electricity-price.md).
+
 - 17 sensors for the current tariff period and modifier, season and day type, optional effective trading price, the next tariff change, current and next cheap periods, configurable thresholds, and tariff maps for today and tomorrow.
 - 4 binary sensors indicating cheap, super cheap, expensive, and very expensive periods.
 - Four bundled schedules covering April-September and October-March, each split into workdays and weekends or Czech public holidays.
@@ -32,13 +37,13 @@
 | **Tariff period** | The interval from one schedule entry to the next. The current period determines the active modifier. |
 | **Tariff modifier** | The percentage assigned to a tariff period, such as `-50 %` or `+25 %`. It is not an electricity price. |
 | **Effective price** | A calculated value using the user-entered base trading price: `base price × (1 + modifier / 100)`. It is unavailable when the base price is `0` and covers only the trading component. |
-| **Actual market or contract price** | Not provided or downloaded. The integration does not connect to a ČEZ account, a market-price feed, or a meter, and it cannot determine the user's complete billed price. |
+| **Full electricity price** | Optional calculation from an editable VAT-inclusive price profile and existing ČEZ HDO entities. Includes distribution, tax and other consumption charges. Standing fees are separate, with optional estimated per-kWh allocation. It does not download contract prices. |
 
 The bundled schedules are transcribed from the official [ČEZ Dynamic Tariff product page](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif) and the ČEZ document [Prices in ČEZ Dynamic Tariff time periods](https://www.cez.cz/webpublic/file/edee/2024/09/dynamickytarif_pasma.pdf). Their internal revision is `cez-public-table-2024-09`.
 
 This is a schedule-based integration. It does **not** download current prices, contract data, or revised tariff schedules from the internet. Users can edit all four schedules in the integration options if their contract differs from the bundled data. ČEZ may change its product terms, so users should compare the bundled schedule with their current contract before relying on it for financially significant automations.
 
-An optional base price can be used to calculate an effective price for the electricity trading component. Distribution charges, taxes, fixed fees, and other regulated components are not included.
+The original optional base price and `effective_price` sensor still cover only the trading component. New full-price sensors use a separate optional profile; existing sensors keep their IDs and meaning.
 
 ### Requirements, installation, and configuration
 
@@ -63,6 +68,11 @@ From v0.5.1, HACS installs the `cez_dynamic_tariff.zip` release asset. The downl
 For manual installation from the installer ZIP, extract its contents directly into `custom_components/cez_dynamic_tariff`, with `manifest.json` at that directory's root. GitHub's automatic **Source code (zip)** archive has a different layout. Older releases retain their original installation method. See [release packaging](scripts/README.md) for the maintainer workflow.
 
 ## Česká dokumentace
+
+**Nové volitelné rozšíření:** [Celková cena, ČEZ HDO a úspory](docs/full-electricity-price.md)
+popisuje připravený profil D57d / 3×25 A, přepínání variant s Dynamickým tarifem
+a bez něj, výpočet nákladů a nový samostatný [přehled](examples/full_price_dashboard.yaml).
+Původní entity i entity cizí integrace ČEZ HDO zůstávají zachované.
 
 Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzory. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
 
@@ -271,7 +281,7 @@ Binární senzory:
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
-Integrace tedy vytváří celkem 21 vlastních entit: 17 senzorů a 4 binární senzory. Aktualizační entitu HACS vytváří HACS samostatně.
+Bez volitelného cenového profilu integrace vytváří původních 21 vlastních entit: 17 senzorů a 4 binární senzory. Zapnutý cenový profil přidává 18 nových senzorů, celkem tedy 39 entit. Jejich význam a ID jsou v [dokumentaci celkové ceny](docs/full-electricity-price.md). Aktualizační entitu HACS vytváří HACS samostatně.
 
 `current_cheap_end` ukazuje konec právě probíhajícího souvislého levného období podle prahu `cheap_threshold`, včetně navazujících super levných pásem a přechodu přes půlnoc. Pokud právě není levno nebo konec není nalezen během následujících osmi dnů, stav je `unknown`. Při změně času sleduje skutečné minuty a stejný lokální rozvrh jako `cheap_now`; v opakované hodině tak může vlastní rozvrh projít pásmem znovu. Senzor se aktualizuje spolu s koordinátorem každých 60 sekund, nikoli nutně přesně na hranici minuty.
 
@@ -290,7 +300,7 @@ Stavy senzorů sezóny a typu dne zůstávají kvůli kompatibilitě české (`L
 ## Poznámky
 
 - `base_price_kwh` je pouze obchodní složka ceny elektřiny
-- distribuce, daně, měsíční fixní poplatky a regulované složky se do výpočtu nezapočítávají
+- původní `effective_price` nadále nezahrnuje distribuci, daně ani stálé platby; nové volitelné cenové senzory je zahrnují podle samostatného profilu
 - detekce svátků používá Python balíček `holidays`
 - v nabídce integrace lze stáhnout diagnostiku obsahující nastavení a aktuálně vypočítaný stav; název konfigurace je v ní skrytý
 - základní cena `0` znamená, že se efektivní cena nevypočítává

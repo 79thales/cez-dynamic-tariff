@@ -5,6 +5,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
+from .billing import ElectricityBilling
 from .const import DOMAIN, PLATFORMS
 from .coordinator import CezDynamicTariffCoordinator
 
@@ -24,6 +25,9 @@ async def async_setup_entry(
 ) -> bool:
     """Set up ČEZ Dynamic Tariff from a config entry."""
     coordinator = CezDynamicTariffCoordinator(hass, entry)
+    if coordinator._option("pricing_enabled", False):
+        coordinator.billing = ElectricityBilling(coordinator)
+        await coordinator.billing.async_setup()
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
 
@@ -39,6 +43,9 @@ async def async_unload_entry(
 ) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+    if unload_ok and entry.runtime_data.billing is not None:
+        await entry.runtime_data.billing.async_close()
 
     return unload_ok
 

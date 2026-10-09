@@ -34,11 +34,13 @@
         "data": {
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
-          "reset_schedules": "Restore bundled default schedules"
+          "reset_schedules": "Restore bundled default schedules",
+          "configure_pricing": "Configure full prices and savings"
         },
         "data_description": {
           "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
-          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults."
+          "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults.",
+          "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning."
         }
       },
       "thresholds": {
@@ -79,6 +81,44 @@
         "data": {
           "confirm_reset": "I understand and want to restore all default schedules"
         }
+      },
+      "pricing": {
+        "title": "Full price and HDO source",
+        "description": "Select public entities of the installed ČEZ HDO integration. Dynamic Tariff selects actual pricing; both variants are always compared. Default profile: D57d, 3×25 A, 30 January 2026 two-year promotion. Changing the rate or breaker does not fetch new prices; edit the fees in the next step.",
+        "data": {
+          "pricing_enabled": "Enable new price and savings sensors",
+          "dynamic_pricing": "Use Dynamic Tariff for actual prices",
+          "include_standing_fees": "Include standing fees in costs",
+          "distribution_rate": "Distribution rate (profile label)",
+          "breaker_amperes": "Circuit breaker current (A)",
+          "breaker_phases": "Circuit breaker phases",
+          "hdo_entity": "Existing HDO: low tariff active",
+          "hdo_schedule_entity": "Existing HDO: schedule",
+          "hdo_valid_entity": "Existing HDO: data valid",
+          "import_energy_entity": "Grid import energy meter (optional)",
+          "annual_import_kwh": "Estimated annual grid import (kWh; 0 = unset)"
+        },
+        "data_description": {
+          "annual_import_kwh": "Standing fees are allocated using annual import. This estimate is not a marginal kWh price."
+        }
+      },
+      "price_rates": {
+        "title": "VAT-inclusive price components",
+        "description": "Enter every amount INCLUDING VAT. Divide CZK/MWh by 1000. Dynamic modifiers change trading prices only. Default POZE is zero: the lower of capacity (zero) and consumption charges. A different price list with a nonzero POZE cap requires an effective rate and annual reconciliation.",
+        "data": {
+          "trade_vt": "Trading price VT (CZK/kWh)",
+          "trade_nt": "Trading price NT (CZK/kWh)",
+          "distribution_vt": "Distribution VT (CZK/kWh)",
+          "distribution_nt": "Distribution NT (CZK/kWh)",
+          "electricity_tax": "Electricity tax (CZK/kWh)",
+          "system_services": "System services (CZK/kWh)",
+          "poze_kwh": "Effective POZE (CZK/kWh)",
+          "supplier_monthly": "Supplier standing fee (CZK/month)",
+          "breaker_monthly": "Circuit breaker fee (CZK/month)",
+          "infrastructure_monthly": "Non-grid infrastructure (CZK/month)",
+          "other_kwh": "Other consumption charges (CZK/kWh)",
+          "other_monthly": "Other standing fees (CZK/month)"
+        }
       }
     },
     "error": {
@@ -86,34 +126,133 @@
       "cheap_not_below_expensive": "Cheap threshold must be lower than expensive threshold.",
       "expensive_not_below_very_expensive": "Expensive threshold must be lower than very expensive threshold.",
       "invalid_schedule": "Use `HH:MM=modifier` items in increasing order, separated by commas; the first item must be `00:00=...` and every modifier must be a whole number.",
-      "confirm_reset": "Confirm that you want to restore all bundled default schedules."
+      "confirm_reset": "Confirm that you want to restore all bundled default schedules.",
+      "missing_entity": "Select an existing entity.",
+      "invalid_price": "Enter a finite nonnegative number.",
+      "invalid_energy_entity": "Select cumulative grid import in Wh, kWh or MWh."
     }
   },
   "entity": {
     "sensor": {
-      "current_cheap_end": {"name": "Current cheap period end"},
-      "current_modifier": {"name": "Current price modifier"},
-      "current_band": {"name": "Current tariff period"},
-      "cheap_threshold": {"name": "Cheap threshold"},
-      "super_cheap_threshold": {"name": "Super cheap threshold"},
-      "expensive_threshold": {"name": "Expensive threshold"},
-      "very_expensive_threshold": {"name": "Very expensive threshold"},
-      "season": {"name": "Season"},
-      "day_type": {"name": "Day type"},
-      "effective_price": {"name": "Effective trading price"},
-      "next_cheap_start": {"name": "Next cheap period start"},
-      "next_cheap_end": {"name": "Next cheap period end"},
-      "next_cheap_modifier": {"name": "Next cheap period modifier"},
-      "next_change": {"name": "Next tariff change"},
-      "next_modifier": {"name": "Next price modifier"},
-      "today_tariff_map": {"name": "Today's tariff map"},
-      "tomorrow_tariff_map": {"name": "Tomorrow's tariff map"}
+      "current_cheap_end": {
+        "name": "Current cheap period end"
+      },
+      "current_modifier": {
+        "name": "Current price modifier"
+      },
+      "current_band": {
+        "name": "Current tariff period"
+      },
+      "cheap_threshold": {
+        "name": "Cheap threshold"
+      },
+      "super_cheap_threshold": {
+        "name": "Super cheap threshold"
+      },
+      "expensive_threshold": {
+        "name": "Expensive threshold"
+      },
+      "very_expensive_threshold": {
+        "name": "Very expensive threshold"
+      },
+      "season": {
+        "name": "Season"
+      },
+      "day_type": {
+        "name": "Day type"
+      },
+      "effective_price": {
+        "name": "Effective trading price"
+      },
+      "next_cheap_start": {
+        "name": "Next cheap period start"
+      },
+      "next_cheap_end": {
+        "name": "Next cheap period end"
+      },
+      "next_cheap_modifier": {
+        "name": "Next cheap period modifier"
+      },
+      "next_change": {
+        "name": "Next tariff change"
+      },
+      "next_modifier": {
+        "name": "Next price modifier"
+      },
+      "today_tariff_map": {
+        "name": "Today's tariff map"
+      },
+      "tomorrow_tariff_map": {
+        "name": "Tomorrow's tariff map"
+      },
+      "total_price": {
+        "name": "Imported electricity price"
+      },
+      "price_without_dynamic": {
+        "name": "Price without Dynamic Tariff"
+      },
+      "price_with_dynamic": {
+        "name": "Price with Dynamic Tariff"
+      },
+      "allocated_price": {
+        "name": "Estimated price including standing fees"
+      },
+      "monthly_fixed_cost": {
+        "name": "Monthly standing fees"
+      },
+      "minimum_price": {
+        "name": "Lowest price through tomorrow"
+      },
+      "best_price_start": {
+        "name": "Cheapest import start"
+      },
+      "next_price_change": {
+        "name": "Next total price change"
+      },
+      "price_forecast": {
+        "name": "Price forecast coverage"
+      },
+      "actual_cost": {
+        "name": "Estimated import cost"
+      },
+      "total_cost": {
+        "name": "Total estimated cost using selected options"
+      },
+      "dynamic_savings": {
+        "name": "Dynamic Tariff savings comparison"
+      },
+      "realized_savings": {
+        "name": "Realized savings against standard tariff"
+      },
+      "potential_savings": {
+        "name": "Theoretical further savings from shifting import"
+      },
+      "unpriced_energy": {
+        "name": "Import without a known price"
+      },
+      "daily_cost": {
+        "name": "Electricity cost today"
+      },
+      "daily_fixed_cost": {
+        "name": "Standing fees for today"
+      },
+      "daily_savings": {
+        "name": "Realized savings today"
+      }
     },
     "binary_sensor": {
-      "cheap_now": {"name": "Cheap period active"},
-      "super_cheap_now": {"name": "Super cheap period active"},
-      "expensive_now": {"name": "Expensive period active"},
-      "very_expensive_now": {"name": "Very expensive period active"}
+      "cheap_now": {
+        "name": "Cheap period active"
+      },
+      "super_cheap_now": {
+        "name": "Super cheap period active"
+      },
+      "expensive_now": {
+        "name": "Expensive period active"
+      },
+      "very_expensive_now": {
+        "name": "Very expensive period active"
+      }
     }
   }
 }

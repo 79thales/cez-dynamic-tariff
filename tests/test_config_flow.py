@@ -82,7 +82,7 @@ def _load_config_flow_module():
     component_path = (
         Path(__file__).parents[1] / "custom_components" / "cez_dynamic_tariff"
     )
-    for module_basename in ("const", "schedule", "config_flow"):
+    for module_basename in ("const", "schedule", "pricing", "config_flow"):
         module_name = f"{package_name}.{module_basename}"
         spec = importlib.util.spec_from_file_location(
             module_name,

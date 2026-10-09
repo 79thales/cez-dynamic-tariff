@@ -85,6 +85,7 @@ class TariffSnapshot:
     tomorrow_season_code: str
     tomorrow_day_type: str
     tomorrow_day_type_code: str
+    billing: dict[str, Any] | None = None
 
 
 class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
@@ -94,6 +95,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
         """Initialize coordinator."""
         self.entry = entry
         self._holidays = None
+        self.billing = None
 
         super().__init__(
             hass,
@@ -580,6 +582,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             tomorrow_season_code=self._season_code(tomorrow),
             tomorrow_day_type=self._day_type_label(tomorrow),
             tomorrow_day_type_code=self._day_type_code(tomorrow),
+            billing=self.billing.calculate(now, current_modifier_percent) if self.billing else None,
         )
 
     @property

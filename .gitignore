@@ -14,3 +14,5 @@ env/
 .idea/
 dist/
 build/
+.test-deps/
+tmp/

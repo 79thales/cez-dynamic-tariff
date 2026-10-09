@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.0 – 2026-10-09
+
+### Čeština
+
+- Volitelný profil D57d / 3×25 A pro celkovou cenu včetně DPH, distribuce a regulovaných složek.
+- Napojení na veřejné entity existující integrace ČEZ HDO bez jejího forku nebo změn.
+- Výběr skutečné ceny s Dynamickým tarifem nebo bez něj a souběžné porovnání obou variant.
+- Denní náklady a volitelné zahrnutí poměrné části jističe a ostatních stálých poplatků.
+- Cenový výhled do konce zítřka, nejlevnější čas a další změna celkové ceny.
+- Uložené odhady nákladů, dosažené a teoretické úspory ze skutečného importu.
+- Původních 21 entit zachováno; cenový profil přidává 18 nových senzorů.
+
+### English
+
+- Optional VAT-inclusive full electricity pricing with distribution, tax and regulated charges; a D57d / 3×25 A preset from the 30 January 2026 ČEZ two-year promotion price list.
+- Reuses public state, validity and schedule entities of the installed ČEZ HDO integration, without forking or modifying it.
+- Select actual pricing with or without Dynamic Tariff, with both variants always available for comparison.
+- Daily import costs with optional calendar-day allocation of breaker and other standing fees.
+- Today/tomorrow price forecast, cheapest known time and next total-price transition.
+- Persisted meter-based estimates of costs, signed achieved savings and separately labelled theoretical shifting potential. Missing prices remain unpriced; historical lifetime readings are never charged on setup.
+- Preserves all 21 original entities, IDs and their meaning; the optional profile adds 18 sensors.
+- Enable the new price profile in integration options after updating; existing configurations keep their behavior by default.
+
 ## 0.5.1 – 2026-10-07
 
 ### Čeština

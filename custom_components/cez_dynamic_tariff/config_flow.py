@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
+from .pricing import PROFILE_DEFAULTS, finite_number
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
 
 SCHEDULE_OPTIONS = (
@@ -127,6 +128,7 @@ def _general_schema(config_entry, user_input=None) -> vol.Schema:
                     else False
                 ),
             ): bool,
+            vol.Required("configure_pricing", default=False): bool,
         }
     )
 
@@ -285,6 +287,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         """Initialize options flow."""
         self._config_entry = config_entry
         self._pending_options = {}
+        self._restore_schedules = False
 
     async def async_step_init(self, user_input=None):
         """Configure general tariff options."""
@@ -293,6 +296,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 CONF_BASE_PRICE_KWH: float(user_input[CONF_BASE_PRICE_KWH]),
                 CONF_INCLUDE_HOLIDAYS: bool(user_input[CONF_INCLUDE_HOLIDAYS]),
                 CONF_RESET_SCHEDULES: bool(user_input[CONF_RESET_SCHEDULES]),
+                "configure_pricing": bool(user_input.get("configure_pricing", False)),
             }
             return await self.async_step_thresholds()
 
@@ -356,7 +360,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     for option in SCHEDULE_OPTIONS
                 }
             )
-            return self._finish_options()
+            return await self._pricing_or_finish()
 
         return self.async_show_form(
             step_id="schedules",
@@ -380,7 +384,9 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             options.pop(CONF_RESET_SCHEDULES, None)
             for option in SCHEDULE_OPTIONS:
                 options.pop(option, None)
-            return self.async_create_entry(title="", data=options)
+            self._pending_options = options
+            self._restore_schedules = True
+            return await self._pricing_or_finish()
 
         return self.async_show_form(
             step_id="reset_schedules",
@@ -389,9 +395,150 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             ),
         )
 
+    async def _pricing_or_finish(self):
+        if self._pending_options.get("configure_pricing"):
+            return await self.async_step_pricing()
+        return self._finish_options()
+
+    async def async_step_pricing(self, user_input=None):
+        """Select existing HDO entities; retain all original entities unchanged."""
+        from homeassistant.helpers import selector
+
+        keys = (
+            "pricing_enabled",
+            "dynamic_pricing",
+            "include_standing_fees",
+            "distribution_rate",
+            "breaker_amperes",
+            "breaker_phases",
+            "hdo_entity",
+            "hdo_schedule_entity",
+            "hdo_valid_entity",
+            "import_energy_entity",
+            "annual_import_kwh",
+        )
+        errors = {}
+        if user_input is not None:
+            for key in ("breaker_amperes", "annual_import_kwh"):
+                value = finite_number(user_input.get(key))
+                if (
+                    value is None
+                    or value < 0
+                    or (key == "breaker_amperes" and value == 0)
+                ):
+                    errors[key] = "invalid_price"
+            if user_input["pricing_enabled"]:
+                for key in ("hdo_entity", "hdo_schedule_entity", "hdo_valid_entity"):
+                    if not user_input.get(key) or not self.hass.states.get(
+                        user_input[key]
+                    ):
+                        errors[key] = "missing_entity"
+                meter = user_input.get("import_energy_entity")
+                if meter:
+                    state = self.hass.states.get(meter)
+                    if state is None or state.attributes.get(
+                        "unit_of_measurement"
+                    ) not in ("Wh", "kWh", "MWh"):
+                        errors["import_energy_entity"] = "invalid_energy_entity"
+            if not errors:
+                self._pending_options.update(
+                    {key: user_input.get(key, PROFILE_DEFAULTS[key]) for key in keys}
+                )
+                return await self.async_step_price_rates()
+        schema = {}
+        for key in keys:
+            default = _option_default(
+                self._config_entry, user_input, key, PROFILE_DEFAULTS[key]
+            )
+            if key.endswith("entity"):
+                if not default:
+                    prefixes = {
+                        "hdo_entity": "binary_sensor.cez_hdo_lowtariffactive_",
+                        "hdo_schedule_entity": "sensor.cez_hdo_schedule_",
+                        "hdo_valid_entity": "binary_sensor.cez_hdo_data_valid_",
+                    }
+                    candidates = [
+                        state.entity_id
+                        for state in self.hass.states.async_all()
+                        if (
+                            key in prefixes
+                            and state.entity_id.startswith(prefixes[key])
+                        )
+                        or (
+                            key == "import_energy_entity"
+                            and "total_energy_import" in state.entity_id
+                            and state.attributes.get("device_class") == "energy"
+                        )
+                    ]
+                    if len(candidates) == 1:
+                        default = candidates[0]
+                domain = (
+                    "binary_sensor"
+                    if key in ("hdo_entity", "hdo_valid_entity")
+                    else "sensor"
+                )
+                schema[
+                    vol.Optional(
+                        key, description={"suggested_value": default} if default else {}
+                    )
+                ] = selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain=domain)
+                )
+            elif isinstance(PROFILE_DEFAULTS[key], bool):
+                schema[vol.Required(key, default=default)] = bool
+            elif key == "distribution_rate":
+                schema[vol.Required(key, default=default)] = str
+            elif key == "breaker_phases":
+                schema[vol.Required(key, default=default)] = vol.All(
+                    vol.Coerce(int), vol.In((1, 3))
+                )
+            else:
+                schema[vol.Required(key, default=default)] = vol.All(
+                    vol.Coerce(float), vol.Range(min=0)
+                )
+        return self.async_show_form(
+            step_id="pricing", data_schema=vol.Schema(schema), errors=errors
+        )
+
+    async def async_step_price_rates(self, user_input=None):
+        """All component prices include VAT and are freely editable."""
+        keys = [
+            k
+            for k, v in PROFILE_DEFAULTS.items()
+            if isinstance(v, float) and k != "annual_import_kwh"
+        ]
+        errors = {}
+        if user_input is not None:
+            errors = {
+                k: "invalid_price"
+                for k in keys
+                if finite_number(user_input.get(k)) is None or float(user_input[k]) < 0
+            }
+            if not errors:
+                self._pending_options.update({k: float(user_input[k]) for k in keys})
+                return self._finish_options()
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    k,
+                    default=_option_default(
+                        self._config_entry, user_input, k, PROFILE_DEFAULTS[k]
+                    ),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0))
+                for k in keys
+            }
+        )
+        return self.async_show_form(
+            step_id="price_rates", data_schema=schema, errors=errors
+        )
+
     def _finish_options(self):
         """Merge submitted values with existing options and finish the flow."""
         options = dict(self._config_entry.options)
         options.update(self._pending_options)
         options.pop(CONF_RESET_SCHEDULES, None)
+        options.pop("configure_pricing", None)
+        if self._restore_schedules:
+            for option in SCHEDULE_OPTIONS:
+                options.pop(option, None)
         return self.async_create_entry(title="", data=options)

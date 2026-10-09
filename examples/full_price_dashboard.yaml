@@ -1,0 +1,59 @@
+# New standalone view; do not replace the existing ČEZ Dynamic Tariff view.
+title: Cena elektřiny a úspory
+path: cez-electricity-costs
+icon: mdi:cash-clock
+cards:
+  - type: markdown
+    content: >-
+      ## Cena nakupované elektřiny
+      Ceny obsahují DPH, distribuci, daň a další proměnné složky.
+      Stálé platby jsou zobrazené zvlášť. Úspory se počítají od zapnutí sledování.
+  - type: entities
+    title: Dnešní náklady
+    entities:
+      - sensor.cez_dynamic_tariff_daily_cost
+      - sensor.cez_dynamic_tariff_daily_fixed_cost
+      - sensor.cez_dynamic_tariff_daily_savings
+  - type: entities
+    title: Aktuální cena a obě varianty
+    entities:
+      - entity: sensor.cez_dynamic_tariff_total_price
+        name: Cena další odebrané kWh
+      - entity: sensor.cez_dynamic_tariff_price_with_dynamic
+        name: S Dynamickým tarifem
+      - entity: sensor.cez_dynamic_tariff_price_without_dynamic
+        name: Bez Dynamického tarifu
+      - entity: sensor.cez_dynamic_tariff_monthly_fixed_cost
+        name: Stálé platby za měsíc
+      - entity: sensor.cez_dynamic_tariff_allocated_price
+        name: Odhad ceny kWh včetně stálých plateb
+  - type: entities
+    title: Výhled do konce zítřka
+    entities:
+      - sensor.cez_dynamic_tariff_price_forecast
+      - sensor.cez_dynamic_tariff_minimum_price
+      - sensor.cez_dynamic_tariff_best_price_start
+      - sensor.cez_dynamic_tariff_next_price_change
+  - type: entities
+    title: Náklady a úspory od zapnutí
+    entities:
+      - sensor.cez_dynamic_tariff_actual_cost
+      - sensor.cez_dynamic_tariff_total_cost
+      - sensor.cez_dynamic_tariff_realized_savings
+      - sensor.cez_dynamic_tariff_dynamic_savings
+      - sensor.cez_dynamic_tariff_potential_savings
+      - sensor.cez_dynamic_tariff_unpriced_energy
+  - type: markdown
+    content: >-
+      **Dosažená úspora** porovnává skutečný odběr se stejným odběrem bez dynamických
+      změn ceny. Záporná hodnota znamená příplatek. **Teoretická další úspora**
+      předpokládá přesun veškerého odběru do nejlevnějšího známého času;
+      možnosti zařízení ani ztráty baterie nejsou zohledněné.
+  - type: history-graph
+    title: Srovnání cen za posledních 24 hodin
+    hours_to_show: 24
+    entities:
+      - entity: sensor.cez_dynamic_tariff_price_with_dynamic
+        name: S dynamikou
+      - entity: sensor.cez_dynamic_tariff_price_without_dynamic
+        name: Bez dynamiky

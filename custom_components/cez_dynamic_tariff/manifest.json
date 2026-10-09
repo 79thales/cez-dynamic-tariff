@@ -13,5 +13,5 @@
     "holidays>=0.106"
   ],
   "single_config_entry": true,
-  "version": "0.5.1"
+  "version": "1.0.0"
 }
