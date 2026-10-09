@@ -2,3 +2,4 @@
 tzdata
 ruff
 coverage
+pypdf==6.19.0

@@ -16,3 +16,5 @@ dist/
 build/
 .test-deps/
 tmp/
+output/screenshots/
+output/analysis/

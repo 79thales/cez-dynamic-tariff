@@ -5,13 +5,15 @@
     "@79thales"
   ],
   "config_flow": true,
+  "dependencies": ["file_upload"],
   "documentation": "https://github.com/79thales/cez-dynamic-tariff#readme",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/79thales/cez-dynamic-tariff/issues",
   "requirements": [
-    "holidays>=0.106"
+    "holidays>=0.106",
+    "pypdf==6.19.0"
   ],
   "single_config_entry": true,
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

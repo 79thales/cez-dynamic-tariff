@@ -87,6 +87,7 @@ jobs:
           pytest-homeassistant-custom-component==${{ matrix.test_plugin }}
           pytest-cov
           "${{ matrix.holidays }}"
+          "pypdf==6.19.0"
 
       - name: Run real Home Assistant lifecycle tests
         run: >-

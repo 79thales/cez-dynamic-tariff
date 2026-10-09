@@ -1,8 +1,36 @@
 # Changelog
 
+## 1.1.0 – 2026-10-09
+
+### Čeština
+
+**Rozšíření výrazné aktualizace 1.0.0 o načítání ceníků ČEZ.**
+
+- Nová volba **Importovat ceník ČEZ z PDF** v nastavení integrace: nahrání souboru nebo přímý HTTPS odkaz na PDF na `www.cez.cz`.
+- Rozpoznání sloupce distribuční sazby a platby pro zvolený jistič, obchodních cen VT/NT, distribuce, daně, systémových služeb, stálých plateb a POZE. Částky s DPH se převádějí z Kč/MWh na Kč/kWh.
+- Před uložením se zobrazí editovatelná kontrola všech částek, zdroj a účinnost. Uloží se také otisk PDF. Import zachovává původní entity, základní obchodní cenu, rozvrhy a nastavení HDO. Historické náklady se nepřepočítávají.
+- Podporovaný je standardní textový ceník domácností ČEZ Prodej / ČEZ Distribuce s jedním cenovým obdobím a 21 % DPH. Skeny, nejednoznačné tabulky, chybějící položky, neshodné součty a ceníky s budoucí účinností se odmítají bez změny cen. Při nenulovém POZE podle jističe je nutný roční odběr pro odhad efektivní sazby a následné roční vyrovnání.
+- Závislost nového cenového profilu na [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce): používá existující stav NT/VT, rozvrh a platnost. ČEZ HDO se nemění ani neforkuje. Původní funkce Dynamického tarifu zůstávají samostatné.
+- Import se zpracovává lokálně v Home Assistantu, bez odesílání PDF do externích AI služeb. Nové závislosti: `file_upload` a `pypdf==6.19.0`.
+- Testy ověřují rozpoznání cen a jističe, DPH a jednotky, kontrolu součtů, potvrzení před uložením, zachování starých nastavení a omezení stahování.
+
+### English
+
+**Extends the major 1.0.0 update with ČEZ PDF price-list imports.**
+
+- Integration options can now import an uploaded PDF or a direct HTTPS PDF URL on `www.cez.cz`.
+- Reads the selected distribution-rate column and breaker fee, VT/NT trading and distribution prices, tax, system services, standing charges and POZE. VAT-inclusive CZK/MWh is converted to CZK/kWh.
+- Editable review of every rate, source and effective dates before saving; the PDF digest is retained. Original entities, base trading price, schedules and HDO settings are preserved. Historical costs are not recalculated.
+- Supports the standard single-period text-based ČEZ Prodej / ČEZ Distribuce household table with 21% VAT. Scans, ambiguous tables, missing cells, inconsistent totals and future-effective lists are rejected without changing rates. Nonzero capacity POZE requires an annual-import estimate for an effective rate, with annual reconciliation.
+- Full pricing depends on the installed [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce), reusing public NT/VT, schedule and validity states without modifying or forking it. Original Dynamic Tariff functions remain independent.
+- PDF parsing is local to Home Assistant; no PDF is sent to external AI services. Added dependencies: `file_upload` and `pypdf==6.19.0`.
+- Tests cover rate/breaker recognition, VAT and units, totals, confirmation before saving, preservation of existing settings and restricted downloads.
+
 ## 1.0.0 – 2026-10-09
 
 ### Čeština
+
+**Výrazná hlavní aktualizace:** plná cena elektřiny, náklady a úspory. Nový cenový profil vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce) pro stav NT/VT, rozvrh a platnost dat. Původní funkce Dynamického tarifu fungují samostatně.
 
 - Volitelný profil D57d / 3×25 A pro celkovou cenu včetně DPH, distribuce a regulovaných složek.
 - Napojení na veřejné entity existující integrace ČEZ HDO bez jejího forku nebo změn.
@@ -13,6 +41,8 @@
 - Původních 21 entit zachováno; cenový profil přidává 18 nových senzorů.
 
 ### English
+
+**Major update:** full electricity pricing, costs and savings. The new price profile requires an installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce) for NT/VT state, schedule and data validity. Original Dynamic Tariff functions remain independent.
 
 - Optional VAT-inclusive full electricity pricing with distribution, tax and regulated charges; a D57d / 3×25 A preset from the 30 January 2026 ČEZ two-year promotion price list.
 - Reuses public state, validity and schedule entities of the installed ČEZ HDO integration, without forking or modifying it.

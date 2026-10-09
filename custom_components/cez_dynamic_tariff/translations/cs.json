@@ -35,12 +35,14 @@
           "base_price_kwh": "Základní obchodní cena (Kč/kWh)",
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
           "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
-          "configure_pricing": "Nastavit celkovou cenu a úspory"
+          "configure_pricing": "Nastavit celkovou cenu a úspory",
+          "import_price_list": "Importovat ceník ČEZ z PDF"
         },
         "data_description": {
           "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
           "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu.",
-          "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné."
+          "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné.",
+          "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce."
         }
       },
       "thresholds": {
@@ -119,6 +121,40 @@
           "other_kwh": "Ostatní platby podle odběru (Kč/kWh)",
           "other_monthly": "Ostatní stálé platby (Kč/měsíc)"
         }
+      },
+      "price_list": {
+        "title": "Načíst ceník ČEZ",
+        "description": "Nahrajte PDF nebo zadejte přímý HTTPS odkaz na PDF z www.cez.cz (pouze jeden zdroj). Podporován je standardní ceník ČEZ Prodej pro domácnosti na území ČEZ Distribuce s jedním cenovým obdobím a cenami včetně 21 % DPH. Nejvýše 5 MB a 6 stran. Skeny a odlišné tabulky se odmítnou. Ceny se ještě neuloží; následuje kontrola. Změna je účinná při uložení, ceník s budoucí účinností se odmítne.",
+        "data": {
+          "price_list_file": "PDF ceníku",
+          "price_list_url": "HTTPS odkaz na PDF ČEZ",
+          "distribution_rate": "Distribuční sazba",
+          "breaker_amperes": "Hodnota jističe (A)",
+          "breaker_phases": "Počet fází jističe",
+          "annual_import_kwh": "Odhad ročního odběru (kWh; 0 = nezadaný)"
+        },
+        "data_description": {
+          "annual_import_kwh": "Při nenulové platbě POZE podle jističe je nutný pro odhad efektivní sazby. Roční odhad není konečné vyúčtování."
+        }
+      },
+      "price_list_review": {
+        "title": "Kontrola načteného ceníku",
+        "description": "Zdroj: {source}\n\nSazba {rate}, jistič {breaker}. Obchodní ceny od {trade_effective}, distribuční od {distribution_effective}. POZE podle odhadu roční spotřeby (yes = ano, no = ne): {poze_estimated}.\n\nZkontrolujte všechny částky včetně DPH; Kč/MWh byly převedeny na Kč/kWh. Můžete je opravit. Ostatní poplatky zůstávají z původního profilu. Při nenulovém POZE je efektivní sazba odhadem vyžadujícím roční vyrovnání. Potvrzením se nový profil použije od této chvíle; historie se nepřepočítá a původní obchodní senzor zůstane stejný.",
+        "data": {
+          "trade_vt": "Obchodní cena VT (Kč/kWh)",
+          "trade_nt": "Obchodní cena NT (Kč/kWh)",
+          "distribution_vt": "Distribuce VT (Kč/kWh)",
+          "distribution_nt": "Distribuce NT (Kč/kWh)",
+          "electricity_tax": "Daň z elektřiny (Kč/kWh)",
+          "system_services": "Systémové služby (Kč/kWh)",
+          "poze_kwh": "Efektivní POZE (Kč/kWh)",
+          "supplier_monthly": "Stálá platba dodavateli (Kč/měsíc)",
+          "breaker_monthly": "Platba za jistič (Kč/měsíc)",
+          "infrastructure_monthly": "Nesíťová infrastruktura (Kč/měsíc)",
+          "other_kwh": "Ostatní platby podle odběru (Kč/kWh)",
+          "other_monthly": "Ostatní stálé platby (Kč/měsíc)",
+          "confirm_price_list": "Zkontroloval(a) jsem částky a chci je nyní použít"
+        }
       }
     },
     "error": {
@@ -129,7 +165,21 @@
       "confirm_reset": "Potvrď, že chceš obnovit všechny výchozí rozvrhy projektu.",
       "missing_entity": "Vyberte existující entitu.",
       "invalid_price": "Zadejte konečné nezáporné číslo.",
-      "invalid_energy_entity": "Vyberte kumulativní odběr ze sítě v Wh, kWh nebo MWh."
+      "invalid_energy_entity": "Vyberte kumulativní odběr ze sítě v Wh, kWh nebo MWh.",
+      "choose_one_price_list_source": "Vyberte právě jeden zdroj: PDF soubor nebo HTTPS odkaz.",
+      "invalid_price_list_url": "Použijte přímý HTTPS odkaz na PDF z cez.cz nebo www.cez.cz.",
+      "invalid_price_list_pdf": "Soubor není čitelné nešifrované PDF ceníku ČEZ. Nahrajte jej znovu.",
+      "price_list_too_large": "PDF překračuje limit 5 MB.",
+      "cannot_download_price_list": "PDF se nepodařilo stáhnout z ČEZ. Stáhněte jej do počítače a nahrajte jako soubor.",
+      "unsupported_price_list": "Nepodporovaný ceník nebo formát tabulky. Podporujeme standardní textový ceník domácností ČEZ Prodej / ČEZ Distribuce s 21 % DPH. Použijte ruční zadání.",
+      "ambiguous_price_list": "Ceník má více cenových tabulek nebo nejednoznačný formát. Vyberte ceník pro jediné období, případně zadejte ceny ručně.",
+      "rate_not_in_price_list": "Zvolená distribuční sazba není v ceníku.",
+      "incomplete_price_list": "Pro tuto sazbu a jistič nelze přečíst všechny složky. Ceny nebyly změněny; použijte ruční zadání.",
+      "inconsistent_price_list": "Načtené složky nesouhlasí se souhrnnou cenou ČEZ. Ceny nebyly změněny.",
+      "invalid_breaker": "Jistič musí mít kladný celočíselný proud a 1 nebo 3 fáze.",
+      "poze_requires_annual_import": "Ceník má nenulové POZE podle jističe. Zadejte kladný roční odběr pro odhad efektivní sazby.",
+      "future_price_list": "Ceník ještě není účinný. Znovu jej importujte od data účinnosti; dnešní ceny se nemění.",
+      "confirm_price_list": "Před uložením potvrďte kontrolu načtených částek."
     }
   },
   "entity": {

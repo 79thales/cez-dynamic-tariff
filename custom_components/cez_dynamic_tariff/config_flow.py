@@ -129,6 +129,7 @@ def _general_schema(config_entry, user_input=None) -> vol.Schema:
                 ),
             ): bool,
             vol.Required("configure_pricing", default=False): bool,
+            vol.Required("import_price_list", default=False): bool,
         }
     )
 
@@ -288,10 +289,16 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         self._config_entry = config_entry
         self._pending_options = {}
         self._restore_schedules = False
+        self._price_list_info = None
 
     async def async_step_init(self, user_input=None):
         """Configure general tariff options."""
         if user_input is not None:
+            if user_input.get("import_price_list"):
+                # Import changes only new price-profile values. Original entity
+                # settings and schedules must remain exactly as saved.
+                self._pending_options = {}
+                return await self.async_step_price_list()
             self._pending_options = {
                 CONF_BASE_PRICE_KWH: float(user_input[CONF_BASE_PRICE_KWH]),
                 CONF_INCLUDE_HOLIDAYS: bool(user_input[CONF_INCLUDE_HOLIDAYS]),
@@ -500,6 +507,105 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             step_id="pricing", data_schema=vol.Schema(schema), errors=errors
         )
 
+    async def async_step_price_list(self, user_input=None):
+        """Upload a ČEZ PDF or read its public HTTPS URL, then review rates."""
+        from homeassistant.helpers import selector
+        from homeassistant.util import dt as dt_util
+
+        from .price_list import PriceListError
+        from .price_list_import import async_import_price_list
+
+        errors = {}
+        if user_input is not None:
+            has_file = bool(user_input.get("price_list_file"))
+            has_url = bool(str(user_input.get("price_list_url", "")).strip())
+            annual = finite_number(user_input["annual_import_kwh"])
+            if annual is None or annual < 0:
+                errors["annual_import_kwh"] = "invalid_price"
+            elif has_file == has_url:
+                errors["base"] = "choose_one_price_list_source"
+            else:
+                try:
+                    imported, source = await async_import_price_list(
+                        self.hass, user_input
+                    )
+                    if (
+                        max(imported.trade_effective, imported.distribution_effective)
+                        > dt_util.now().date().isoformat()
+                    ):
+                        raise PriceListError("future_price_list")
+                except PriceListError as err:
+                    errors["base"] = str(err)
+                else:
+                    self._price_list_info = {
+                        "source": source,
+                        "rate": user_input["distribution_rate"],
+                        "breaker": f"{user_input['breaker_phases']}×{user_input['breaker_amperes']} A",
+                        "trade_effective": imported.trade_effective,
+                        "distribution_effective": imported.distribution_effective,
+                        "poze_estimated": "yes" if imported.poze_estimated else "no",
+                    }
+                    self._pending_options.update(imported.rates)
+                    self._pending_options.update(
+                        {
+                            k: user_input[k]
+                            for k in (
+                                "distribution_rate",
+                                "breaker_amperes",
+                                "breaker_phases",
+                                "annual_import_kwh",
+                            )
+                        }
+                    )
+                    self._pending_options.update(
+                        {
+                            "price_list_source": source,
+                            "price_list_sha256": imported.digest,
+                            "price_list_trade_effective": imported.trade_effective,
+                            "price_list_distribution_effective": imported.distribution_effective,
+                            "price_list_imported_at": dt_util.utcnow().isoformat(),
+                            "price_list_poze_estimated": imported.poze_estimated,
+                        }
+                    )
+                    return await self.async_step_price_list_review()
+        schema = {
+            vol.Optional("price_list_file"): selector.FileSelector(
+                selector.FileSelectorConfig(accept=".pdf,application/pdf")
+            ),
+            vol.Optional("price_list_url"): str,
+            vol.Required(
+                "distribution_rate",
+                default=_option_default(
+                    self._config_entry, user_input, "distribution_rate", "D57d"
+                ),
+            ): str,
+            vol.Required(
+                "breaker_amperes",
+                default=_option_default(
+                    self._config_entry, user_input, "breaker_amperes", 25
+                ),
+            ): vol.All(vol.Coerce(int), vol.Range(min=1, max=1000)),
+            vol.Required(
+                "breaker_phases",
+                default=_option_default(
+                    self._config_entry, user_input, "breaker_phases", 3
+                ),
+            ): vol.All(vol.Coerce(int), vol.In((1, 3))),
+            vol.Required(
+                "annual_import_kwh",
+                default=_option_default(
+                    self._config_entry, user_input, "annual_import_kwh", 0.0
+                ),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0)),
+        }
+        return self.async_show_form(
+            step_id="price_list", data_schema=vol.Schema(schema), errors=errors
+        )
+
+    async def async_step_price_list_review(self, user_input=None):
+        """Confirm/edit the parsed VAT-inclusive rates before saving."""
+        return await self.async_step_price_rates(user_input)
+
     async def async_step_price_rates(self, user_input=None):
         """All component prices include VAT and are freely editable."""
         keys = [
@@ -515,21 +621,58 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 if finite_number(user_input.get(k)) is None or float(user_input[k]) < 0
             }
             if not errors:
-                self._pending_options.update({k: float(user_input[k]) for k in keys})
-                return self._finish_options()
+                if self._price_list_info and not user_input.get("confirm_price_list"):
+                    errors["base"] = "confirm_price_list"
+                else:
+                    self._pending_options.update(
+                        {k: float(user_input[k]) for k in keys}
+                    )
+                    if self._price_list_info:
+                        self._pending_options["price_list_rates_edited"] = any(
+                            float(user_input[k])
+                            != self._pending_imported_rates.get(k, float(user_input[k]))
+                            for k in keys
+                        )
+                    elif self._config_entry.options.get("price_list_sha256"):
+                        self._pending_options["price_list_rates_edited"] = bool(
+                            self._config_entry.options.get("price_list_rates_edited")
+                        ) or any(
+                            float(user_input[k])
+                            != self._config_entry.options.get(k, PROFILE_DEFAULTS[k])
+                            for k in keys
+                        )
+                    return self._finish_options()
+        if self._price_list_info and not hasattr(self, "_pending_imported_rates"):
+            self._pending_imported_rates = {
+                k: self._pending_options[k] for k in keys if k in self._pending_options
+            }
         schema = vol.Schema(
             {
                 vol.Required(
                     k,
-                    default=_option_default(
-                        self._config_entry, user_input, k, PROFILE_DEFAULTS[k]
+                    default=(
+                        user_input[k]
+                        if user_input and k in user_input
+                        else self._pending_options.get(
+                            k,
+                            _option_default(
+                                self._config_entry, None, k, PROFILE_DEFAULTS[k]
+                            ),
+                        )
                     ),
                 ): vol.All(vol.Coerce(float), vol.Range(min=0))
                 for k in keys
             }
         )
+        if self._price_list_info:
+            schema = schema.extend(
+                {vol.Required("confirm_price_list", default=False): bool}
+            )
         return self.async_show_form(
-            step_id="price_rates", data_schema=schema, errors=errors
+            step_id="price_list_review" if self._price_list_info else "price_rates",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=self._price_list_info or {},
         )
 
     def _finish_options(self):

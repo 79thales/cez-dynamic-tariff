@@ -35,12 +35,14 @@
           "base_price_kwh": "Base trading price (CZK/kWh)",
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
           "reset_schedules": "Restore bundled default schedules",
-          "configure_pricing": "Configure full prices and savings"
+          "configure_pricing": "Configure full prices and savings",
+          "import_price_list": "Import a ČEZ price list PDF"
         },
         "data_description": {
           "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
           "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults.",
-          "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning."
+          "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning.",
+          "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first."
         }
       },
       "thresholds": {
@@ -119,6 +121,40 @@
           "other_kwh": "Other consumption charges (CZK/kWh)",
           "other_monthly": "Other standing fees (CZK/month)"
         }
+      },
+      "price_list": {
+        "title": "Read a ČEZ price list",
+        "description": "Upload a PDF OR enter its direct HTTPS PDF URL on www.cez.cz. Supports the standard ČEZ Prodej household table for ČEZ Distribuce, one price period, including 21% VAT. Maximum 5 MB and 6 pages. Scans and other layouts are rejected. Rates are reviewed before saving and apply immediately; future-effective lists are rejected.",
+        "data": {
+          "price_list_file": "Price list PDF",
+          "price_list_url": "ČEZ PDF HTTPS URL",
+          "distribution_rate": "Distribution rate",
+          "breaker_amperes": "Circuit breaker current (A)",
+          "breaker_phases": "Circuit breaker phases",
+          "annual_import_kwh": "Estimated annual import (kWh; 0 = unset)"
+        },
+        "data_description": {
+          "annual_import_kwh": "Required to estimate the effective POZE rate when its capacity fee is nonzero. The annual estimate is not a final bill."
+        }
+      },
+      "price_list_review": {
+        "title": "Review imported price list",
+        "description": "Source: {source}\n\nRate {rate}, breaker {breaker}. Trading prices effective {trade_effective}; distribution effective {distribution_effective}. Estimated POZE: {poze_estimated}.\n\nReview every VAT-inclusive amount; CZK/MWh was converted to CZK/kWh. You can edit the rates. Other charges retain previous profile values. Nonzero POZE is an estimate requiring annual reconciliation. Confirming applies the profile now, without recalculating history or changing the original trading-price sensor.",
+        "data": {
+          "trade_vt": "Trading price VT (CZK/kWh)",
+          "trade_nt": "Trading price NT (CZK/kWh)",
+          "distribution_vt": "Distribution VT (CZK/kWh)",
+          "distribution_nt": "Distribution NT (CZK/kWh)",
+          "electricity_tax": "Electricity tax (CZK/kWh)",
+          "system_services": "System services (CZK/kWh)",
+          "poze_kwh": "Effective POZE (CZK/kWh)",
+          "supplier_monthly": "Supplier standing fee (CZK/month)",
+          "breaker_monthly": "Circuit breaker fee (CZK/month)",
+          "infrastructure_monthly": "Non-grid infrastructure (CZK/month)",
+          "other_kwh": "Other consumption charges (CZK/kWh)",
+          "other_monthly": "Other standing fees (CZK/month)",
+          "confirm_price_list": "I reviewed the rates and want to apply them now"
+        }
       }
     },
     "error": {
@@ -129,7 +165,21 @@
       "confirm_reset": "Confirm that you want to restore all bundled default schedules.",
       "missing_entity": "Select an existing entity.",
       "invalid_price": "Enter a finite nonnegative number.",
-      "invalid_energy_entity": "Select cumulative grid import in Wh, kWh or MWh."
+      "invalid_energy_entity": "Select cumulative grid import in Wh, kWh or MWh.",
+      "choose_one_price_list_source": "Choose exactly one source: an uploaded PDF or HTTPS URL.",
+      "invalid_price_list_url": "Use a direct HTTPS PDF URL on cez.cz or www.cez.cz.",
+      "invalid_price_list_pdf": "The file is not a readable unencrypted ČEZ price-list PDF. Upload it again.",
+      "price_list_too_large": "The PDF exceeds 5 MB.",
+      "cannot_download_price_list": "Cannot download the ČEZ PDF. Download it locally and upload the file.",
+      "unsupported_price_list": "Unsupported price list/table. Use a standard text-based ČEZ Prodej / ČEZ Distribuce household list with 21% VAT, or enter rates manually.",
+      "ambiguous_price_list": "Multiple price tables or ambiguous layout. Select a single-period list or enter rates manually.",
+      "rate_not_in_price_list": "The selected distribution rate is absent from the price list.",
+      "incomplete_price_list": "Some components cannot be read for this rate/breaker. No rates changed; enter them manually.",
+      "inconsistent_price_list": "Parsed components do not match ČEZ's published totals. No rates changed.",
+      "invalid_breaker": "Breaker current must be a positive integer, with 1 or 3 phases.",
+      "poze_requires_annual_import": "Nonzero capacity POZE requires a positive annual grid-import estimate.",
+      "future_price_list": "This price list is not yet effective. Import it on/after its effective date; current rates are unchanged.",
+      "confirm_price_list": "Confirm you reviewed the imported rates before saving."
     }
   },
   "entity": {

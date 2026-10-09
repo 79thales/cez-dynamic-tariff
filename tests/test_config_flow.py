@@ -26,7 +26,7 @@ def _load_config_flow_module():
     sys.modules["homeassistant"] = homeassistant
 
     class _FlowBase:
-        def async_show_form(self, *, step_id, data_schema, errors=None):
+        def async_show_form(self, *, step_id, data_schema, errors=None, description_placeholders=None):
             return {
                 "type": "form",
                 "step_id": step_id,

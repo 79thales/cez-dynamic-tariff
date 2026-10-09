@@ -61,6 +61,39 @@ pásem, která lze stále upravovat v původním nastavení.
    ze stejného zařízení a pro stejné odběrné místo jako elektroměr.
 6. Potvrdit částky z ceníku v kroku **Složky ceny včetně DPH**.
 
+### Aktualizace cen z PDF ČEZ (od 1.1.0)
+
+V **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff → Nastavit** zaškrtnout
+**Importovat ceník ČEZ z PDF**. Otevře se samostatný import, který zachová
+původní obchodní cenu, rozvrhy, nastavení HDO i ostatní volby.
+
+1. Nahrát PDF ceníku, nebo vložit přímý HTTPS odkaz na PDF na `www.cez.cz`.
+   Vybrat jediný zdroj, distribuční sazbu a jistič. Roční odběr se převezme
+   z uloženého profilu a lze jej upravit.
+2. Integrace načte ceny lokálně, vybere sloupec sazby a řádek jističe,
+   vezme ceny včetně DPH a převede Kč/MWh na Kč/kWh. Porovná složky se
+   souhrnnými jednotkovými cenami ČEZ.
+3. Zkontrolovat editovatelné částky v náhledu, zdroj a účinnost a potvrdit
+   jejich použití. **Teprve toto uložení změní nový cenový profil.**
+   Položky `other_kwh` a `other_monthly` se zachovají z předchozího profilu.
+   Původní senzor obchodní ceny zůstane nezměněný.
+
+Podporujeme standardní textovou tabulku ceníku ČEZ Prodej pro domácnosti
+na území ČEZ Distribuce s jedním cenovým obdobím, cenami včetně 21 % DPH,
+řádky 1–30 a dvoutarifní sazbou. Ověřeno na dodaném ceníku z 30. 1. 2026.
+Limit je 5 MB / 6 stran. Skeny, odlišné šablony, více cenových období,
+chybějící částky a neodpovídající součty odmítáme; použít ruční zadání.
+Import se použije od uložení a nepřepočítává minulou spotřebu.
+Ceníky s budoucí účinností je nutné importovat až od účinnosti.
+Nenulové POZE podle jističe vyžaduje kladný odhad ročního odběru;
+efektivní sazba je nižší z kapacitního limitu přepočteného na odhad odběru
+a sazby podle spotřeby. Není konečným vyúčtováním a vyžaduje roční vyrovnání.
+
+PDF neodesíláme do externích AI služeb. Nahraný soubor se po přečtení odstraní
+z dočasného úložiště HA; uloží se pouze částky, zdroj, data účinnosti a SHA-256.
+HTTPS stahování ověřuje doménu i každé přesměrování. Metadatová položka
+`price_list` u nových senzorů ukazuje původ cen a případné opravy po importu.
+
 | Účel | Ověřená entita |
 |---|---|
 | Stav nízkého tarifu EVV3 | `binary_sensor.cez_hdo_lowtariffactive_hdo_evv3` |

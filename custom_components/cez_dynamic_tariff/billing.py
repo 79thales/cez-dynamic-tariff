@@ -256,6 +256,18 @@ class ElectricityBilling:
                 "breaker_amperes": self.values["breaker_amperes"],
                 "breaker_phases": self.values["breaker_phases"],
                 "vat_included": True,
+                "price_list": {
+                    key.removeprefix("price_list_"): self.coordinator._option(key, None)
+                    for key in (
+                        "price_list_source",
+                        "price_list_sha256",
+                        "price_list_trade_effective",
+                        "price_list_distribution_effective",
+                        "price_list_imported_at",
+                        "price_list_poze_estimated",
+                        "price_list_rates_edited",
+                    )
+                },
                 "profile_revision": PROFILE_REVISION
                 if all(
                     self.values[k] == v
