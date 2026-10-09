@@ -18,6 +18,7 @@ from homeassistant.components.recorder.statistics import (
 
 from .accounting import CostLedger
 from .const import DOMAIN
+from .edc_source import income_statistic_id
 from .pricing import PriceProfile, finite_number, parse_hdo_schedule, price_timeline
 from .settlement import (
     SETTLEMENT_DEFAULTS,
@@ -70,15 +71,7 @@ class SettlementHistory:
         state = self.hass.states.get(entity) if entity else None
         # EDC exposes its existing financial Energy statistic. Prefer it over
         # multiplying shared kWh or summing receiver entities a second time.
-        return (
-            (
-                state.attributes.get("energy_revenue_statistic_id")
-                or state.attributes.get("hourly_statistic_id")
-                or entity
-            )
-            if state
-            else entity
-        )
+        return income_statistic_id(state, entity)
 
     def _read(self, now, start, revenue_id):
         meter = self.meter_id

@@ -152,7 +152,7 @@
       },
       "accounting": {
         "title": "Účetnictví a zúčtovací období",
-        "description": "Vyžaduje nastavenou plnou cenu a integraci ČEZ HDO. Nechte zdroj nákladů prázdný pro automatické použití již vypočtených nákladů této integrace. Vlastní zdroj musí obsahovat Kč pouze za odběr, bez stálých plateb; nepoužívejte starou nesprávnou fixní cenu. EDC zdroj může poskytovat atribut energy_revenue_statistic_id. Chybějící historie se nepovažuje za nulu.",
+        "description": "{energy_sharing_warning}\n\nVyžaduje nastavenou plnou cenu a integraci ČEZ HDO. Nechte zdroj nákladů prázdný pro automatické použití již vypočtených nákladů této integrace. Vlastní zdroj musí obsahovat Kč pouze za odběr, bez stálých plateb; nepoužívejte starou nesprávnou fixní cenu. EDC zdroj může poskytovat atribut energy_revenue_statistic_id. Chybějící historie se nepovažuje za nulu.",
         "data": {
           "accounting_enabled": "Zapnout účetnictví a zpětný dopočet",
           "billing_start": "Začátek zúčtovacího období",
@@ -294,7 +294,9 @@
       "pricing_required": "Nejprve nastavte a zapněte plnou cenu.",
       "invalid_monetary_entity": "Vyberte existující senzor v CZK nebo EDC zdroj peněžních statistik.",
       "invalid_advances": "Zadejte nezápornou zálohu. Zaplaceno nesmí přesáhnout částku zálohy; při společné částce musí být vyplněná společná záloha.",
-      "invalid_accounting_history": "Ověřte datum v tomto období, odběr v kWh a náklady v Kč. Neznámé údaje nenahrazujte nulou."
+      "invalid_accounting_history": "Ověřte datum v tomto období, odběr v kWh a náklady v Kč. Neznámé údaje nenahrazujte nulou.",
+      "sharing_already_in_energy": "⚠️ Stejný příjem ze sdílení už je v panelu Energie vybraný jako celková kompenzace. Do Energie použijte náklady před odečtením sdílení; čisté náklady by příjem odečetly dvakrát. Přepínač níže odečítá příjem pouze v samostatném účetnictví ČEZ. Nastavení Energie se nemění.",
+      "energy_preferences_unavailable": "⚠️ Nastavení kompenzace v panelu Energie se nepodařilo ověřit. Při použití příjmu v Energii zadávejte náklady před sdílením, aby se příjem neodečetl dvakrát."
     }
   },
   "entity": {

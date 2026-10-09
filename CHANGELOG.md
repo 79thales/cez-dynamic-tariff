@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.7 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Další doplnění výrazného updatu účetnictví: nastavení zdroje příjmu upozorní, když stejná peněžní statistika už slouží jako kompenzace v základním panelu Energie. Porovnává skutečné ID statistiky i při jiném názvu entity, podporuje staré i nové uspořádání konfigurace Energie.
+- Upozornění vysvětluje správné zapojení: do Energie patří náklady před odečtením sdílení, protože kompenzace se odečítá samostatně. Přepínač v ČEZ ovládá jeho vlastní účetnictví; příjem v obou oddělených přehledech je v pořádku. Upozornění neblokuje uložení a nemění výběr zdroje, platby ani konfiguraci Energie.
+- Nedostupné nastavení Energie se hlásí jako neověřené. Původní entity a jejich význam zůstávají stejné, již vypočtený příjem EDC se nepřepočítává.
+
+### English
+
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Continues the substantial Accounting update with a notice when the selected revenue statistic is already used as compensation in the standard Energy dashboard. Compares statistic identity across differently named entities and supports both legacy grid flows and unified grid preferences.
+- Explains that Energy import costs must be before sharing to avoid a second deduction. ČEZ's deduction switch controls its separate accounting; using revenue in both separate views is valid. The informational notice allows saving and does not change sources, payments or Energy settings.
+- Unavailable preferences are reported as unverified. Original entities and their meaning stay unchanged; existing EDC revenue is reused.
+
 ## 1.0.6 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

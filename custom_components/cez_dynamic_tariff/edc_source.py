@@ -1,6 +1,17 @@
 """Suggest the existing EDC monetary statistic, never a kWh or price sensor."""
 
 
+def income_statistic_id(state, entity_id):
+    """Use the same existing monetary history for accounting and Energy checks."""
+    if state is None:
+        return entity_id
+    return (
+        state.attributes.get("energy_revenue_statistic_id")
+        or state.attributes.get("hourly_statistic_id")
+        or entity_id
+    )
+
+
 def suggest_edc_income(states):
     candidates = [
         state

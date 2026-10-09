@@ -4,7 +4,8 @@
   "after_dependencies": [
     "recorder",
     "frontend",
-    "http"
+    "http",
+    "energy"
   ],
   "codeowners": [
     "@79thales"
@@ -22,5 +23,5 @@
     "pypdf==6.19.0"
   ],
   "single_config_entry": true,
-  "version": "1.0.6"
+  "version": "1.0.7"
 }

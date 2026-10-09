@@ -26,7 +26,9 @@ def _load_config_flow_module():
     sys.modules["homeassistant"] = homeassistant
 
     class _FlowBase:
-        def async_show_form(self, *, step_id, data_schema, errors=None, description_placeholders=None):
+        def async_show_form(
+            self, *, step_id, data_schema, errors=None, description_placeholders=None
+        ):
             return {
                 "type": "form",
                 "step_id": step_id,
@@ -82,7 +84,15 @@ def _load_config_flow_module():
     component_path = (
         Path(__file__).parents[1] / "custom_components" / "cez_dynamic_tariff"
     )
-    for module_basename in ("const", "schedule", "edc_source", "pricing", "settlement", "config_flow"):
+    for module_basename in (
+        "const",
+        "schedule",
+        "edc_source",
+        "energy_preferences",
+        "pricing",
+        "settlement",
+        "config_flow",
+    ):
         module_name = f"{package_name}.{module_basename}"
         spec = importlib.util.spec_from_file_location(
             module_name,

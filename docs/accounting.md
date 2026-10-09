@@ -76,6 +76,8 @@ Panel Energie počítá změnu peněžního součtu za vybraný den, týden, mě
 
 K nákladům na odběr použijte zdroj **před odečtením sdílení**; Energie odečte kompenzaci samostatně. Čistý náklad po sdílení spolu s touž kompenzací by příjem odečetl dvakrát. Ruční přepínač odečítání v účetnictví ČEZ řídí jeho vlastní přehledy a nemění konfiguraci panelu Energie. Upozornění na dostupnost dnešních dat zůstává důležité: EDC má zpoždění a den bez dosud importovaných údajů není potvrzenou nulou.
 
+Od **1.0.7** stránka **Nastavit → Období, tarif a zdroje spotřeby** automaticky upozorní, pokud navržený nebo vybraný příjem už je kompenzací v Energii. Kontroluje ID existující peněžní statistiky, včetně odkazu z diagnostické entity EDC. Upozornění neblokuje uložení: oba samostatné přehledy mohou příjem odečítat, ale vstup nákladů do Energie musí zůstat před sdílením. Při nedostupné konfiguraci není zdroj označený jako nepoužívaný; zobrazuje se neověřená kontrola. Konfigurace Energie se pouze čte.
+
 ## Ověřený odečet a předchozí vyúčtování
 
 Volitelný odečet dodavatele zadává kumulovaný odběr a kumulované náklady **včetně stálých plateb**, od začátku právě vybraného období do uvedeného dne. Tyto již spočítané hodnoty se převezmou; statistiky se přidávají až od následujícího dne. Při změně začátku období se starý odečet nepřenáší. Pokud vypnete stálé platby, jejich známá historická část se z převzatého nákladu odečte.

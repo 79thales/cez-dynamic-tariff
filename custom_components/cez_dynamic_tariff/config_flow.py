@@ -27,7 +27,8 @@ from .const import (
     DEFAULT_VERY_EXPENSIVE_THRESHOLD,
     DOMAIN,
 )
-from .edc_source import suggest_edc_income
+from .edc_source import income_statistic_id, suggest_edc_income
+from .energy_preferences import async_income_in_energy
 from .pricing import PROFILE_DEFAULTS, finite_number
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
 from .settlement import (
@@ -793,6 +794,28 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 return self._finish_options()
         schema = {}
         proposed_income = suggest_edc_income(self.hass.states.async_all("sensor"))
+        selected_income = _option_default(
+            self._config_entry, user_input, "shared_income_entity", ""
+        )
+        if not selected_income and user_input is None:
+            selected_income = proposed_income or ""
+        income_in_energy = await async_income_in_energy(
+            self.hass,
+            income_statistic_id(self.hass.states.get(selected_income), selected_income),
+        )
+        warning = ""
+        if income_in_energy is not False:
+            from homeassistant.helpers.translation import async_get_translations
+
+            translations = await async_get_translations(
+                self.hass, self.hass.config.language, "options", [DOMAIN]
+            )
+            key = (
+                "sharing_already_in_energy"
+                if income_in_energy
+                else "energy_preferences_unavailable"
+            )
+            warning = translations[f"component.{DOMAIN}.options.error.{key}"]
         for key in keys:
             value = _option_default(self._config_entry, user_input, key, defaults[key])
             if key == "shared_income_entity" and not value and user_input is None:
@@ -838,7 +861,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             else:
                 schema[marker] = bool
         return self.async_show_form(
-            step_id="accounting", data_schema=vol.Schema(schema), errors=errors
+            step_id="accounting",
+            data_schema=vol.Schema(schema),
+            errors=errors,
+            description_placeholders={"energy_sharing_warning": warning},
         )
 
     async def async_step_monthly_advances(self, user_input=None):

@@ -152,7 +152,7 @@
       },
       "accounting": {
         "title": "Accounting and billing period",
-        "description": "Requires full pricing and ČEZ HDO. Leave the cost source empty to reuse this integration's existing import costs automatically. A custom source must contain CZK for import only, without standing fees; do not select an obsolete fixed price. EDC sources can expose energy_revenue_statistic_id. Missing history is never zero.",
+        "description": "{energy_sharing_warning}\n\nRequires full pricing and ČEZ HDO. Leave the cost source empty to reuse this integration's existing import costs automatically. A custom source must contain CZK for import only, without standing fees; do not select an obsolete fixed price. EDC sources can expose energy_revenue_statistic_id. Missing history is never zero.",
         "data": {
           "accounting_enabled": "Enable accounting and historical backfill",
           "billing_start": "Billing period start",
@@ -294,7 +294,9 @@
       "pricing_required": "Configure and enable full pricing first.",
       "invalid_monetary_entity": "Select a CZK sensor or an EDC financial statistic source.",
       "invalid_advances": "Enter nonnegative advance amounts. Paid money cannot exceed the advance; common mode requires a common amount.",
-      "invalid_accounting_history": "Check the date within this period, imported kWh and costs in CZK. Do not replace unknown amounts with zero."
+      "invalid_accounting_history": "Check the date within this period, imported kWh and costs in CZK. Do not replace unknown amounts with zero.",
+      "sharing_already_in_energy": "⚠️ This sharing income is already selected as total compensation in Energy. Use import costs before sharing in Energy; net costs would deduct the income twice. The switch below deducts income only in the separate ČEZ accounting. Energy settings are unchanged.",
+      "energy_preferences_unavailable": "⚠️ Energy compensation settings could not be checked. If Energy uses this income, supply costs before sharing to avoid deducting the income twice."
     }
   },
   "entity": {
