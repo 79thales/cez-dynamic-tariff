@@ -11,7 +11,6 @@ from homeassistant.core import State
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.cez_dynamic_tariff.billing import ElectricityBilling
-from custom_components.cez_dynamic_tariff.config_flow import CezDynamicTariffOptionsFlow
 from custom_components.cez_dynamic_tariff.const import DOMAIN
 from custom_components.cez_dynamic_tariff.pricing import PROFILE_DEFAULTS, PriceProfile
 from custom_components.cez_dynamic_tariff.sensor import _invoice_price
@@ -370,11 +369,15 @@ async def test_accounting_options_preserve_original_values_and_unpaid_months(has
         "winter_workday_schedule": "00:00=-50",
     }
     entry = MockConfigEntry(domain=DOMAIN, data={}, options=old)
-    flow = CezDynamicTariffOptionsFlow(entry)
-    flow.hass = hass
-    first = await flow.async_step_init({"configure_accounting": True})
+    entry.add_to_hass(hass)
+    manager = hass.config_entries.options
+    first = await manager.async_init(entry.entry_id)
+    first = await manager.async_configure(
+        first["flow_id"], {"configure_accounting": True}
+    )
     assert first["step_id"] == "accounting"
-    result = await flow.async_step_accounting(
+    result = await manager.async_configure(
+        first["flow_id"],
         {
             "accounting_enabled": True,
             "billing_start": "2026-04-01",
@@ -384,7 +387,8 @@ async def test_accounting_options_preserve_original_values_and_unpaid_months(has
         }
     )
     assert result["step_id"] == "monthly_advances"
-    result = await flow.async_step_advances(
+    result = await manager.async_configure(
+        result["flow_id"],
         {
             "month_2_amount": 100,
             "month_2_paid": True,
@@ -393,7 +397,8 @@ async def test_accounting_options_preserve_original_values_and_unpaid_months(has
         }
     )
     assert result["step_id"] == "accounting_history"
-    result = await flow.async_step_accounting_history(
+    result = await manager.async_configure(
+        result["flow_id"],
         {
             "reference_energy": 0,
             "reference_cost": 0,

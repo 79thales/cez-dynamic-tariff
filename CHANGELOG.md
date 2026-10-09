@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.3 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Oprava ukládání měsíčních záloh v nové části Accounting. Home Assistant nyní správně otevře i odešle měsíční formulář; chyba „Unknown error occurred“ bránila zapnutí účetnictví a zpětného dopočtu.
+- Regresní ověření celého průchodu pomocí skutečného správce konfiguračních kroků Home Assistantu. Zachovává původní nastavení a rozlišuje nezadané, zaplacené a plánované měsíce.
+- Navazuje na výrazný update **ČEZ Dynamic Tariff & Accounting** ve verzi 1.0.2. Původní entity a jejich ID zůstávají zachovány.
+
+### English
+
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Fix monthly advance setup in Accounting: dispatch the monthly form through Home Assistant's flow manager. The previous “Unknown error occurred” prevented enabling accounting and historical backfill.
+- Regression coverage exercises the complete managed options flow, preserving existing settings and missing, paid and planned months.
+- Continues the substantial **ČEZ Dynamic Tariff & Accounting** update in 1.0.2 without changing original entities or their IDs.
+
 ## 1.0.2 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).** Plná cena, zpětné ocenění a cenový výhled používají její veřejné údaje NT/VT, rozvrh a platnost. Původní samostatné procentní senzory tuto závislost nemají.

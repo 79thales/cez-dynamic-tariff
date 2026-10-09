@@ -798,6 +798,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             step_id="accounting", data_schema=vol.Schema(schema), errors=errors
         )
 
+    async def async_step_monthly_advances(self, user_input=None):
+        """Dispatch the monthly form through Home Assistant's flow manager."""
+        return await self.async_step_advances(user_input)
+
     async def async_step_advances(self, user_input=None):
         """Annual aggregates or individually entered monthly paid/planned amounts."""
         import json
