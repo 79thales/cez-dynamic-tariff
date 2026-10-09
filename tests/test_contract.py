@@ -129,6 +129,7 @@ class PublicContractTests(unittest.TestCase):
             "super_cheap_now",
             "expensive_now",
             "very_expensive_now",
+            "advance_editor_available",
         }
         actual = _description_keys(
             "binary_sensor.py",
