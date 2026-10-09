@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.0.2 – 2026-10-09
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).** Plná cena, zpětné ocenění a cenový výhled používají její veřejné údaje NT/VT, rozvrh a platnost. Původní samostatné procentní senzory tuto závislost nemají.
+
+### Čeština
+
+**Výrazné rozšíření aktualizace 1.0.0: ČEZ Dynamic Tariff & Accounting.** Doména a všech 39 původních entit, jejich ID, unique ID a význam zůstávají zachovány. Účetnictví přidává 17 volitelných senzorů.
+
+- Nastavitelné zúčtovací období, výchozí 1. duben až 31. březen; zálohy jako úplný součet nebo jednotlivé měsíce se skutečným označením zaplacení.
+- Zpětný odběr používá existující opravené statistiky Recorderu. Již spočítané náklady se převezmou; chybějící se ocení jen při dostupném historickém HDO, cenách a smluvním datu aktivace. Dnešek se doplňuje od půlnoci pomocí existujících pětiminutových statistik, s veřejně uvedeným časem pokrytí. Žádné nové statistiky se do Recorderu neimportují a původní náklady se nepřepisují.
+- Rozpis odběru, denního podílu jističe a dalších stálých plateb, známých příjmů ze sdílení a čistých nákladů. Zahrnutí stálých plateb zůstává volitelné.
+- Ruční odečtení již vypočtené finanční statistiky EDC, včetně `energy_revenue_statistic_id`; bez druhého násobení sdílených kWh cenou a bez přičítání stejného příjmu vícekrát. Zpožděná data se nepřiřazují k dnešku.
+- Převzetí ověřeného odečtu dodavatele a předchozích vyúčtování bez přeocenění. Měsíční profil spotřeby používá úplné historické dny; chybějící měsíce mohou doplnit údaje ověřené faktury. Nastavení a soukromé finanční údaje se nezveřejňují v diagnostice.
+- Odhad celého období a přeplatku/nedoplatku odděluje zaplacené zálohy od plánovaných. Chybějící historie, ceníky a zálohy se nepovažují za nulu. Odhad budoucích nákladů používá sezónní odběr a průměr nynějšího dvoudenního výhledu; budoucí sdílení ani změny cen tím nejsou předpovězené.
+- Rozlišení finálního tarifu a tarifu na zkoušku. Na zkoušku účetnictví používá standardní fakturované NT/VT ceny a nezapočítává neověřenou budoucí vratku. ČEZ pro ni používá váženou obchodní cenu a celé zkušební období. Dynamická procenta se nikdy neaplikují na distribuci, daně ani stálé platby.
+- [Nastavení, formát historie a omezení odhadu](docs/accounting.md). ČEZ HDO se nemění ani neforkuje; původní integrace a účetnictví EDC se používají jako zdroje.
+
+### English
+
+**A substantial extension of the 1.0.0 update: ČEZ Dynamic Tariff & Accounting.** Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce) for public NT/VT schedules and validity. All 39 existing entities retain their IDs, unique IDs and meaning; accounting adds 17 optional sensors.
+
+- Configurable billing periods (default April–March), annual advance aggregates or individually recorded monthly planned/paid payments.
+- Reuses corrected Recorder import increments and existing monetary costs. Only missing costs are reconstructed where historical HDO, prices and contractual dates are available. Today is backfilled from midnight using existing five-minute statistics; coverage timestamps and gaps are explicit. Does not rewrite or import energy statistics.
+- Separate import costs, optional calendar-day standing fees, existing EDC monetary sharing income and net costs. No duplicate energy-to-revenue calculation; delayed income is not assigned to today.
+- Verified provider checkpoints and settled bills are reused without repricing. Seasonal demand comes from complete historic days or verified monthly invoice readings. Private financial settings are redacted from diagnostics.
+- Full-period demand/cost and surplus/deficit estimates distinguish paid from planned advances. Missing inputs are not zero. Future costs use seasonal demand and the current two-day mean price; future income and price changes are not predicted.
+- Separate final and trial contract accounting. Trials retain standard invoiced NT/VT prices and exclude unverified future refunds, whose supplier calculation uses a weighted trading price over the trial period. Modifiers never apply to distribution, taxes or standing fees.
+- See [accounting setup and limitations](docs/accounting.md). Reuses existing ČEZ HDO and EDC data without modifying or forking either integration.
+
 ## 1.0.1 – 2026-10-09
 
 ### Čeština

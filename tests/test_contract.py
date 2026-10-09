@@ -16,6 +16,18 @@ def _description_keys(filename: str, constructor: str) -> set[str]:
     tree = ast.parse((COMPONENT / filename).read_text(encoding="utf-8"))
     keys: set[str] = set()
     for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and any(
+            isinstance(t, ast.Name) and t.id == "ACCOUNTING_DESCRIPTIONS"
+            for t in node.targets
+        ):
+            for item in ast.walk(node):
+                if (
+                    isinstance(item, ast.Tuple)
+                    and len(item.elts) == 2
+                    and all(isinstance(v, ast.Constant) for v in item.elts)
+                    and item.elts[1].value in ("CZK", "kWh", None)
+                ):
+                    keys.add(item.elts[0].value)
         if not isinstance(node, ast.Call):
             continue
         if not isinstance(node.func, ast.Name) or node.func.id != constructor:
@@ -59,11 +71,41 @@ class PublicContractTests(unittest.TestCase):
             "next_modifier",
             "today_tariff_map",
             "tomorrow_tariff_map",
-            "total_price", "price_without_dynamic", "price_with_dynamic", "allocated_price",
-            "daily_cost", "daily_fixed_cost", "daily_savings",
-            "monthly_fixed_cost", "minimum_price", "best_price_start", "next_price_change",
-            "price_forecast", "actual_cost", "total_cost", "dynamic_savings", "realized_savings",
-            "potential_savings", "unpriced_energy",
+            "total_price",
+            "price_without_dynamic",
+            "price_with_dynamic",
+            "allocated_price",
+            "daily_cost",
+            "daily_fixed_cost",
+            "daily_savings",
+            "monthly_fixed_cost",
+            "minimum_price",
+            "best_price_start",
+            "next_price_change",
+            "price_forecast",
+            "actual_cost",
+            "total_cost",
+            "dynamic_savings",
+            "realized_savings",
+            "potential_savings",
+            "unpriced_energy",
+            "daily_import_energy",
+            "daily_import_cost_backfilled",
+            "daily_cost_backfilled",
+            "daily_savings_backfilled",
+            "daily_shared_income",
+            "daily_net_cost",
+            "period_import_energy",
+            "period_gross_cost",
+            "period_shared_income",
+            "advance_payments_total",
+            "advance_payments_paid",
+            "forecast_import_energy",
+            "forecast_gross_cost",
+            "forecast_net_cost",
+            "forecast_balance",
+            "consumption_profile",
+            "accounting_status",
         }
         actual = _description_keys(
             "sensor.py",
@@ -71,7 +113,11 @@ class PublicContractTests(unittest.TestCase):
         )
 
         self.assertEqual(actual, expected)
-        for filename in ("strings.json", "translations/en.json", "translations/cs.json"):
+        for filename in (
+            "strings.json",
+            "translations/en.json",
+            "translations/cs.json",
+        ):
             content = json.loads((COMPONENT / filename).read_text(encoding="utf-8"))
             self.assertEqual(set(content["entity"]["sensor"]), expected)
 
@@ -89,7 +135,11 @@ class PublicContractTests(unittest.TestCase):
         )
 
         self.assertEqual(actual, expected)
-        for filename in ("strings.json", "translations/en.json", "translations/cs.json"):
+        for filename in (
+            "strings.json",
+            "translations/en.json",
+            "translations/cs.json",
+        ):
             content = json.loads((COMPONENT / filename).read_text(encoding="utf-8"))
             self.assertEqual(set(content["entity"]["binary_sensor"]), expected)
 
@@ -147,9 +197,7 @@ class PublicContractTests(unittest.TestCase):
 
     def test_blueprint_examples_are_present(self) -> None:
         """Ship the documented automation starting points with the repository."""
-        blueprint_dir = (
-            ROOT / "blueprints" / "automation" / "cez_dynamic_tariff"
-        )
+        blueprint_dir = ROOT / "blueprints" / "automation" / "cez_dynamic_tariff"
         expected = {
             "cheap_window_device.yaml",
             "super_cheap_charging.yaml",

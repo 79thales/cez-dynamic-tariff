@@ -1,5 +1,5 @@
 {
-  "name": "ČEZ Dynamic Tariff",
+  "name": "ČEZ Dynamic Tariff & Accounting",
   "country": "CZ",
   "homeassistant": "2025.1.0",
   "render_readme": true,

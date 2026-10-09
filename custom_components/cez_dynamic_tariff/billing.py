@@ -40,6 +40,11 @@ class ElectricityBilling:
         self.timeline = []
         self.minimum = None
         self.status = "initializing"
+        self.settlement = None
+        if coordinator._option("accounting_enabled", False):
+            from .settlement_history import SettlementHistory
+
+            self.settlement = SettlementHistory(self)
 
     async def async_setup(self):
         """Restore totals, subscribe to source events and flush on unload."""

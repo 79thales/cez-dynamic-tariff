@@ -11,7 +11,20 @@ from homeassistant.core import HomeAssistant
 from . import CezDynamicTariffConfigEntry
 from .const import CONF_NAME
 
-TO_REDACT = {CONF_NAME}
+TO_REDACT = {
+    CONF_NAME,
+    "advance_total",
+    "advance_paid",
+    "monthly_advances",
+    "settled_bills",
+    "reference_energy",
+    "reference_cost",
+    "reference_date",
+    "settlement",
+    "historical_profiles",
+    "shared_income_entity",
+    "historical_cost_entity",
+}
 
 
 async def async_get_config_entry_diagnostics(
@@ -32,6 +45,8 @@ async def async_get_config_entry_diagnostics(
                 if coordinator.update_interval is not None
                 else None
             ),
-            "data": asdict(snapshot) if snapshot is not None else None,
+            "data": async_redact_data(asdict(snapshot), TO_REDACT)
+            if snapshot is not None
+            else None,
         },
     }

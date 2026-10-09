@@ -1,4 +1,4 @@
-# ČEZ Dynamic Tariff for Home Assistant
+# ČEZ Dynamic Tariff & Accounting for Home Assistant
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1.0%2B-41BDF5?logo=home-assistant&logoColor=white&style=flat)](https://www.home-assistant.io/)
 [![HACS Integration](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white&style=flat)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
@@ -16,6 +16,11 @@
 ČEZ Dynamic Tariff is an independent custom integration for Home Assistant users of the ČEZ Dynamic Tariff product in the Czech Republic. It determines the current tariff period and percentage price modifier from a daily schedule, then exposes the result through sensors, binary sensors, and attributes suitable for Home Assistant dashboards and automations.
 
 ### Features
+
+- Optional billing-period accounting reuses existing Recorder and EDC financial
+  statistics, with annual or monthly advance payments, historical backfill,
+  verified provider readings, settled bills, seasonal consumption profiles and
+  surplus/deficit estimates. See [accounting setup and data limitations](docs/accounting.md).
 
 - Optional full electricity pricing with public ČEZ HDO entities, VAT-inclusive
   distribution and regulated charges, standing fees, today/tomorrow forecasts,

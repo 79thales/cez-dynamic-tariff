@@ -279,6 +279,51 @@ PRICING_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
 )
 
 
+ACCOUNTING_DESCRIPTIONS = tuple(
+    CezDynamicTariffSensorDescription(
+        key=key,
+        translation_key=key,
+        native_unit_of_measurement=unit,
+        device_class=SensorDeviceClass.MONETARY
+        if unit == "CZK"
+        else SensorDeviceClass.ENERGY
+        if unit == "kWh"
+        else SensorDeviceClass.ENUM,
+        options=[
+            "complete",
+            "incomplete",
+            "history_unavailable",
+            "contract_unconfirmed",
+        ]
+        if unit is None
+        else None,
+        suggested_display_precision=2 if unit else None,
+        value_fn=lambda data, key=key: (
+            (data.billing or {}).get("settlement", {}).get(key)
+        ),
+    )
+    for key, unit in (
+        ("daily_import_energy", "kWh"),
+        ("daily_import_cost_backfilled", "CZK"),
+        ("daily_cost_backfilled", "CZK"),
+        ("daily_savings_backfilled", "CZK"),
+        ("daily_shared_income", "CZK"),
+        ("daily_net_cost", "CZK"),
+        ("period_import_energy", "kWh"),
+        ("period_gross_cost", "CZK"),
+        ("period_shared_income", "CZK"),
+        ("advance_payments_total", "CZK"),
+        ("advance_payments_paid", "CZK"),
+        ("forecast_import_energy", "kWh"),
+        ("forecast_gross_cost", "CZK"),
+        ("forecast_net_cost", "CZK"),
+        ("forecast_balance", "CZK"),
+        ("consumption_profile", None),
+        ("accounting_status", None),
+    )
+)
+
+
 async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up sensors for a config entry."""
     coordinator: CezDynamicTariffCoordinator = entry.runtime_data
@@ -286,6 +331,8 @@ async def async_setup_entry(hass, entry, async_add_entities) -> None:
     descriptions = SENSOR_DESCRIPTIONS
     if coordinator.billing is not None:
         descriptions += PRICING_DESCRIPTIONS
+        if coordinator.billing.settlement is not None:
+            descriptions += ACCOUNTING_DESCRIPTIONS
     async_add_entities(
         CezDynamicTariffSensor(coordinator, entry, description)
         for description in descriptions
@@ -324,6 +371,10 @@ class CezDynamicTariffSensor(
         value = self.entity_description.value_fn(self.coordinator.data)
         if self.entity_description in PRICING_DESCRIPTIONS and isinstance(value, float):
             return round(value, 6)
+        if self.entity_description in ACCOUNTING_DESCRIPTIONS and isinstance(
+            value, float
+        ):
+            return round(value, 6)
         return value
 
     @property
@@ -348,6 +399,28 @@ class CezDynamicTariffSensor(
 
         data = self.coordinator.data
         key = self.entity_description.key
+
+        if key in {description.key for description in ACCOUNTING_DESCRIPTIONS}:
+            attributes = dict(
+                (data.billing or {}).get("settlement", {}).get("metadata", {})
+            )
+            if key not in (
+                "accounting_status",
+                "consumption_profile",
+                "forecast_balance",
+            ):
+                for large in (
+                    "consumption_profile",
+                    "settled_bills",
+                    "months",
+                    "history_months",
+                    "cost_actual_series",
+                    "cost_forecast_series",
+                    "advance_paid_series",
+                    "advance_planned_series",
+                ):
+                    attributes.pop(large, None)
+            return attributes
 
         if key in {description.key for description in PRICING_DESCRIPTIONS}:
             billing = data.billing or {}

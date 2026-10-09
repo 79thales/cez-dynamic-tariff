@@ -1,5 +1,5 @@
 {
-  "title": "ČEZ Dynamický tarif",
+  "title": "ČEZ Dynamic Tariff & Accounting",
   "config": {
     "step": {
       "user": {
@@ -36,13 +36,15 @@
           "include_holidays": "Brát české státní svátky jako víkend/svátek",
           "reset_schedules": "Obnovit výchozí rozvrhy z projektu",
           "configure_pricing": "Nastavit celkovou cenu a úspory",
-          "import_price_list": "Importovat ceník ČEZ z PDF"
+          "import_price_list": "Importovat ceník ČEZ z PDF",
+          "configure_accounting": "Nastavit účetnictví, zálohy a historii"
         },
         "data_description": {
           "base_price_kwh": "Jen obchodní složka ceny. Distribuce, daně a fixní platby se do výpočtu nezahrnují.",
           "reset_schedules": "Po nastavení prahů se zobrazí samostatné potvrzení, které odstraní všechny vlastní rozvrhy a obnoví výchozí hodnoty projektu.",
           "configure_pricing": "Po rozvrzích otevře nový cenový profil. Původní entity zůstávají stejné.",
-          "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce."
+          "import_price_list": "Otevře samostatný import a kontrolu cen. Zachová původní obchodní cenu, rozvrhy, entity a nastavení HDO. Pro současné nastavení celkových cen nejprve dokončete jeho průvodce.",
+          "configure_accounting": "Samostatné nastavení; používá existující statistiky odběru, nákladů a příjmů EDC. Původní entity ani rozvrhy nemění."
         }
       },
       "thresholds": {
@@ -155,6 +157,76 @@
           "other_monthly": "Ostatní stálé platby (Kč/měsíc)",
           "confirm_price_list": "Zkontroloval(a) jsem částky a chci je nyní použít"
         }
+      },
+      "accounting": {
+        "title": "Účetnictví a zúčtovací období",
+        "description": "Vyžaduje nastavenou plnou cenu a integraci ČEZ HDO. Nechte zdroj nákladů prázdný pro automatické použití již vypočtených nákladů této integrace. Vlastní zdroj musí obsahovat Kč pouze za odběr, bez stálých plateb; nepoužívejte starou nesprávnou fixní cenu. EDC zdroj může poskytovat atribut energy_revenue_statistic_id. Chybějící historie se nepovažuje za nulu.",
+        "data": {
+          "accounting_enabled": "Zapnout účetnictví a zpětný dopočet",
+          "billing_start": "Začátek zúčtovacího období",
+          "billing_end": "Konec zúčtovacího období (včetně dne)",
+          "dynamic_start": "Smluvní začátek Dynamického tarifu",
+          "dynamic_contract_mode": "Smluvní režim Dynamického tarifu",
+          "current_price_start": "Skutečný začátek platnosti současného ceníku",
+          "advance_mode": "Zadání záloh",
+          "deduct_shared_income": "Odečíst již vypočtený příjem ze sdílení",
+          "shared_income_entity": "Existující příjem ze sdílení nebo EDC zdroj statistik",
+          "historical_cost_entity": "Existující náklady pouze za odběr (volitelné)"
+        },
+        "data_description": {
+          "dynamic_contract_mode": "Na zkoušku: fakturovaný odběr používá standardní ceny NT/VT. Budoucí dodatečně vyplacená úspora není automaticky odečtená; její výpočet vyžaduje smluvní váženou obchodní cenu a celé zkušební období. Finální: hodinová procenta upravují pouze obchodní složku."
+        }
+      },
+      "advances": {
+        "title": "Zálohy za celé období",
+        "description": "Zadejte plánovaný součet za celé období a část již zaplacenou. Platby se samy neoznačují jako zaplacené.",
+        "data": {
+          "advance_total": "Součet záloh za celé období (Kč)",
+          "advance_paid": "Již zaplacené zálohy (Kč)"
+        }
+      },
+      "monthly_advances": {
+        "title": "Měsíční zálohy",
+        "description": "Pořadí měsíců: {months}. Nevyplněná částka znamená nezadaný měsíc; nula znamená výslovně žádnou zálohu. Zaškrtnutí znamená skutečně zaplacenou částku.",
+        "data": {
+          "month_1_amount": "1. měsíc: částka (Kč)",
+          "month_1_paid": "1. měsíc: zaplaceno",
+          "month_2_amount": "2. měsíc: částka (Kč)",
+          "month_2_paid": "2. měsíc: zaplaceno",
+          "month_3_amount": "3. měsíc: částka (Kč)",
+          "month_3_paid": "3. měsíc: zaplaceno",
+          "month_4_amount": "4. měsíc: částka (Kč)",
+          "month_4_paid": "4. měsíc: zaplaceno",
+          "month_5_amount": "5. měsíc: částka (Kč)",
+          "month_5_paid": "5. měsíc: zaplaceno",
+          "month_6_amount": "6. měsíc: částka (Kč)",
+          "month_6_paid": "6. měsíc: zaplaceno",
+          "month_7_amount": "7. měsíc: částka (Kč)",
+          "month_7_paid": "7. měsíc: zaplaceno",
+          "month_8_amount": "8. měsíc: částka (Kč)",
+          "month_8_paid": "8. měsíc: zaplaceno",
+          "month_9_amount": "9. měsíc: částka (Kč)",
+          "month_9_paid": "9. měsíc: zaplaceno",
+          "month_10_amount": "10. měsíc: částka (Kč)",
+          "month_10_paid": "10. měsíc: zaplaceno",
+          "month_11_amount": "11. měsíc: částka (Kč)",
+          "month_11_paid": "11. měsíc: zaplaceno",
+          "month_12_amount": "12. měsíc: částka (Kč)",
+          "month_12_paid": "12. měsíc: zaplaceno",
+          "month_13_amount": "13. měsíc: částka (Kč)",
+          "month_13_paid": "13. měsíc: zaplaceno"
+        }
+      },
+      "accounting_history": {
+        "title": "Historie a ověřený odečet",
+        "description": "Odečet dodavatele převezme již spočtené náklady a odběr do uvedeného dne; historie se přičítá až od následujícího dne. Starší vyúčtování poslouží také pro měsíční profil, když chybí úplné dny ve statistikách. JSON lze ponechat jako []. Formát je popsán v dokumentaci. Odhad budoucích nákladů používá sezónní spotřebu a průměr současného cenového výhledu; budoucí ceny ani výnosy ze sdílení nejsou zaručené.",
+        "data": {
+          "reference_date": "Datum posledního odečtu dodavatele (volitelné)",
+          "reference_energy": "Odběr od začátku období k odečtu (kWh)",
+          "reference_cost": "Náklady od začátku období k odečtu včetně stálých plateb (Kč)",
+          "settled_bills": "Ověřená starší vyúčtování a měsíční odběr (JSON)",
+          "historical_profiles": "Starší úplné cenové profily s platností (JSON)"
+        }
       }
     },
     "error": {
@@ -179,7 +251,12 @@
       "invalid_breaker": "Jistič musí mít kladný celočíselný proud a 1 nebo 3 fáze.",
       "poze_requires_annual_import": "Ceník má nenulové POZE podle jističe. Zadejte kladný roční odběr pro odhad efektivní sazby.",
       "future_price_list": "Ceník ještě není účinný. Znovu jej importujte od data účinnosti; dnešní ceny se nemění.",
-      "confirm_price_list": "Před uložením potvrďte kontrolu načtených částek."
+      "confirm_price_list": "Před uložením potvrďte kontrolu načtených částek.",
+      "invalid_accounting_dates": "Zadejte platná data a období nejvýše 370 dní.",
+      "pricing_required": "Nejprve nastavte a zapněte plnou cenu.",
+      "invalid_monetary_entity": "Vyberte existující senzor v CZK nebo EDC zdroj peněžních statistik.",
+      "invalid_advances": "Částky musí být nezáporné; zaplaceno nesmí přesáhnout plánovaný součet.",
+      "invalid_accounting_history": "Zkontrolujte datum odečtu, částky a formát JSON podle dokumentace."
     }
   },
   "entity": {
@@ -288,6 +365,69 @@
       },
       "daily_savings": {
         "name": "Dosažená úspora dnes"
+      },
+      "daily_import_energy": {
+        "name": "Odběr dnes od půlnoci"
+      },
+      "daily_import_cost_backfilled": {
+        "name": "Cena odběru dnes od půlnoci"
+      },
+      "daily_cost_backfilled": {
+        "name": "Náklady dnes od půlnoci"
+      },
+      "daily_savings_backfilled": {
+        "name": "Úspora dnes od půlnoci"
+      },
+      "daily_shared_income": {
+        "name": "Známý příjem ze sdílení dnes"
+      },
+      "daily_net_cost": {
+        "name": "Čisté náklady dnes"
+      },
+      "period_import_energy": {
+        "name": "Odběr za zúčtovací období"
+      },
+      "period_gross_cost": {
+        "name": "Náklady za zúčtovací období"
+      },
+      "period_shared_income": {
+        "name": "Známý příjem ze sdílení za období"
+      },
+      "advance_payments_total": {
+        "name": "Zálohy celkem za období"
+      },
+      "advance_payments_paid": {
+        "name": "Zaplacené zálohy"
+      },
+      "forecast_import_energy": {
+        "name": "Odhad odběru za celé období"
+      },
+      "forecast_gross_cost": {
+        "name": "Odhad nákladů za celé období"
+      },
+      "forecast_net_cost": {
+        "name": "Odhad čistých nákladů za celé období"
+      },
+      "forecast_balance": {
+        "name": "Odhad přeplatku nebo nedoplatku"
+      },
+      "consumption_profile": {
+        "name": "Profil spotřeby",
+        "state": {
+          "complete": "Úplné",
+          "incomplete": "Neúplné",
+          "history_unavailable": "Historie nedostupná",
+          "contract_unconfirmed": "Smluvní režim zatím neurčen"
+        }
+      },
+      "accounting_status": {
+        "name": "Úplnost účetnictví",
+        "state": {
+          "complete": "Úplné",
+          "incomplete": "Neúplné",
+          "history_unavailable": "Historie nedostupná",
+          "contract_unconfirmed": "Smluvní režim zatím neurčen"
+        }
       }
     },
     "binary_sensor": {
@@ -302,6 +442,21 @@
       },
       "very_expensive_now": {
         "name": "Právě probíhá velmi drahé pásmo"
+      }
+    }
+  },
+  "selector": {
+    "advance_mode": {
+      "options": {
+        "annual": "Celé období: součet",
+        "monthly": "Jednotlivé měsíce"
+      }
+    },
+    "dynamic_contract_mode": {
+      "options": {
+        "unknown": "Smluvní režim zatím neurčen",
+        "regular": "Finální Dynamický tarif",
+        "trial": "Dynamický tarif na zkoušku"
       }
     }
   }

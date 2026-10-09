@@ -29,6 +29,12 @@ from .const import (
 )
 from .pricing import PROFILE_DEFAULTS, finite_number
 from .schedule import DEFAULT_SCHEDULES, format_schedule, parse_schedule
+from .settlement import (
+    SETTLEMENT_DEFAULTS,
+    default_period,
+    month_starts,
+    parse_advances,
+)
 
 SCHEDULE_OPTIONS = (
     CONF_WINTER_WORKDAY_SCHEDULE,
@@ -130,6 +136,7 @@ def _general_schema(config_entry, user_input=None) -> vol.Schema:
             ): bool,
             vol.Required("configure_pricing", default=False): bool,
             vol.Required("import_price_list", default=False): bool,
+            vol.Required("configure_accounting", default=False): bool,
         }
     )
 
@@ -294,6 +301,9 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input=None):
         """Configure general tariff options."""
         if user_input is not None:
+            if user_input.get("configure_accounting"):
+                self._pending_options = {}
+                return await self.async_step_accounting()
             if user_input.get("import_price_list"):
                 # Import changes only new price-profile values. Original entity
                 # settings and schedules must remain exactly as saved.
@@ -676,6 +686,321 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
             data_schema=schema,
             errors=errors,
             description_placeholders=self._price_list_info or {},
+        )
+
+    async def async_step_accounting(self, user_input=None):
+        """Independent accounting options preserve original schedules and IDs."""
+        from datetime import date
+
+        from homeassistant.helpers import selector
+        from homeassistant.util import dt as dt_util
+
+        keys = (
+            "accounting_enabled",
+            "billing_start",
+            "billing_end",
+            "dynamic_start",
+            "dynamic_contract_mode",
+            "current_price_start",
+            "advance_mode",
+            "deduct_shared_income",
+            "shared_income_entity",
+            "historical_cost_entity",
+        )
+        defaults = dict(SETTLEMENT_DEFAULTS)
+        defaults["billing_start"], defaults["billing_end"] = default_period(
+            dt_util.now().date()
+        )
+        defaults["current_price_start"] = self._config_entry.options.get(
+            "price_list_trade_effective", ""
+        )
+        errors = {}
+        if user_input is not None:
+            try:
+                start, end = (
+                    date.fromisoformat(user_input["billing_start"]),
+                    date.fromisoformat(user_input["billing_end"]),
+                )
+                if not start < end or (end - start).days > 370:
+                    raise ValueError
+                for key in ("dynamic_start", "current_price_start"):
+                    if user_input.get(key):
+                        date.fromisoformat(user_input[key])
+            except (KeyError, ValueError, TypeError):
+                errors["base"] = "invalid_accounting_dates"
+            if user_input.get(
+                "accounting_enabled"
+            ) and not self._config_entry.options.get("pricing_enabled"):
+                errors["base"] = "pricing_required"
+            for key in ("historical_cost_entity", "shared_income_entity"):
+                entity = user_input.get(key)
+                state = self.hass.states.get(entity) if entity else None
+                if entity and (
+                    state is None
+                    or not (
+                        state.attributes.get("energy_revenue_statistic_id")
+                        or state.attributes.get("unit_of_measurement") == "CZK"
+                    )
+                ):
+                    errors[key] = "invalid_monetary_entity"
+            if user_input.get("deduct_shared_income") and not user_input.get(
+                "shared_income_entity"
+            ):
+                errors["shared_income_entity"] = "missing_entity"
+            if not errors:
+                self._pending_options.update(
+                    {k: user_input.get(k, defaults[k]) for k in keys}
+                )
+                return await self.async_step_advances()
+        schema = {}
+        for key in keys:
+            value = _option_default(self._config_entry, user_input, key, defaults[key])
+            marker = (
+                vol.Required(key, default=value)
+                if key
+                not in (
+                    "dynamic_start",
+                    "current_price_start",
+                    "historical_cost_entity",
+                    "shared_income_entity",
+                )
+                else vol.Optional(
+                    key, description={"suggested_value": value} if value else {}
+                )
+            )
+            if key.endswith("entity"):
+                schema[marker] = selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor")
+                )
+            elif key in (
+                "billing_start",
+                "billing_end",
+                "dynamic_start",
+                "current_price_start",
+            ):
+                schema[marker] = selector.DateSelector()
+            elif key == "advance_mode":
+                schema[marker] = selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["annual", "monthly"], translation_key="advance_mode"
+                    )
+                )
+            elif key == "dynamic_contract_mode":
+                schema[marker] = selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=["unknown", "regular", "trial"],
+                        translation_key="dynamic_contract_mode",
+                    )
+                )
+            else:
+                schema[marker] = bool
+        return self.async_show_form(
+            step_id="accounting", data_schema=vol.Schema(schema), errors=errors
+        )
+
+    async def async_step_advances(self, user_input=None):
+        """Annual aggregates or individually entered monthly paid/planned amounts."""
+        import json
+        from datetime import date
+
+        start, end = (
+            date.fromisoformat(self._pending_options[k])
+            for k in ("billing_start", "billing_end")
+        )
+        months = list(month_starts(start, end))
+        mode = self._pending_options["advance_mode"]
+        errors = {}
+        if user_input is not None:
+            if mode == "annual":
+                total, paid = (
+                    finite_number(user_input.get(k))
+                    for k in ("advance_total", "advance_paid")
+                )
+                if total is None or paid is None or not 0 <= paid <= total:
+                    errors["base"] = "invalid_advances"
+                else:
+                    self._pending_options.update(advance_total=total, advance_paid=paid)
+            else:
+                rows = [
+                    {
+                        "month": m.strftime("%Y-%m"),
+                        "amount": user_input[f"month_{i}_amount"],
+                        "paid": user_input.get(f"month_{i}_paid", False),
+                    }
+                    for i, m in enumerate(months, 1)
+                    if f"month_{i}_amount" in user_input
+                ]
+                try:
+                    parse_advances(json.dumps(rows), start, end)
+                    self._pending_options["monthly_advances"] = json.dumps(rows)
+                except (ValueError, TypeError, KeyError):
+                    errors["base"] = "invalid_advances"
+            if not errors:
+                return await self.async_step_accounting_history()
+        schema = {}
+        if mode == "annual":
+            for key in ("advance_total", "advance_paid"):
+                schema[
+                    vol.Required(
+                        key,
+                        default=_option_default(
+                            self._config_entry, user_input, key, 0.0
+                        ),
+                    )
+                ] = vol.All(vol.Coerce(float), vol.Range(min=0))
+        else:
+            saved = {
+                r["month"]: r
+                for r in json.loads(
+                    self._config_entry.options.get("monthly_advances", "[]")
+                )
+            }
+            for i, month in enumerate(months, 1):
+                row = saved.get(month.strftime("%Y-%m"), {})
+                value = (user_input or {}).get(f"month_{i}_amount", row.get("amount"))
+                schema[
+                    vol.Optional(
+                        f"month_{i}_amount",
+                        description={"suggested_value": value}
+                        if value is not None
+                        else {},
+                    )
+                ] = vol.All(vol.Coerce(float), vol.Range(min=0))
+                schema[
+                    vol.Required(
+                        f"month_{i}_paid",
+                        default=(user_input or {}).get(
+                            f"month_{i}_paid", row.get("paid", False)
+                        ),
+                    )
+                ] = bool
+        return self.async_show_form(
+            step_id="advances" if mode == "annual" else "monthly_advances",
+            data_schema=vol.Schema(schema),
+            errors=errors,
+            description_placeholders={
+                "months": ", ".join(
+                    f"{i}: {m.strftime('%Y-%m')}" for i, m in enumerate(months, 1)
+                )
+            },
+        )
+
+    async def async_step_accounting_history(self, user_input=None):
+        """Optional provider checkpoint and verified settled bills; never fake old HDO."""
+        import json
+        from datetime import date
+
+        from homeassistant.helpers import selector
+
+        keys = (
+            "reference_date",
+            "reference_energy",
+            "reference_cost",
+            "settled_bills",
+            "historical_profiles",
+        )
+        errors = {}
+        if user_input is not None:
+            try:
+                reference = user_input.get("reference_date")
+                if reference and not date.fromisoformat(
+                    self._pending_options["billing_start"]
+                ) <= date.fromisoformat(reference) <= date.fromisoformat(
+                    self._pending_options["billing_end"]
+                ):
+                    raise ValueError
+                bills = json.loads(user_input["settled_bills"])
+                profiles = json.loads(user_input["historical_profiles"])
+                if (
+                    not isinstance(bills, list)
+                    or not isinstance(profiles, list)
+                    or len(bills) > 24
+                    or len(profiles) > 24
+                ):
+                    raise ValueError
+                for bill in bills:
+                    if date.fromisoformat(bill["start"]) > date.fromisoformat(
+                        bill["end"]
+                    ):
+                        raise ValueError
+                    for key in ("energy_kwh", "cost", "paid"):
+                        if finite_number(bill[key]) is None or bill[key] < 0:
+                            raise ValueError
+                    if "fixed_cost" in bill and (
+                        finite_number(bill["fixed_cost"]) is None
+                        or bill["fixed_cost"] < 0
+                    ):
+                        raise ValueError
+                    seen = set()
+                    for row in bill.get("months", []):
+                        month = date.fromisoformat(row["month"] + "-01")
+                        if row["month"] in seen or not date.fromisoformat(
+                            bill["start"]
+                        ).replace(day=1) <= month <= date.fromisoformat(bill["end"]):
+                            raise ValueError
+                        seen.add(row["month"])
+                        if any(
+                            finite_number(row[k]) is None or row[k] < 0
+                            for k in ("nt_kwh", "vt_kwh")
+                        ):
+                            raise ValueError
+                rate_keys = {
+                    k
+                    for k, v in PROFILE_DEFAULTS.items()
+                    if isinstance(v, float) and k != "annual_import_kwh"
+                }
+                for row in profiles:
+                    if (
+                        date.fromisoformat(row["start"])
+                        > date.fromisoformat(row["end"])
+                        or set(row["rates"]) != rate_keys
+                    ):
+                        raise ValueError
+                    if any(
+                        finite_number(v) is None or v < 0 for v in row["rates"].values()
+                    ):
+                        raise ValueError
+                for key in ("reference_energy", "reference_cost"):
+                    if finite_number(user_input[key]) is None or user_input[key] < 0:
+                        raise ValueError
+            except (KeyError, ValueError, TypeError):
+                errors["base"] = "invalid_accounting_history"
+            if not errors:
+                self._pending_options.update(
+                    {k: user_input.get(k, SETTLEMENT_DEFAULTS[k]) for k in keys}
+                )
+                self._pending_options["reference_period_start"] = self._pending_options[
+                    "billing_start"
+                ]
+                return self._finish_options()
+        schema = {}
+        for key in keys:
+            value = _option_default(
+                self._config_entry, user_input, key, SETTLEMENT_DEFAULTS[key]
+            )
+            if (
+                user_input is None
+                and key.startswith("reference_")
+                and self._config_entry.options.get("reference_period_start")
+                != self._pending_options["billing_start"]
+            ):
+                value = SETTLEMENT_DEFAULTS[key]
+            if key == "reference_date":
+                schema[
+                    vol.Optional(
+                        key, description={"suggested_value": value} if value else {}
+                    )
+                ] = selector.DateSelector()
+            elif key in ("reference_energy", "reference_cost"):
+                schema[vol.Required(key, default=value)] = vol.All(
+                    vol.Coerce(float), vol.Range(min=0)
+                )
+            else:
+                schema[vol.Required(key, default=value)] = selector.TextSelector(
+                    selector.TextSelectorConfig(multiline=True)
+                )
+        return self.async_show_form(
+            step_id="accounting_history", data_schema=vol.Schema(schema), errors=errors
         )
 
     def _finish_options(self):

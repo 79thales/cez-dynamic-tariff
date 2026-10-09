@@ -448,6 +448,12 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
 
         now = dt_util.now()
         current_window = self._current_window(now)
+        billing_data = None
+        if self.billing:
+            billing_data = self.billing.calculate(now, current_window.modifier_percent)
+            if self.billing.settlement is not None:
+                await self.billing.settlement.async_refresh(now)
+                billing_data["settlement"] = self.billing.settlement.result
 
         today = now.date()
         tomorrow = today + timedelta(days=1)
@@ -582,7 +588,7 @@ class CezDynamicTariffCoordinator(DataUpdateCoordinator[TariffSnapshot]):
             tomorrow_season_code=self._season_code(tomorrow),
             tomorrow_day_type=self._day_type_label(tomorrow),
             tomorrow_day_type_code=self._day_type_code(tomorrow),
-            billing=self.billing.calculate(now, current_modifier_percent) if self.billing else None,
+            billing=billing_data,
         )
 
     @property

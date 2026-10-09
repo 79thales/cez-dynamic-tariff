@@ -1,5 +1,5 @@
 {
-  "title": "ČEZ Dynamic Tariff",
+  "title": "ČEZ Dynamic Tariff & Accounting",
   "config": {
     "step": {
       "user": {
@@ -36,13 +36,15 @@
           "include_holidays": "Treat Czech public holidays as weekend/holiday",
           "reset_schedules": "Restore bundled default schedules",
           "configure_pricing": "Configure full prices and savings",
-          "import_price_list": "Import a ČEZ price list PDF"
+          "import_price_list": "Import a ČEZ price list PDF",
+          "configure_accounting": "Configure accounting, advances and history"
         },
         "data_description": {
           "base_price_kwh": "Only the trading component price. Distribution, taxes and fixed fees are not included.",
           "reset_schedules": "After configuring thresholds, a separate confirmation will remove all custom schedules and restore the bundled defaults.",
           "configure_pricing": "Opens the new price profile after schedules. Existing entities keep their meaning.",
-          "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first."
+          "import_price_list": "Opens a separate import and review. Keeps original trading price, schedules, entities and HDO settings. To configure full pricing too, complete that wizard first.",
+          "configure_accounting": "Independent settings using existing import, cost and EDC income statistics. Preserves original entities and schedules."
         }
       },
       "thresholds": {
@@ -155,6 +157,76 @@
           "other_monthly": "Other standing fees (CZK/month)",
           "confirm_price_list": "I reviewed the rates and want to apply them now"
         }
+      },
+      "accounting": {
+        "title": "Accounting and billing period",
+        "description": "Requires full pricing and ČEZ HDO. Leave the cost source empty to reuse this integration's existing import costs automatically. A custom source must contain CZK for import only, without standing fees; do not select an obsolete fixed price. EDC sources can expose energy_revenue_statistic_id. Missing history is never zero.",
+        "data": {
+          "accounting_enabled": "Enable accounting and historical backfill",
+          "billing_start": "Billing period start",
+          "billing_end": "Billing period end (inclusive)",
+          "dynamic_start": "Contractual Dynamic Tariff start",
+          "dynamic_contract_mode": "Dynamic Tariff contract mode",
+          "current_price_start": "Actual current price-list start",
+          "advance_mode": "Advance input mode",
+          "deduct_shared_income": "Deduct already calculated sharing income",
+          "shared_income_entity": "Existing sharing income or EDC statistic source",
+          "historical_cost_entity": "Existing import-only costs (optional)"
+        },
+        "data_description": {
+          "dynamic_contract_mode": "Trial: invoiced import uses standard NT/VT prices. The future separately paid refund is not automatically deducted; it requires the contractual weighted trading price and the full trial period. Final: hourly modifiers apply only to the trading component."
+        }
+      },
+      "advances": {
+        "title": "Full period advances",
+        "description": "Enter the full period planned total and the amount already paid. Payments are never automatically marked paid.",
+        "data": {
+          "advance_total": "Total planned advances for full period (CZK)",
+          "advance_paid": "Already paid advances (CZK)"
+        }
+      },
+      "monthly_advances": {
+        "title": "Monthly advances",
+        "description": "Month order: {months}. An empty amount means unknown; zero explicitly means no payment. Check paid only for received payments.",
+        "data": {
+          "month_1_amount": "Month 1: amount (CZK)",
+          "month_1_paid": "Month 1: paid",
+          "month_2_amount": "Month 2: amount (CZK)",
+          "month_2_paid": "Month 2: paid",
+          "month_3_amount": "Month 3: amount (CZK)",
+          "month_3_paid": "Month 3: paid",
+          "month_4_amount": "Month 4: amount (CZK)",
+          "month_4_paid": "Month 4: paid",
+          "month_5_amount": "Month 5: amount (CZK)",
+          "month_5_paid": "Month 5: paid",
+          "month_6_amount": "Month 6: amount (CZK)",
+          "month_6_paid": "Month 6: paid",
+          "month_7_amount": "Month 7: amount (CZK)",
+          "month_7_paid": "Month 7: paid",
+          "month_8_amount": "Month 8: amount (CZK)",
+          "month_8_paid": "Month 8: paid",
+          "month_9_amount": "Month 9: amount (CZK)",
+          "month_9_paid": "Month 9: paid",
+          "month_10_amount": "Month 10: amount (CZK)",
+          "month_10_paid": "Month 10: paid",
+          "month_11_amount": "Month 11: amount (CZK)",
+          "month_11_paid": "Month 11: paid",
+          "month_12_amount": "Month 12: amount (CZK)",
+          "month_12_paid": "Month 12: paid",
+          "month_13_amount": "Month 13: amount (CZK)",
+          "month_13_paid": "Month 13: paid"
+        }
+      },
+      "accounting_history": {
+        "title": "History and verified provider reading",
+        "description": "The provider reading reuses known costs and import through that day; history is added only from the following day. Settled bills also supply monthly seasonality when statistics lack complete days. JSON may remain []. See documentation for the format. Future costs use seasonal demand and the current forecast mean price; future prices and sharing revenue are not guaranteed.",
+        "data": {
+          "reference_date": "Latest provider reading date (optional)",
+          "reference_energy": "Period import through provider reading (kWh)",
+          "reference_cost": "Period costs through provider reading including standing fees (CZK)",
+          "settled_bills": "Verified settled bills and monthly import (JSON)",
+          "historical_profiles": "Older complete price profiles with validity (JSON)"
+        }
       }
     },
     "error": {
@@ -179,7 +251,12 @@
       "invalid_breaker": "Breaker current must be a positive integer, with 1 or 3 phases.",
       "poze_requires_annual_import": "Nonzero capacity POZE requires a positive annual grid-import estimate.",
       "future_price_list": "This price list is not yet effective. Import it on/after its effective date; current rates are unchanged.",
-      "confirm_price_list": "Confirm you reviewed the imported rates before saving."
+      "confirm_price_list": "Confirm you reviewed the imported rates before saving.",
+      "invalid_accounting_dates": "Enter valid dates and a billing period of at most 370 days.",
+      "pricing_required": "Configure and enable full pricing first.",
+      "invalid_monetary_entity": "Select a CZK sensor or an EDC financial statistic source.",
+      "invalid_advances": "Amounts must be nonnegative; paid cannot exceed planned total.",
+      "invalid_accounting_history": "Check the reading date, amounts and JSON format against documentation."
     }
   },
   "entity": {
@@ -288,6 +365,69 @@
       },
       "daily_savings": {
         "name": "Realized savings today"
+      },
+      "daily_import_energy": {
+        "name": "Grid import since midnight"
+      },
+      "daily_import_cost_backfilled": {
+        "name": "Import cost since midnight"
+      },
+      "daily_cost_backfilled": {
+        "name": "Costs since midnight"
+      },
+      "daily_savings_backfilled": {
+        "name": "Savings since midnight"
+      },
+      "daily_shared_income": {
+        "name": "Known sharing income today"
+      },
+      "daily_net_cost": {
+        "name": "Net costs today"
+      },
+      "period_import_energy": {
+        "name": "Billing period grid import"
+      },
+      "period_gross_cost": {
+        "name": "Billing period gross costs"
+      },
+      "period_shared_income": {
+        "name": "Known billing period sharing income"
+      },
+      "advance_payments_total": {
+        "name": "Total planned period advances"
+      },
+      "advance_payments_paid": {
+        "name": "Paid advances"
+      },
+      "forecast_import_energy": {
+        "name": "Projected full period grid import"
+      },
+      "forecast_gross_cost": {
+        "name": "Projected full period gross costs"
+      },
+      "forecast_net_cost": {
+        "name": "Projected full period net costs"
+      },
+      "forecast_balance": {
+        "name": "Projected surplus or deficit"
+      },
+      "consumption_profile": {
+        "name": "Consumption profile",
+        "state": {
+          "complete": "Complete",
+          "incomplete": "Incomplete",
+          "history_unavailable": "History unavailable",
+          "contract_unconfirmed": "Contract mode not confirmed"
+        }
+      },
+      "accounting_status": {
+        "name": "Accounting completeness",
+        "state": {
+          "complete": "Complete",
+          "incomplete": "Incomplete",
+          "history_unavailable": "History unavailable",
+          "contract_unconfirmed": "Contract mode not confirmed"
+        }
       }
     },
     "binary_sensor": {
@@ -302,6 +442,21 @@
       },
       "very_expensive_now": {
         "name": "Very expensive period active"
+      }
+    }
+  },
+  "selector": {
+    "advance_mode": {
+      "options": {
+        "annual": "Full period total",
+        "monthly": "Individual months"
+      }
+    },
+    "dynamic_contract_mode": {
+      "options": {
+        "unknown": "Contract mode not yet confirmed",
+        "regular": "Final Dynamic Tariff",
+        "trial": "Dynamic Tariff trial"
       }
     }
   }

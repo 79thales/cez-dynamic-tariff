@@ -1,11 +1,16 @@
 {
   "domain": "cez_dynamic_tariff",
-  "name": "ČEZ Dynamic Tariff",
+  "name": "ČEZ Dynamic Tariff & Accounting",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@79thales"
   ],
   "config_flow": true,
-  "dependencies": ["file_upload"],
+  "dependencies": [
+    "file_upload"
+  ],
   "documentation": "https://github.com/79thales/cez-dynamic-tariff#readme",
   "integration_type": "service",
   "iot_class": "calculated",
@@ -15,5 +20,5 @@
     "pypdf==6.19.0"
   ],
   "single_config_entry": true,
-  "version": "1.0.1"
+  "version": "1.0.2"
 }

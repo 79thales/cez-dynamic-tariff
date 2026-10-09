@@ -48,7 +48,7 @@ class CostLedger:
             yield local.date().isoformat(), cursor, stop
             cursor = stop
 
-    def sample(self, when, energy, timeline, minimum=None, tz=UTC):
+    def sample(self, when, energy, timeline, minimum=None, tz=UTC, known_costs=None):
         """Use uniform consumption within a meter interval, capped at 15 minutes.
 
         Price data is captured at the previous reading, so later HDO changes
@@ -69,6 +69,15 @@ class CostLedger:
             return
         if seconds > 900:
             self._add(when.astimezone(tz).date().isoformat(), "unpriced_kwh", delta)
+            return
+        if known_costs is not None:
+            # Historical accounting can reuse monetary increments which this
+            # integration has already calculated. Do not price them again.
+            for day, left, right in self._day_parts(start, when, tz):
+                fraction = (right - left).total_seconds() / seconds
+                self._add(day, "energy_kwh", delta * fraction)
+                for key, amount in known_costs.items():
+                    self._add(day, key, amount * fraction)
             return
         covered = 0.0
         for row in rows:
