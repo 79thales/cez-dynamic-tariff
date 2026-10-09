@@ -7,6 +7,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.const import EntityCategory
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -49,9 +50,19 @@ async def async_setup_entry(hass, entry, async_add_entities) -> None:
     """Set up binary sensors for a config entry."""
     coordinator: CezDynamicTariffCoordinator = entry.runtime_data
 
+    descriptions = list(BINARY_SENSOR_DESCRIPTIONS)
+    if coordinator.billing is not None and coordinator.billing.settlement is not None:
+        descriptions.append(
+            CezDynamicTariffBinarySensorDescription(
+                key="advance_editor_available",
+                translation_key="advance_editor_available",
+                entity_category=EntityCategory.DIAGNOSTIC,
+                value_fn=lambda data: True,
+            )
+        )
     async_add_entities(
         CezDynamicTariffBinarySensor(coordinator, entry, description)
-        for description in BINARY_SENSOR_DESCRIPTIONS
+        for description in descriptions
     )
 
 

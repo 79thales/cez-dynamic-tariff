@@ -10,6 +10,7 @@
 - Volitelné automatické potvrzení vždy k prvnímu dni měsíce, výchozí vypnuté. Zapnutí uprostřed měsíce začne příštím měsícem. Nepotvrzuje starou historii ani nezadané zálohy, nepřepisuje ruční opravy a částečné úhrady; opakování a restart nezapočtou platbu dvakrát. Automatické označení je odlišitelné od ručního potvrzení a neověřuje bankovní platbu.
 - Samostatná volba správného elektroměru pro účetnictví. Přebírá existující statistiky a náklady jen ze shodného zdroje; původní entity a zdroj původního monitoringu zůstávají zachované.
 - Editace záloh aktualizuje výpočet bez zbytečného načítání historie Recorderu a bez restartu integrace. Dosavadní roční součet se nerozpočítává na vymyšlené měsíce. Soukromá finanční data nejsou obsahem instalačního balíčku.
+- Nový volitelný diagnostický příznak dostupnosti editoru umožní připravit podmíněnou kartu v dashboardu už před instalací; zobrazí se až po aktualizaci a zapnutí účetnictví.
 
 ### English
 

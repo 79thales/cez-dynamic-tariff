@@ -103,7 +103,8 @@ async def test_enabled_accounting_lifecycle_reads_real_recorder_and_adds_only_ne
         for s in hass.states.async_all()
         if s.entity_id.startswith((f"sensor.{DOMAIN}_", f"binary_sensor.{DOMAIN}_"))
     ]
-    assert len(states) == 57
+    assert len(states) == 58
+    assert hass.states.get(f"binary_sensor.{DOMAIN}_advance_editor_available").state == "on"
     assert hass.states.get(f"sensor.{DOMAIN}_accounting_status").state == "incomplete"
     assert hass.states.get(f"sensor.{DOMAIN}_actual_cost").state == "0.0"
     assert hass.states.get(f"sensor.{DOMAIN}_daily_cost_backfilled").state == "unknown"

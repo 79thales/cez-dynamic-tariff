@@ -462,6 +462,9 @@
       },
       "very_expensive_now": {
         "name": "Very expensive period active"
+      },
+      "advance_editor_available": {
+        "name": "Monthly advances editor available"
       }
     }
   },
