@@ -1,8 +1,44 @@
 # Oprava logu Home Assistantu z 10. 10. 2026
 
-ČEZ: implementována oprava zdrojové karty a generátoru, regresní testy prošly.
-Do běžícího HA se nic nezapsalo. Monitoring internetu je mimo otevřený projekt;
-jeho oprava a akceptační kritérium pro obě chyby zůstávají nedokončené.
+ČEZ: oprava zdrojové karty a generátoru je implementována a na navazující
+výslovné zadání uživatele také nasazena do běžícího HA. Lokální regresní testy
+i dodatečné živé vykreslení na Core 2026.10.1 prošly. Monitoring internetu je
+mimo otevřený projekt; v této práci se nezměnil a jeho akceptační kritérium
+nebylo ověřeno.
+
+## Dodatečné nasazení do HA 10. 10. 2026
+
+- Přes přímý HA konektor byla změněna pouze markdown karta Cena odebrané kWh
+  v `/lovelace/cez-dynamic-tariff`. Transakce
+  `309b97d4-fde8-4a65-8530-f87fc27e886c` vytvořila zálohu, kontrolovala původní
+  SHA-256 a následně potvrdila skutečný uložený obsah. Nový SHA-256 je
+  `ce7485c96a0a9f624a46df41f816c3ef1b6ecf672b677cd9e04baa007cf99350`.
+- Zpětné čtení ověřilo Jinja komentář i shodu celé konfigurace s původní
+  konfigurací upravenou pouze o tuto jednu kartu. Hlavní pohled, detailní
+  podstránky, editor záloh i ostatní dashboardy se zachovaly.
+- Přes UI File editor byly aktualizovány nasazené soubory
+  `/homeassistant/custom_components/cez_dynamic_tariff/dashboard_template.json`
+  a `frontend/dashboard-generator.js`. Původní JS odpovídal výchozímu kódu
+  před opravou. Znovu otevřené uložené soubory odpovídají opraveným zdrojům
+  v repozitáři; český Jinja komentář zůstal v šabloně zachovaný.
+- Živý Generate dashboard vytvořil náhled cest `cez-dynamic-tariff`,
+  `cez-dynamic-tariff-detaily` a `cez-dynamic-tariff-zalohy`, s hlavním pohledem
+  a dvěma subviews. Náhled obsahuje bezpečný HDO blok i komentáře. Nebyly
+  přidány duplicitní pohledy. V živém dashboardu se správně vykreslil NT.
+- V šablonovacím editoru běžícího HA prošlo **16 scénářů**: None, atribut
+  neexistujícího cenového senzoru, prázdný řetězec, číslo, boolean, seznam,
+  objekt, neplatné ID, velká písmena, úvodní mezera, koncový LF, úvodní,
+  koncová i dvojitá podtržítka, neexistující HDO a nakonfigurované živé HDO.
+  Prvních 15 zobrazilo „neznámé“, poslední správný živý NT. Žádné stavy entit
+  se neměnily a původní obsah editoru byl po testu přesně obnoven.
+- Stránka O aplikaci potvrdila **Core 2026.10.1**, Frontend 20260930.3.
+  Restart ani reload integrace nebyl proveden ani potřebný pro tyto dvě
+  statické souborové úpravy. V otevřeném prohlížeči se generátor načetl nově.
+  Existující prohlížeče mohou potřebovat obnovení stránky bez cache.
+
+Vizuální důkaz je uložen lokálně v ignorované složce `output/screenshots`:
+`cez-hdo-deployed-2026-10-10.jpg` a `cez-hdo-live-regression-2026-10-10.jpg`.
+Snímky obsahují místní stav dashboardu a nejsou součástí veřejného commitu.
 
 ## Skutečná příčina ČEZ
 
@@ -39,7 +75,9 @@ Původ atributu a inicializace byly ověřeny v aktuálním kódu:
 V manifestu není tvrdá závislost na `cez_hdo`; integrace používá veřejné stavy.
 Dodatečné vynucování pořadí startu není potřeba: testy potvrdily odběr událostí,
 pozdní vznik zdrojů a obnovu ceny bez změny API. Živou konfiguraci options ani
-aktuální stav HDO konektor nečte; jejich skutečné hodnoty nebyly ověřeny.
+aktuální stav HDO konektor nečte. Dodatečné UI ověření přečetlo nakonfigurované
+HDO ID z atributu cenového senzoru a potvrdilo jeho aktuální on/NT. Úplná
+uložená konfigurace options nebyla auditována.
 
 Všechny výskyty `hdo_entity`, cenové zdroje, příklady a blueprinty byly prohledány.
 Vadné dynamické volání bylo ve zdrojové kartě. Ostatní repozitářové šablony
@@ -128,13 +166,14 @@ z těchto částí nenahrazuje ani nepřesměrovává.
 | `ruff check custom_components tests tests_homeassistant scripts` | **PASS**. |
 | `python -m compileall -q custom_components tests tests_homeassistant scripts` | **PASS**. |
 | `git diff --check` | **PASS**. |
-| HA 2026.10.x runtime | **NESPUŠTĚNO**; viz důvod níže. |
-| Produkční restart/reload a frontend v běžícím HA | **NESPUŠTĚNO**; nic nebylo nasazeno. |
+| HA 2026.10.x runtime | **PASS: 16 živých šablonovacích scénářů na Core 2026.10.1**. Úplná pytest sada na této verzi nebyla spuštěna. |
+| Frontend v běžícím HA | **PASS**: dashboard, náhled generátoru a zachované tři pohledy. |
+| Produkční restart/reload procesu | **NESPUŠTĚNO**; statické změny jej nevyžadovaly. |
 | Monitoring: krátký/dlouhý report, velká historie, nedostupný cíl, opakování, velikost, detekce a aktualizace dashboardu | **NESPUŠTĚNO**; jiný projekt a nezměněný producent. |
 
 Lokální HA testy vyžadovaly povolení Windows loopback socketpair; původní
 sandbox jej blokoval při vytvoření asyncio smyčky. Lokální pomocný runner
-ponechal ochranu spojení testů mimo loopback. Testy nevyvolávají výpadek
+ponechal ochranu spojení testů mimo loopback. Lokální sady nevyvolávají výpadek
 internetu a neovládají produkční HA. Zůstala upozornění staršího testovacího
 pluginu na pytest konfiguraci/import; samotné testy neselhaly.
 
@@ -148,8 +187,8 @@ Cíl je HA 2026.10.x. Úpravy používají dokumentované
 [čtení stavu](https://www.home-assistant.io/template-functions/states/) a
 [regex_match](https://www.home-assistant.io/template-functions/regex_match/)
 s Jinja testem `is string`; v upraveném runtime kódu není nové ani zastaralé
-backend API. Z těchto podkladů plyne očekávaná kompatibilita, nikoli potvrzený
-runtime test na cílové verzi.
+backend API. Dodatečné živé ověření potvrdilo HDO blok a frontend na Core
+2026.10.1. Nejde o úplnou pytest sadu ani test restartu procesu na této verzi.
 
 Veřejná metadata PyPI při kontrole uváděla HA **2026.10.1**. Projektový
 `scripts/resolve_latest_ha.py` však skončil chybou
@@ -168,7 +207,8 @@ opravený zdroj generátoru a přibalenou šablonu pro budoucí náhledy; po zm�
 JS obnovte prohlížeč bez cache, protože verze manifestu se tímto commitem nemění.
 Pokud aktualizujete celou integraci standardním postupem, načtěte ji znovu.
 
-Zbývá ověřit reálný restart/reload na HA 2026.10.x a log po nasazení. Stávající
-uložená karta se samotnou aktualizací souborů automaticky nezmění. Upozornění
-`internet_monitoring_report` tato oprava ČEZ neřeší; je nutné pokračovat v přesně
-uvedeném projektu. Celkové akceptační kritérium pro obě chyby zatím splněno není.
+Zbývá ověřit reálný restart/reload procesu na HA 2026.10.x a delší sledování
+logu. Stávající uložená karta se samotnou aktualizací souborů automaticky
+nezmění; při tomto nasazení byla proto opravena také přes přímý HA konektor.
+Upozornění `internet_monitoring_report` tato oprava ČEZ neřeší. Jeho akceptační
+kritérium v rámci tohoto projektu ověřeno nebylo.
