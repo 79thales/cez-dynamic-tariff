@@ -3,6 +3,9 @@
 `build_release.py` builds `dist/cez_dynamic_tariff.zip` with integration files directly at
 the archive root, as required by HACS `zip_release`. It uses `git archive` on the
 selected commit's `custom_components/cez_dynamic_tariff` tree, never the working directory.
+Text files use LF and archive dates use the commit timestamp in UTC, so host line-ending
+and timezone settings do not change the installer. `--repository` selects a separate
+checkout when verifying an older tag with current packaging tools.
 Uncommitted edits, local credentials, exports, caches and repository metadata are
 not included. Keep private data out of Git as well and inspect the staged diff
 before committing.
@@ -28,8 +31,14 @@ python scripts/build_release.py --ref HEAD
    release first: HACS expects the configured ZIP to be available immediately.
 
 The workflow can also be run manually with an existing tag that contains these
-packaging scripts. It will reuse an identical asset on a draft but will not
-overwrite a different asset or modify a published release. Removing/replacing a
+packaging scripts. The workflow uses packaging tools from its own commit and runtime
+files and release notes from the requested tag. An existing draft or published
+installer is verified without changing it. Legacy Windows packages may differ only
+in ZIP metadata or CRLF line endings: every file is compared with the tagged build,
+and binary files must match byte for byte. A changed file, missing file, corrupt ZIP,
+or incorrect manifest fails verification. A published release without its installer
+is also rejected; uploads are allowed only to drafts. The workflow never
+overwrites an asset or modifies a published release. Removing/replacing a
 GitHub release asset resets its download count; keep published assets intact.
 
 Existing tags are not rewritten. Older releases retain their original `hacs.json`

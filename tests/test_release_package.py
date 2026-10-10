@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import unittest
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -120,8 +121,18 @@ class ReleasePackageTest(unittest.TestCase):
         first, _ = build_release(self.repository, "v0.1.0", "v0.1.0")
         self._write("custom_components/cez_dynamic_tariff/local-only.json", "local test data")
         self._git("config", "core.autocrlf", "true")
+        self._git("config", "core.eol", "crlf")
         second, _ = build_release(self.repository, "v0.1.0", "v0.1.0")
         self.assertEqual(first, second)
+
+    def test_zip_dates_use_commit_time_in_utc(self) -> None:
+        archive, _ = build_release(self.repository, "v0.1.0", "v0.1.0")
+        stamp = datetime.fromtimestamp(
+            int(self._git("show", "-s", "--format=%ct", "v0.1.0")), UTC
+        )
+        expected = (stamp.year, stamp.month, stamp.day, stamp.hour, stamp.minute, stamp.second // 2 * 2)
+        with ZipFile(BytesIO(archive)) as package:
+            self.assertTrue(all(item.date_time == expected for item in package.infolist()))
 
     def test_mismatched_or_invalid_release_tags_are_rejected(self) -> None:
         for tag in ("v0.1.1", "main", "v0.1.0; unsafe"):

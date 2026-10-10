@@ -7,6 +7,7 @@ import json
 import re
 import stat
 import subprocess
+from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path, PurePosixPath
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -19,7 +20,8 @@ ASSET_NAME = "cez_dynamic_tariff.zip"
 def _git(repository: Path, *args: str) -> bytes:
     """Read committed data without executing a shell."""
     return subprocess.check_output(
-        ["git", "-c", "core.autocrlf=false", *args], cwd=repository
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", *args],
+        cwd=repository,
     )
 
 
@@ -65,8 +67,11 @@ def build_release(
     ):
         raise ValueError("Release tag must match the integration manifest version")
 
-    # Archive a commit, not a tree, so timestamps come from the commit and
-    # repeated builds preserve the asset digest instead of using the build time.
+    # git archive uses local time for ZIP dates. Stamp the installer in UTC
+    # explicitly so Windows and CI produce the same metadata.
+    committed_at = int(_git(repository, "show", "-s", "--format=%ct", commit))
+    stamp = datetime.fromtimestamp(committed_at, UTC)
+    archive_date = (stamp.year, stamp.month, stamp.day, stamp.hour, stamp.minute, stamp.second)
     source = _git(repository, "archive", "--format=zip", commit, COMPONENT_PATH)
     output = BytesIO()
     prefix = COMPONENT_PATH + "/"
@@ -91,7 +96,7 @@ def build_release(
             if stat.S_ISLNK(item.external_attr >> 16):
                 raise ValueError("Installer must not contain symbolic links")
             target = ZipInfo(
-                item.filename.removeprefix(prefix), date_time=item.date_time
+                item.filename.removeprefix(prefix), date_time=archive_date
             )
             target.create_system = 3
             target.external_attr = 0o100644 << 16
@@ -110,12 +115,13 @@ def main() -> None:
     """Write build artifacts; uploading or publishing is deliberately separate."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", default="HEAD")
+    parser.add_argument("--repository", type=Path, default=REPOSITORY_ROOT)
     parser.add_argument("--expected-tag")
     parser.add_argument("--output", type=Path, default=Path("dist") / ASSET_NAME)
     args = parser.parse_args()
     if args.output.name != ASSET_NAME:
         parser.error(f"The HACS installer filename must be {ASSET_NAME}")
-    archive, notes = build_release(REPOSITORY_ROOT, args.ref, args.expected_tag)
+    archive, notes = build_release(args.repository.resolve(), args.ref, args.expected_tag)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(archive)
     args.output.with_name("release-notes.md").write_text(notes, encoding="utf-8")

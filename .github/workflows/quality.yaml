@@ -53,8 +53,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Test dashboard view creation
-        run: node --test tests/test_dashboard_frontend.js
+      - name: Test dashboard view creation and release workflow
+        run: node --test tests/test_dashboard_frontend.js tests/test_release_workflow.js
 
       - name: Unit-test coverage
         run: coverage report --show-missing
