@@ -1,7 +1,7 @@
 """Native financial settings save independently without losing existing data."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -39,7 +39,7 @@ async def test_one_page_common_individual_confirmation_and_atomic_save(hass):
     manager = hass.config_entries.options
     with patch(
         "homeassistant.util.dt.now",
-        return_value=datetime(2026, 10, 9, tzinfo=timezone.utc),
+        return_value=datetime(2026, 10, 9, tzinfo=UTC),
     ):
         form = await choose(hass, entry, "monthly_advances")
         assert form["step_id"] == "monthly_advances"

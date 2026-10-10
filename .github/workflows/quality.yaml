@@ -97,6 +97,19 @@ jobs:
           "${{ matrix.holidays }}"
           "pypdf==6.19.0"
 
+      - name: Install frontend required by this Home Assistant version
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+          import homeassistant.components.frontend as frontend
+
+          manifest = json.loads(Path(frontend.__file__).with_name("manifest.json").read_text())
+          subprocess.check_call([sys.executable, "-m", "pip", "install", *manifest["requirements"]])
+          PY
+
       - name: Run real Home Assistant lifecycle tests
         run: >-
           pytest tests_homeassistant -q
