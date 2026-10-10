@@ -7,9 +7,32 @@ function cezSameConfig(left, right) {
   return JSON.stringify(canonical(left)) === JSON.stringify(canonical(right));
 }
 
+function cezGuardHdoTemplates(value) {
+  // Vstup/výstup: JSON podstrom pohledů. Pole a objekty vracíme jako nové kopie,
+  // primitivní hodnoty zachováme. Běží synchronně při náhledu, bez I/O a bez
+  // zápisu do HA; uložení dál podléhá původním kontrolám kolizí a souběhu.
+  // Starší místní karta posílala atribut hdo_entity přímo do is_state(). Při
+  // startu/reloadu cenový senzor nemusí existovat a atribut vrací None. Projdeme
+  // pouze kopii pohledů; ostatní karty, ceny, odkazy a místní údaje zachováme.
+  // Volání s proměnnou hdo změníme na čtení stavu až po kontrole typu a celého
+  // entity_id. Neplatný vstup znamená false pro NT i VT, tedy „neznámé“.
+  // Slug nepřipouští okrajová/dvojitá podtržítka. \Z je absolutní konec
+  // řetězce (na rozdíl od $ odmítá i koncový nový řádek).
+  // Výstup už neobsahuje původní volání, takže opakovaný náhled je idempotentní.
+  if (typeof value === "string" && value.includes("hdo_entity")) {
+    return value.replace(/is_state\(\s*hdo\s*,\s*(['"])(on|off)\1\s*\)/g,
+      (_, quote, state) => `(hdo is string and hdo | regex_match('^[a-z0-9]+(?:_[a-z0-9]+)*[.][a-z0-9]+(?:_[a-z0-9]+)*\\\\Z') and states(hdo) == '${state}')`);
+  }
+  if (Array.isArray(value)) return value.map(cezGuardHdoTemplates);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, cezGuardHdoTemplates(item)]));
+  }
+  return value;
+}
+
 function reuseCurrentCezViews(generated, current) {
-  // Keep the user's existing composition and local invoice comparison exactly
-  // as edited. Fresh installations use the bundled, customer-free template.
+  // Převzaté místní složení včetně všech detailů zachováme; opravíme pouze
+  // nebezpečné čtení HDO. Nové instalace používají opravenou přibalenou šablonu.
   const base = "cez-dynamic-tariff";
   const main = current?.views?.find(view => view.path === base);
   if (!main) return generated;
@@ -18,7 +41,7 @@ function reuseCurrentCezViews(generated, current) {
   const views = generated.views.map((fallback, index) => {
     const source = current.views.find(view => view.path === base + suffixes[index]);
     if (!source) return fallback;
-    const cloned = JSON.parse(JSON.stringify(source).replaceAll(`/lovelace/${base}`, `/lovelace/${path}`));
+    const cloned = cezGuardHdoTemplates(JSON.parse(JSON.stringify(source).replaceAll(`/lovelace/${base}`, `/lovelace/${path}`)));
     cloned.path = path + suffixes[index];
     cloned.subview = index > 0;
     if (!index) cloned.title = generated.views[0].title;

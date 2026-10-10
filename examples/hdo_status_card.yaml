@@ -1,0 +1,32 @@
+# Opravená karta „Cena odebrané kWh“ v hlavním pohledu ČEZ.
+# V editoru YAML nahraďte tuto jednu markdown kartu; ostatní pohledy zachovejte.
+# Při přejmenování entit použijte aktuální ID svého registru nebo generátor.
+# Bez cenového senzoru/HDO je tarif neznámý; on = NT, off = VT.
+type: markdown
+content: |
+  {% set price = states('sensor.cez_dynamic_tariff_accounting_price') %}
+  {% set mode = state_attr('sensor.cez_dynamic_tariff_accounting_status','dynamic_contract_mode') %}
+  ## Cena odebrané kWh
+  {% if is_number(price) %}
+  # {{ '%.3f'|format(price|float)|replace('.',',') }} Kč/kWh
+  {{ 'Standardní fakturovaná cena NT/VT · tarif na zkoušku' if mode == 'trial' else 'Cena ve zvoleném smluvním režimu' }}
+  {% else %}
+  ### Smluvní režim zatím neurčen
+  Smluvní režim zvolte v nastavení integrace. Cenové modely jsou v detailech.
+  {% endif %}
+
+  **Bez Dynamického tarifu: {{ ('%.3f'|format(states('sensor.cez_dynamic_tariff_price_without_dynamic')|float)|replace('.',',') ~ ' Kč/kWh') if is_number(states('sensor.cez_dynamic_tariff_price_without_dynamic')) else 'neznámá cena' }}**
+
+  {# Cenový senzor při startu/reloadu nebo vypnutém ocenění nemusí existovat.
+     Atribut není živý stav HDO; obsahuje nakonfigurované entity_id. Nejdříve
+     ověříme řetězec i celé ID (včetně konce), teprve potom čteme on = NT / off = VT.
+     Chybějící, unknown, unavailable i neplatný vstup zobrazíme jako neznámé.
+     Změny cenového senzoru i platné HDO entity zajišťují nové vykreslení v HA. #}
+  {% set hdo = state_attr('sensor.cez_dynamic_tariff_total_price','hdo_entity') %}
+  {% set hdo_valid = hdo is string and hdo | regex_match('^[a-z0-9]+(?:_[a-z0-9]+)*[.][a-z0-9]+(?:_[a-z0-9]+)*\\Z') %}
+  {% set hdo_state = states(hdo) if hdo_valid else 'unknown' %}
+  HDO: **{{ 'NT — nízký tarif' if hdo_state == 'on' else 'VT — vysoký tarif' if hdo_state == 'off' else 'neznámé' }}**
+
+  Včetně DPH a distribuce. Stálé platby jsou v denních nákladech podle nastavení.
+grid_options:
+  columns: full

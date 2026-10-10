@@ -78,3 +78,27 @@ test("reuse keeps the user's exact card layout and local invoice values",()=>{
 test("fresh installations retain the bundled current template",()=>{
  assert.equal(context.reuseCurrentCezViews(config,{views:[{path:"home"}]}),config);
 });
+
+// Převzetí starých pohledů musí opravit stejnou chybu jako přibalená šablona.
+// Úprava se týká jen HDO výrazů; místní sestava a vstupní konfigurace se nemění.
+test("copied HDO templates are guarded in the main view and detail subviews",()=>{
+ const unsafe="{% set hdo = state_attr('sensor.cez_dynamic_tariff_total_price','hdo_entity') %}HDO: {{ 'NT' if is_state(hdo,'on') else 'VT' if is_state( hdo, \"off\" ) else 'neznámé' }}";
+ const existing={views:[{path:"cez-dynamic-tariff",cards:[{type:"markdown",content:unsafe}]},
+  {path:"cez-dynamic-tariff-detaily",cards:[{type:"markdown",content:unsafe},{type:"markdown",content:"Místní faktura"}]},
+  {path:"cez-dynamic-tariff-zalohy",cards:[{type:"markdown",content:unsafe}]}]};
+ const before=clone(existing),result=context.reuseCurrentCezViews(config,existing);
+ assert.deepEqual(existing,before);
+ for(const view of result.views){const content=view.cards[0].content;
+  assert.ok(!content.includes("is_state("));assert.ok(content.includes("hdo is string"));
+  assert.ok(content.includes("regex_match('^[a-z0-9]+(?:_[a-z0-9]+)*[.][a-z0-9]+(?:_[a-z0-9]+)*\\\\Z')"));
+  assert.ok(content.includes("states(hdo) == 'on'"));assert.ok(content.includes("states(hdo) == 'off'"));
+  assert.equal(context.cezGuardHdoTemplates(content),content);}
+ assert.equal(result.views[1].cards[1].content,"Místní faktura");
+});
+
+test("repair preserves guarded bundled templates and unrelated is_state calls",()=>{
+ const bundled=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ assert.deepEqual(clone(context.cezGuardHdoTemplates(bundled)),bundled);
+ const unrelated="{{ is_state('binary_sensor.local_switch','on') }}";
+ assert.equal(context.cezGuardHdoTemplates(unrelated),unrelated);
+});

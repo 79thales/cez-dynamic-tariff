@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased – oprava HDO dashboardu 2026-10-10
+
+- Markdown karta HDO ověřuje typ a celé entity_id před čtením stavu. Při startu,
+  reloadu, chybějícím cenovém senzoru nebo neplatném atributu zobrazí „neznámé“;
+  `on` zůstává NT a `off` VT. Výpočty cen, trial režim a ID entit se nemění.
+- Generate dashboard opraví také nebezpečné HDO výrazy při převzetí existujících
+  místních pohledů; zachová hlavní stránku, detaily i editor záloh.
+- Doplněny skutečné HA regresní testy vykreslení, odběru stavů, pozdního vzniku
+  HDO, reloadu a exportu YAML. Ruční oprava karty: `examples/hdo_status_card.yaml`.
+- HDO dashboard templates validate the source before reading its state, including
+  copied existing views. Unknown inputs remain unknown; NT/VT and prices are preserved.
+
 ## 1.0.8 – 2026-10-10
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

@@ -14,7 +14,10 @@ Tlačítko vytvoří oznámení s odkazem na generátor, obdobně jako v EDC Sha
 Generátor používá současné složení: aktuální cena, dnešní náklady a úspory,
 vyúčtování, skutečný měsíční odběr, nejlevnější odběr. Zachovává také složení
 detailů. Pokud už pohledy ČEZ existují, náhled převezme jejich přesné místní
-složení včetně vašich úprav. Pro novou instalaci slouží dodaná šablona.
+složení včetně vašich úprav. Při převzetí opraví staré výrazy
+`is_state(hdo, 'on'/'off')` ve šablonách s atributem `hdo_entity`: stav čte až
+po ověření řetězce a platného ID. Chybějící HDO znamená **neznámé**;
+`on` zůstává NT a `off` VT. Pro novou instalaci slouží opravená dodaná šablona.
 Grafy používají **ApexCharts Card**, stejně jako současný přehled;
 generátor tuto kartu neinstaluje. Pokud chybí, nainstalujte ji přes HACS sami.
 Pomocný editor záloh je součástí integrace.
@@ -30,6 +33,16 @@ Pokud některá ze tří adres existuje, nepřepíše se a nevznikne duplicitní
 Generátor nabídne odkaz na existující pohled; jiný nový pohled vyžaduje jinou adresu.
 Při změně Overview během přidávání se uložení zastaví a lze jej zopakovat.
 Při výpadku spojení se ověřuje výsledek zápisu; žádný pohled se automaticky nemaže.
+
+Oprava generátoru sama nepřepíše již uložený pohled. Pro opravu existující karty
+otevřete `/lovelace/cez-dynamic-tariff`, v části **Aktuální cena** upravte markdown
+kartu **Cena odebrané kWh** a její YAML nahraďte obsahem
+[`examples/hdo_status_card.yaml`](../examples/hdo_status_card.yaml).
+Ostatní karty a podstránky ponechte. U přejmenovaných senzorů zachovejte svá ID.
+Alternativně stáhněte náhled generátoru a převezměte z něj opravenou kartu.
+Uložení karty nepotřebuje restart HA; po aktualizaci souboru generátoru obnovte
+prohlížeč bez cache. Podrobnosti a rozsah ověření obsahuje
+[report opravy logu 2026.10](ha-2026-10-log-fixes.md).
 
 **YAML spravovaný nebo automaticky generovaný Overview se nepřebírá automaticky.**
 YAML můžete stáhnout. Obsahuje klíč `views` se třemi pohledy; při ručním přidání
