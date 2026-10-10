@@ -1,0 +1,961 @@
+{
+  "views": [
+    {
+      "title": "ČEZ – cena a vyúčtování",
+      "path": "cez-dynamic-tariff",
+      "icon": "mdi:transmission-tower",
+      "type": "sections",
+      "max_columns": 3,
+      "dense_section_placement": false,
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Aktuální cena",
+              "heading_style": "title",
+              "icon": "mdi:cash-clock",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "{% set price = states('sensor.cez_dynamic_tariff_accounting_price') %}\n{% set mode = state_attr('sensor.cez_dynamic_tariff_accounting_status','dynamic_contract_mode') %}\n## Cena odebrané kWh\n{% if is_number(price) %}\n# {{ '%.3f'|format(price|float)|replace('.',',') }} Kč/kWh\n{{ 'Standardní fakturovaná cena NT/VT · tarif na zkoušku' if mode == 'trial' else 'Cena ve zvoleném smluvním režimu' }}\n{% else %}\n### Smluvní režim zatím neurčen\nSmluvní režim zvolte v nastavení integrace. Cenové modely jsou v detailech.\n{% endif %}\n\n**Bez Dynamického tarifu: {{ ('%.3f'|format(states('sensor.cez_dynamic_tariff_price_without_dynamic')|float)|replace('.',',') ~ ' Kč/kWh') if is_number(states('sensor.cez_dynamic_tariff_price_without_dynamic')) else 'neznámá cena' }}**\n\n{% set hdo = state_attr('sensor.cez_dynamic_tariff_total_price','hdo_entity') %}HDO: **{{ 'NT — nízký tarif' if is_state(hdo,'on') else 'VT — vysoký tarif' if is_state(hdo,'off') else 'neznámé' }}**\n\nVčetně DPH a distribuce. Stálé platby jsou v denních nákladech podle nastavení.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Pásmo obchodní ceny",
+              "content": "{% set e = 'sensor.cez_dynamic_tariff_today_tariff_map' %}\n{% set palette = {\"super_cheap\":\"🟢\",\"cheap\":\"⚪\",\"normal\":\"🔘\",\"expensive\":\"🟠\",\"very_expensive\":\"🔴\"} %}\n{% set ns = namespace(symbol=state_attr('sensor.cez_dynamic_tariff_current_modifier', 'display_token')) %}\n{% for row in state_attr(e,'schedule') or [] %}{% if (row.start ~ '-' ~ row.end) == states('sensor.cez_dynamic_tariff_current_band') %}{% set ns.symbol = row.get('display_token') or palette.get(row.level,'—') %}{% endif %}{% endfor %}\n{% if has_value('sensor.cez_dynamic_tariff_current_modifier') %}\n{% set m = states('sensor.cez_dynamic_tariff_current_modifier') | float %}\n## {{ ns.symbol or '—' }} {{ '+' if m > 0 else '' }}{{ m | round(0) | int }} %\n{% else %}\nPásmo není dostupné.\n{% endif %}\n{% for row in state_attr(e,'legend') or [] %}{{ row.get('display_token') or palette.get(row.level,'—') }} **{{ row.modifier_percent }} %**{{ ' · ' if not loop.last else '' }}{% endfor %}\n\nProcenta upravují pouze obchodní cenu.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "button",
+              "name": "Složky ceny, rozvrhy a detaily",
+              "icon": "mdi:chart-box-outline",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/lovelace/cez-dynamic-tariff-detaily"
+              },
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Dnes a úspory",
+              "heading_style": "title",
+              "icon": "mdi:calendar-today",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "{% set e = 'sensor.cez_dynamic_tariff_daily_cost_backfilled' %}\n{% set a = 'sensor.cez_dynamic_tariff_accounting_status' %}\n## Dnes od půlnoci\n\n| Položka | Dnes |\n|:--|--:|\n| Odběr ze sítě | {{ (states('sensor.cez_dynamic_tariff_daily_import_energy')|float|round(2)) ~ ' kWh' if is_number(states('sensor.cez_dynamic_tariff_daily_import_energy')) else 'Data chybí' }} |\n| Cena odebrané elektřiny | {{ (states('sensor.cez_dynamic_tariff_daily_import_cost_backfilled')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_daily_import_cost_backfilled')) else 'Nelze úplně ocenit' }} |\n| Jistič a další stálé platby | {{ (state_attr(a,'daily_fixed_included')|float(0)|round(2)) ~ ' Kč' }} |\n| **Náklady celkem** | **{{ (states(e)|float|round(2)) ~ ' Kč' if is_number(states(e)) else 'Neúplný výpočet' }}** |\n| Úspora oproti běžné ceně | {{ (states('sensor.cez_dynamic_tariff_daily_savings_backfilled')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_daily_savings_backfilled')) else 'Nelze zatím potvrdit' }} |\n| Známý příjem ze sdílení | {{ (states('sensor.cez_dynamic_tariff_daily_shared_income')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_daily_shared_income')) else 'Dnešní data zatím nejsou' }} |\n| {{ 'Po odečtení sdílení' if state_attr(a,'deduct_shared_income') else 'Výsledné náklady (sdílení vypnuté)' }} | {{ (states('sensor.cez_dynamic_tariff_daily_net_cost')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_daily_net_cost')) else 'Čeká na údaje' }} |\n\n{% if state_attr(a,'today_through') %}Dopočteno do **{{ as_timestamp(state_attr(a,'today_through'))|timestamp_custom('%H:%M') }}**. Aktualizace po pěti minutách.{% endif %}\n{% if is_state(a,'contract_unconfirmed') %}**Je potřeba určit, zda máte tarif finální, nebo na zkoušku. Odběr se přebírá, neověřený cenový model se neúčtuje.**{% endif %}\n{% if state_attr(a,'dynamic_contract_mode') == 'trial' %}Na zkoušku jde o fakturovanou standardní cenu NT/VT; případná později vyplacená úspora je samostatná.{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "{% set a = 'sensor.cez_dynamic_tariff_accounting_status' %}\n**Stálé platby: {{ 'zahrnuté' if state_attr(a,'include_standing_fees') else 'nezahrnuté' }} · Sdílení: {{ 'odečítání zapnuté' if state_attr(a,'deduct_shared_income') else 'odečítání vypnuté' }}.**\n\nPříjem EDC se započítává ke dni, ke kterému patří.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "history-graph",
+              "title": "Oba cenové modely za 24 hodin",
+              "hours_to_show": 24,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_price_with_dynamic",
+                  "name": "S dynamikou"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_price_without_dynamic",
+                  "name": "Bez dynamiky"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Zúčtovací období",
+              "icon": "mdi:cash-check",
+              "heading_style": "title",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "content": "{% set a = 'sensor.cez_dynamic_tariff_accounting_status' %}\n{% set b = states('sensor.cez_dynamic_tariff_forecast_balance') %}\n{% set f = states('sensor.cez_dynamic_tariff_forecast_import_energy') %}\n{% macro amount(entity,unit,decimals=0) -%}\n{% set value=states(entity) %}{{ ('%.*f'|format(decimals,value|float)|replace('.',',') ~ ' ' ~ unit) if is_number(value) else 'Údaje chybí' }}\n{%- endmacro %}\n## Vyúčtování\n{{ state_attr(a,'billing_start') or '—' }} → {{ state_attr(a,'billing_end') or '—' }}\n\n{% if is_number(b) %}\n### {{ 'Očekávaný přeplatek' if b|float >= 0 else 'Očekávaný nedoplatek' }}\n# {{ b|float|abs|round(0)|int }} Kč\n{% elif state_attr(a,'missing_advance_months') %}\n**Chybí zadaná záloha za {% for m in state_attr(a,'missing_advance_months') %}{{ m[5:7] }}/{{ m[0:4] }}{{ ', ' if not loop.last else '' }}{% endfor %}.**\n{% else %}\n**Vyúčtování čeká na úplné finanční údaje.**\n{% endif %}\n\n| Za zúčtovací období | Hodnota |\n|:--|--:|\n| **Skutečný odběr dosud** | **{{ amount('sensor.cez_dynamic_tariff_period_import_energy','kWh',1) }}** |\n| **Odhad odběru celkem** | **{{ amount('sensor.cez_dynamic_tariff_forecast_import_energy','kWh') }}** |\n| Náklady dosud | {{ amount('sensor.cez_dynamic_tariff_period_gross_cost','Kč') }} |\n| Odhad nákladů celkem | {{ amount('sensor.cez_dynamic_tariff_forecast_net_cost','Kč') }} |\n| Zaplacené zálohy | {{ amount('sensor.cez_dynamic_tariff_advance_payments_paid','Kč') }} |\n| Plán záloh celkem | {{ amount('sensor.cez_dynamic_tariff_advance_payments_total','Kč') }} |\n\n{% if state_attr(a,'reference_date') %}Odběr dosud: odečet ČEZ do **{{ state_attr(a,'reference_date') }}**, dále měření HA.{% else %}Odběr dosud podle historie měření HA.{% endif %}\n\nOdhad vychází z měsíčního profilu historie HA. Sdílení: **{{ 'odečítání zapnuté' if state_attr(a,'deduct_shared_income') else 'odečítání vypnuté' }}**.\n{% if not is_number(f) %}Pro odhad odběru chybí úplný sezónní profil.{% endif %}\n{% if not is_number(states('sensor.cez_dynamic_tariff_period_gross_cost')) %}\n{% if state_attr(a,'unpriced_period_kwh')|float(0)>0.001 %}**Chybí historická cena pro {{ state_attr(a,'unpriced_period_kwh')|float|round(2) }} kWh.**{% else %}**Ocenění období není úplné.**{% endif %}\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "show": true,
+                "title": "Náklady a zálohy za zúčtovací období",
+                "show_states": false
+              },
+              "section_mode": true,
+              "grid_options": {
+                "columns": 12,
+                "rows": 7
+              },
+              "graph_span": "800d",
+              "span": {
+                "start": "day",
+                "offset": "-400d"
+              },
+              "now": {
+                "show": true,
+                "label": "Dnes"
+              },
+              "apex_config": {
+                "chart": {
+                  "height": 320,
+                  "toolbar": {
+                    "show": true
+                  },
+                  "events": {
+                    "mounted": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }",
+                    "updated": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }"
+                  }
+                },
+                "legend": {
+                  "show": true,
+                  "fontSize": "12px"
+                },
+                "markers": {
+                  "size": 5
+                },
+                "xaxis": {
+                  "labels": {
+                    "format": "MM/yy"
+                  }
+                },
+                "yaxis": {
+                  "labels": {
+                    "formatter": "EVAL:function(value){return Math.round(value).toLocaleString('cs-CZ')+' Kč';}"
+                  },
+                  "min": 0
+                }
+              },
+              "series": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "name": "Známé náklady",
+                  "color": "#ff9800",
+                  "stroke_width": 3,
+                  "curve": "straight",
+                  "extend_to": false,
+                  "unit": "CZK",
+                  "data_generator": "const a=entity.attributes; const periodLeft=new Date(a.billing_start+'T00:00:00').getTime(); const periodEndDate=new Date(a.billing_end+'T00:00:00'); periodEndDate.setDate(periodEndDate.getDate()+1); const finish=periodEndDate.getTime(); if(!Number.isFinite(periodLeft)||!Number.isFinite(finish)) return []; return [[periodLeft,null], ...(a.cost_actual_series || []).filter(p=>p[0]>=periodLeft && p[0]<=finish), [finish,null]];",
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  }
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "name": "Odhad nákladů",
+                  "color": "#23a26d",
+                  "stroke_width": 3,
+                  "stroke_dash": 6,
+                  "curve": "straight",
+                  "extend_to": false,
+                  "unit": "CZK",
+                  "data_generator": "const a=entity.attributes; const periodLeft=new Date(a.billing_start+'T00:00:00').getTime(); const periodEndDate=new Date(a.billing_end+'T00:00:00'); periodEndDate.setDate(periodEndDate.getDate()+1); const finish=periodEndDate.getTime(); if(!Number.isFinite(periodLeft)||!Number.isFinite(finish)) return []; return [[periodLeft,null], ...(a.cost_forecast_series || []).filter(p=>p[0]>=periodLeft && p[0]<=finish), [finish,null]];",
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  }
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "name": "Zaplacené zálohy",
+                  "color": "#6e7cc5",
+                  "stroke_width": 2,
+                  "curve": "stepline",
+                  "extend_to": false,
+                  "unit": "CZK",
+                  "data_generator": "const a=entity.attributes; const periodLeft=new Date(a.billing_start+'T00:00:00').getTime(); const periodEndDate=new Date(a.billing_end+'T00:00:00'); periodEndDate.setDate(periodEndDate.getDate()+1); const finish=periodEndDate.getTime(); if(!Number.isFinite(periodLeft)||!Number.isFinite(finish)) return []; return [[periodLeft,null], ...(a.advance_paid_series || []).filter(p=>p[0]>=periodLeft && p[0]<=finish), [finish,null]];",
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  }
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "name": "Plán záloh",
+                  "color": "#9da5c7",
+                  "stroke_width": 2,
+                  "stroke_dash": 3,
+                  "curve": "stepline",
+                  "extend_to": false,
+                  "unit": "CZK",
+                  "data_generator": "const a=entity.attributes; const periodLeft=new Date(a.billing_start+'T00:00:00').getTime(); const periodEndDate=new Date(a.billing_end+'T00:00:00'); periodEndDate.setDate(periodEndDate.getDate()+1); const finish=periodEndDate.getTime(); if(!Number.isFinite(periodLeft)||!Number.isFinite(finish)) return []; return [[periodLeft,null], ...(a.advance_planned_series || []).filter(p=>p[0]>=periodLeft && p[0]<=finish), [finish,null]];",
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  }
+                }
+              ]
+            },
+            {
+              "type": "button",
+              "name": "Nastavení integrace: zálohy a odečet",
+              "icon": "mdi:cog-outline",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/config/integrations/integration/cez_dynamic_tariff"
+              },
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Skutečná spotřeba",
+              "heading_style": "title",
+              "icon": "mdi:chart-bar"
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "show": true,
+                "title": "Měsíční odběr podle měření HA",
+                "show_states": false
+              },
+              "section_mode": true,
+              "grid_options": {
+                "columns": 12,
+                "rows": 7
+              },
+              "graph_span": "800d",
+              "span": {
+                "start": "day",
+                "offset": "-400d"
+              },
+              "now": {
+                "show": true,
+                "label": "Dnes"
+              },
+              "apex_config": {
+                "chart": {
+                  "height": 300,
+                  "toolbar": {
+                    "show": true
+                  },
+                  "events": {
+                    "mounted": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }",
+                    "updated": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }"
+                  },
+                  "stacked": true
+                },
+                "plotOptions": {
+                  "bar": {
+                    "columnWidth": "65%"
+                  }
+                },
+                "dataLabels": {
+                  "enabled": false
+                },
+                "legend": {
+                  "show": true,
+                  "fontSize": "12px"
+                },
+                "markers": {
+                  "size": 0
+                },
+                "xaxis": {
+                  "labels": {
+                    "format": "MM/yy"
+                  },
+                  "tooltip": {
+                    "enabled": false
+                  }
+                },
+                "yaxis": {
+                  "min": 0,
+                  "labels": {
+                    "formatter": "EVAL:function(value){return Math.round(value).toLocaleString('cs-CZ')+' kWh';}"
+                  }
+                },
+                "tooltip": {
+                  "shared": true,
+                  "intersect": false,
+                  "x": {
+                    "format": "MM/yyyy"
+                  }
+                }
+              },
+              "series": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "unit": "kWh",
+                  "float_precision": 1,
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  },
+                  "extend_to": false,
+                  "name": "Úplný měsíc",
+                  "type": "column",
+                  "color": "#1976d2",
+                  "data_generator": "const a=entity.attributes;\nconst left=new Date(a.billing_start+'T00:00:00'), ending=new Date(a.billing_end+'T00:00:00');\nif(!Number.isFinite(left.getTime())||!Number.isFinite(ending.getTime())) return [];\nending.setDate(ending.getDate()+1);\nconst through=new Date(a.today_through||a.statistics_read_at);\nif(!Number.isFinite(through.getTime())) return [];\nconst parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:hass.config.time_zone||'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(through).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));\nconst current=parts.year+'-'+String(parts.month).padStart(2,'0');\nconst months=[];let cursor=new Date(left.getFullYear(),left.getMonth(),1);\nfor(let i=0;i<14&&cursor<ending;i++){const y=cursor.getFullYear(),m=cursor.getMonth()+1;months.push({y,m,key:y+'-'+String(m).padStart(2,'0'),stamp:Date.UTC(y,m-1,1,12),days:new Date(y,m,0).getDate()});cursor=new Date(y,m,1);}\nconst result=months.filter(m=>m.key<=current).map(({key,stamp})=>{const row=a.history_months?.[key];const value=row?.kwh==null?NaN:Number(row.kwh);const isComplete=Boolean(row?.complete)&&key<current;return [stamp,Number.isFinite(value)&&isComplete===true?value:null];});return result;"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "unit": "kWh",
+                  "float_precision": 1,
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  },
+                  "extend_to": false,
+                  "name": "Neúplný měsíc",
+                  "type": "column",
+                  "color": "#ef9b28",
+                  "data_generator": "const a=entity.attributes;\nconst left=new Date(a.billing_start+'T00:00:00'), ending=new Date(a.billing_end+'T00:00:00');\nif(!Number.isFinite(left.getTime())||!Number.isFinite(ending.getTime())) return [];\nending.setDate(ending.getDate()+1);\nconst through=new Date(a.today_through||a.statistics_read_at);\nif(!Number.isFinite(through.getTime())) return [];\nconst parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:hass.config.time_zone||'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(through).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));\nconst current=parts.year+'-'+String(parts.month).padStart(2,'0');\nconst months=[];let cursor=new Date(left.getFullYear(),left.getMonth(),1);\nfor(let i=0;i<14&&cursor<ending;i++){const y=cursor.getFullYear(),m=cursor.getMonth()+1;months.push({y,m,key:y+'-'+String(m).padStart(2,'0'),stamp:Date.UTC(y,m-1,1,12),days:new Date(y,m,0).getDate()});cursor=new Date(y,m,1);}\nconst result=months.filter(m=>m.key<=current).map(({key,stamp})=>{const row=a.history_months?.[key];const value=row?.kwh==null?NaN:Number(row.kwh);const isComplete=Boolean(row?.complete)&&key<current;return [stamp,Number.isFinite(value)&&isComplete===false?value:null];});return result;"
+                }
+              ]
+            },
+            {
+              "type": "markdown",
+              "content": "**Naměřené měsíce z HA.** Oranžový sloupec je neúplný měsíc. Chybějící data nejsou nulová spotřeba.\n\n{% if state_attr('sensor.cez_dynamic_tariff_accounting_status','reference_date') %}**Součet sloupců se může lišit od odečtu ČEZ.** Odečet nemá měsíční rozpis; celkový odběr ve vyúčtování používá ověřený součet ČEZ.{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "button",
+              "name": "Profil, faktura a podrobnosti",
+              "icon": "mdi:chart-box-outline",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/lovelace/cez-dynamic-tariff-detaily"
+              },
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Nejlevnější odběr",
+              "heading_style": "title",
+              "icon": "mdi:clock-outline",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Cenový model do konce zítřka",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_minimum_price",
+                  "name": "Minimum cenového modelu"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_best_price_start",
+                  "name": "Minimum modelu od"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_next_price_change",
+                  "name": "Další změna celkové ceny"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Aktuální HDO a cenové pásmo",
+              "content": "{%- set rows = state_attr('sensor.cez_dynamic_tariff_price_forecast', 'forecast') or [] -%}\n{%- set now_ts = as_timestamp(now()) -%}\n{%- set ns = namespace(row=none) -%}\n{%- for r in rows -%}\n{%- if as_timestamp(r.start, 0) <= now_ts < as_timestamp(r.end, 0) and r.price_kwh is number -%}\n{%- set ns.row = r -%}\n{%- endif -%}\n{%- endfor -%}\n{% if ns.row %}\n{% set r = ns.row %}\n{% set minutes = ((as_timestamp(r.end) - now_ts) / 60) | round(0, 'ceil') | int %}\n## {{ 'Nízký tarif (NT)' if r.tariff == 'NT' else 'Vysoký tarif (VT)' }}\nToto cenové pásmo platí ještě **{{ minutes // 60 }} h {{ minutes % 60 }} min**, do **{{ as_timestamp(r.end) | timestamp_custom('%d.%m. %H:%M', true) }}**.\n\n{{ 'Modelová změna obchodní složky (vratka se vyúčtuje samostatně)' if state_attr('sensor.cez_dynamic_tariff_accounting_status','dynamic_contract_mode') == 'trial' else 'Změna obchodní složky podle pásma' }}: {{ '+' if r.modifier_percent > 0 else '' }}{{ r.modifier_percent }} %.\n\n{% else %}\nAktuální cenové pásmo nelze z dostupných HDO dat potvrdit.\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Nejbližší levnější odběr",
+              "content": "{%- set e = 'sensor.cez_dynamic_tariff_total_price' -%}\n{%- set mode = state_attr('sensor.cez_dynamic_tariff_accounting_status','dynamic_contract_mode') -%}\n{%- set known = mode in ['trial','regular'] -%}\n{%- set current = states('sensor.cez_dynamic_tariff_accounting_price' if known else e) | float(none) -%}\n{%- set rows = state_attr('sensor.cez_dynamic_tariff_price_forecast', 'forecast') or [] -%}\n{%- set ns = namespace(row=none) -%}\n{%- set now_ts = as_timestamp(now()) -%}\n{%- if is_state('sensor.cez_dynamic_tariff_price_forecast', 'complete') and current is number -%}\n{%- for r in rows -%}\n{%- set candidate = r.without_dynamic_kwh if mode == 'trial' else r.price_kwh -%}\n{%- if ns.row is none and as_timestamp(r.start, 0) > now_ts and candidate is number and candidate < current - 0.000001 -%}\n{%- set ns.row = r -%}\n{%- endif -%}\n{%- endfor -%}\n{%- endif -%}\n{% if ns.row %}\n{% set r = ns.row %}\n{% set minutes = ((as_timestamp(r.start) - now_ts) / 60) | round(0, 'ceil') | int %}\n## {{ 'NT — nízký tarif' if r.tariff == 'NT' else 'VT — vysoký tarif' }}\n**Za {{ minutes // 60 }} h {{ minutes % 60 }} min**  \nOd **{{ as_timestamp(r.start) | timestamp_custom('%d.%m. %H:%M', true) }}** do **{{ as_timestamp(r.end) | timestamp_custom('%d.%m. %H:%M', true) }}**\n\n| Varianta | Celková cena |\n| :--- | ---: |\n| S Dynamickým tarifem | {{ '%.3f' | format(r.with_dynamic_kwh) | replace('.', ',') }} Kč/kWh |\n| Bez Dynamického tarifu | {{ '%.3f' | format(r.without_dynamic_kwh) | replace('.', ',') }} Kč/kWh |\n\n{{ 'Levnější fakturovaná cena než nyní.' if known else '**Cenová simulace — smluvní režim zatím nepotvrzen.**' }} Úsek končí při další změně HDO nebo dynamického pásma. Ceny zahrnují DPH a distribuci; stálé poplatky jsou zvlášť.\n{% elif not is_state('sensor.cez_dynamic_tariff_price_forecast', 'complete') or current is not number %}\nÚplný cenový výhled není dostupný. Levnější okno nelze spolehlivě určit.\n{% else %}\nV úplném výhledu do konce zítřka není známá cena nižší než nyní. Obchodní sleva sama o sobě neznamená nejnižší celkovou cenu.\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        }
+      ],
+      "cards": []
+    },
+    {
+      "title": "ČEZ – detaily",
+      "path": "cez-dynamic-tariff-detaily",
+      "icon": "mdi:chart-box-outline",
+      "type": "sections",
+      "subview": true,
+      "back_path": "/lovelace/cez-dynamic-tariff",
+      "max_columns": 3,
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Složky ceny a náklady",
+              "heading_style": "title",
+              "icon": "mdi:cash-multiple",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Ceník odběrného místa",
+              "content": "{% set r = state_attr('sensor.cez_dynamic_tariff_total_price', 'rates') %}\n{% if r is mapping %}\n**{{ r.distribution_rate }} · {{ r.breaker_phases | int }}×{{ r.breaker_amperes | int }} A · včetně DPH**\n\n| Složka | VT | NT |\n| :--- | ---: | ---: |\n| Dodávka Kč/kWh | {{ '%.5f' | format(r.trade_vt) | replace('.', ',') }} | {{ '%.5f' | format(r.trade_nt) | replace('.', ',') }} |\n| Distribuce Kč/kWh | {{ '%.5f' | format(r.distribution_vt) | replace('.', ',') }} | {{ '%.5f' | format(r.distribution_nt) | replace('.', ',') }} |\n| Daň Kč/kWh | {{ '%.5f' | format(r.electricity_tax) | replace('.', ',') }} | {{ '%.5f' | format(r.electricity_tax) | replace('.', ',') }} |\n| Systémové služby Kč/kWh | {{ '%.5f' | format(r.system_services) | replace('.', ',') }} | {{ '%.5f' | format(r.system_services) | replace('.', ',') }} |\n| POZE Kč/kWh | {{ '%.5f' | format(r.poze_kwh) | replace('.', ',') }} | {{ '%.5f' | format(r.poze_kwh) | replace('.', ',') }} |\n| Ostatní Kč/kWh | {{ '%.5f' | format(r.other_kwh) | replace('.', ',') }} | {{ '%.5f' | format(r.other_kwh) | replace('.', ',') }} |\n\n**Měsíční platby**\n\n| Položka | Kč/měsíc |\n| :--- | ---: |\n| Dodavatel | {{ '%.2f' | format(r.supplier_monthly) | replace('.', ',') }} |\n| Jistič | {{ '%.2f' | format(r.breaker_monthly) | replace('.', ',') }} |\n| Nesíťová infrastruktura | {{ '%.2f' | format(r.infrastructure_monthly) | replace('.', ',') }} |\n| Ostatní | {{ '%.2f' | format(r.other_monthly) | replace('.', ',') }} |\n\nDynamické procento upravuje pouze **obchodní cenu za odebranou kWh**. Distribuce, daně a stálé platby se tím nemění.\n{% else %}\nCenový profil není dostupný.\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Zdroj ceníku",
+              "content": "{% set p = state_attr('sensor.cez_dynamic_tariff_total_price', 'price_list') or {} %}\n{% if p.source %}\n**Zdroj:** {{ p.source }}\n\n**Datum vydání obchodního ceníku:** {{ p.trade_effective }}  \n**Distribuční ceník od:** {{ p.distribution_effective }}\n\n{% if p.imported_at %}**Načteno:** {{ as_local(as_datetime(p.imported_at)).strftime('%d. %m. %Y %H:%M') }}{% endif %}\n{% if p.rates_edited %}Částky byly po načtení ručně upraveny.{% endif %}\n{% if p.poze_estimated %}POZE je odhad podle ročního odběru; vyžaduje roční vyrovnání.{% endif %}\n{% else %}\nPoužívá se výchozí nebo ručně nastavený profil. Nový ceník lze načíst jako PDF v nastavení integrace.\n{% endif %}\n\n**Cena ve vaší smlouvě od:** {{ state_attr('sensor.cez_dynamic_tariff_accounting_status','current_price_start') or 'nezadáno' }}"
+            },
+            {
+              "type": "entities",
+              "title": "Stálé platby a odhad kWh",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_monthly_fixed_cost",
+                  "name": "Stálé platby za měsíc"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_daily_fixed_cost",
+                  "name": "Stálé platby na dnešní den"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_allocated_price",
+                  "name": "Odhad kWh včetně stálých plateb"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Součty od zapnutí sledování",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_actual_cost",
+                  "name": "Variabilní náklad"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_total_cost",
+                  "name": "Náklady dle zvolené volby"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_realized_savings",
+                  "name": "Dosažená úspora"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_dynamic_savings",
+                  "name": "Srovnání úspory dynamiky"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_potential_savings",
+                  "name": "Teoretická další úspora přesunem"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_unpriced_energy",
+                  "name": "Odběr bez určené ceny"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Jak číst úspory",
+              "content": "**Původní monitoring je zachovaný.** Jeho součty začínají zapnutím sledování a cenový model nemusí odpovídat vyúčtování tarifu na zkoušku. Nový dopočet od půlnoci, zúčtovací období a zdroje historie jsou na hlavní stránce a níže.\n\nTeoretická úspora přesunem předpokládá přesun veškerého odběru do nejlevnějšího známého času; neověřuje možnosti zařízení ani ztráty baterie.",
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Dnešní výhled",
+              "heading_style": "title",
+              "icon": "mdi:calendar-today",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Celková cena dnes",
+              "content": "{%- set rows = state_attr('sensor.cez_dynamic_tariff_price_forecast', 'forecast') or [] -%}\n{%- set day = today_at() + timedelta(days=0) -%}\n{%- set day_end = day + timedelta(days=1) -%}\n{%- set ns = namespace(lines=[]) -%}\n{%- for row in rows -%}\n{%- set start = as_local(as_datetime(row.start)) -%}\n{%- set end = as_local(as_datetime(row.end)) -%}\n{%- if start < day_end and end > day -%}\n{%- set left = day if start < day else start -%}\n{%- set right = day_end if end > day_end else end -%}\n{%- set value = ('%.3f' | format(row.price_kwh) | replace('.', ',')) if row.price_kwh is number else 'neznámá' -%}\n{%- set ns.lines = ns.lines + ['| ' ~ left.strftime('%H:%M') ~ '–' ~ ('24:00' if right == day_end else right.strftime('%H:%M')) ~ ' | ' ~ (row.tariff or '—') ~ ' | ' ~ ('+' if row.modifier_percent > 0 else '') ~ row.modifier_percent ~ ' % | ' ~ value ~ ' |'] -%}\n{%- endif -%}\n{%- endfor -%}\n**{{ day.strftime('%d.%m.%Y') }} · ceny včetně DPH**\n\n{% if ns.lines %}\n| Čas | HDO | Změna dodávky | Kč/kWh |\n| :--- | :--- | ---: | ---: |\n{{ ns.lines | join('\\n') }}\n{% else %}\nVýhled není dostupný. Neznámé ceny se nepovažují za vysoký tarif.\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Procentní pásma dnes",
+              "content": "{% set entity = 'sensor.cez_dynamic_tariff_today_tariff_map' %}\n{% set schedule = state_attr(entity, 'schedule') or [] %}\n{% set current = states('sensor.cez_dynamic_tariff_current_band') %}\n**{{ state_attr(entity, 'season') or '—' }} · {{ state_attr(entity, 'day_type') or '—' }}**\n{% if not has_value(entity) or schedule | length == 0 %}\nMapa tarifu není dostupná.\n{% else %}\n| Pásmo | Čas | Změna |\n| :--- | :--- | ---: |\n{% for item in schedule -%}\n{% set active = (item['start'] ~ '-' ~ item['end']) == current -%}\n{% set mod = item['modifier_percent'] | int -%}\n| {{ item.get('display_token') or {'super_cheap': '🟢', 'cheap': '⚪', 'normal': '🔘', 'expensive': '🟠', 'very_expensive': '🔴'}.get(item['level'], item['token']) }}{{ ' **TEĎ**' if active else '' }} | {{ '**' if active else '' }}{{ item['start'] }}–{{ item['end'] }}{{ '**' if active else '' }} | {{ '**' if active else '' }}{{ '+' if mod > 0 else '' }}{{ mod }} %{{ '**' if active else '' }} |\n{% endfor %}\n{% endif %}\n"
+            },
+            {
+              "type": "entities",
+              "title": "Stav zdrojových dat",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "__HDO_VALID__",
+                  "name": "Platná HDO data"
+                },
+                {
+                  "entity": "__HDO_VALID_UNTIL__",
+                  "name": "HDO platnost do"
+                },
+                {
+                  "entity": "__HDO_AGE__",
+                  "name": "Stáří HDO dat"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_price_forecast",
+                  "name": "Úplnost cenového výhledu"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Zítřek a nastavení",
+              "heading_style": "title",
+              "icon": "mdi:calendar-arrow-right",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Celková cena zítra",
+              "content": "{%- set rows = state_attr('sensor.cez_dynamic_tariff_price_forecast', 'forecast') or [] -%}\n{%- set day = today_at() + timedelta(days=1) -%}\n{%- set day_end = day + timedelta(days=1) -%}\n{%- set ns = namespace(lines=[]) -%}\n{%- for row in rows -%}\n{%- set start = as_local(as_datetime(row.start)) -%}\n{%- set end = as_local(as_datetime(row.end)) -%}\n{%- if start < day_end and end > day -%}\n{%- set left = day if start < day else start -%}\n{%- set right = day_end if end > day_end else end -%}\n{%- set value = ('%.3f' | format(row.price_kwh) | replace('.', ',')) if row.price_kwh is number else 'neznámá' -%}\n{%- set ns.lines = ns.lines + ['| ' ~ left.strftime('%H:%M') ~ '–' ~ ('24:00' if right == day_end else right.strftime('%H:%M')) ~ ' | ' ~ (row.tariff or '—') ~ ' | ' ~ ('+' if row.modifier_percent > 0 else '') ~ row.modifier_percent ~ ' % | ' ~ value ~ ' |'] -%}\n{%- endif -%}\n{%- endfor -%}\n**{{ day.strftime('%d.%m.%Y') }} · ceny včetně DPH**\n\n{% if ns.lines %}\n| Čas | HDO | Změna dodávky | Kč/kWh |\n| :--- | :--- | ---: | ---: |\n{{ ns.lines | join('\\n') }}\n{% else %}\nVýhled není dostupný. Neznámé ceny se nepovažují za vysoký tarif.\n{% endif %}",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Procentní pásma zítra",
+              "content": "{% set entity = 'sensor.cez_dynamic_tariff_tomorrow_tariff_map' %}\n{% set schedule = state_attr(entity, 'schedule') or [] %}\n**{{ state_attr(entity, 'season') or '—' }} · {{ state_attr(entity, 'day_type') or '—' }}**\n{% if not has_value(entity) or schedule | length == 0 %}\nMapa tarifu na zítřek není dostupná.\n{% else %}\n| Pásmo | Čas | Změna |\n| :--- | :--- | ---: |\n{% for item in schedule -%}\n{% set mod = item['modifier_percent'] | int -%}\n| {{ item.get('display_token') or {'super_cheap': '🟢', 'cheap': '⚪', 'normal': '🔘', 'expensive': '🟠', 'very_expensive': '🔴'}.get(item['level'], item['token']) }} | {{ item['start'] }}–{{ item['end'] }} | {{ '+' if mod > 0 else '' }}{{ mod }} % |\n{% endfor %}\n{% endif %}\n"
+            },
+            {
+              "type": "entities",
+              "title": "Prahy pro vyhodnocení pásem",
+              "show_header_toggle": false,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_super_cheap_threshold",
+                  "name": "Super levné – nejvýše"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_cheap_threshold",
+                  "name": "Levné – nejvýše"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_expensive_threshold",
+                  "name": "Drahé – nejméně"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_very_expensive_threshold",
+                  "name": "Velmi drahé – nejméně"
+                }
+              ]
+            },
+            {
+              "type": "markdown",
+              "title": "Režim dynamického tarifu",
+              "content": "{% set entity = 'sensor.cez_dynamic_tariff_today_tariff_map' %} {% set raw = (state_attr(entity, 'season') or '') | lower %} {% set m = now().month %} {% set d = now().day %} {% set y = now().year %}\n{% if raw in ['summer', 'letni', 'letní'] %}\n  {% set current = '☀️ Letní' %}\n{% elif raw in ['winter', 'zimni', 'zimní'] %}\n  {% set current = '❄️ Zimní' %}\n{% elif 4 <= m <= 9 %}\n  {% set current = '☀️ Letní' %}\n{% else %}\n  {% set current = '❄️ Zimní' %}\n{% endif %}\n{% if 4 <= m <= 9 %}\n  {% set next_mode = '❄️ Zimní' %}\n  {% set next_date = y ~ '-10-01 00:00:00' %}\n  {% set next_text = '1. 10. ' ~ y %}\n{% else %}\n  {% set next_mode = '☀️ Letní' %}\n  {% if m >= 10 %}\n    {% set ny = y + 1 %}\n  {% else %}\n    {% set ny = y %}\n  {% endif %}\n  {% set next_date = ny ~ '-04-01 00:00:00' %}\n  {% set next_text = '1. 4. ' ~ ny %}\n{% endif %}\n{% set t = as_timestamp(next_date, none) %}\n{% if t is not none %}\n  {% set days = ((t - as_timestamp(now())) / 86400)\n    | round(0, 'ceil') | int %}\n{% else %}\n  {% set days = none %}\n{% endif %}\n## {{ current }} režim\n{% if (m == 4 and d == 1) or (m == 10 and d == 1) %}\n## 🔴 DNES DOŠLO KE ZMĚNĚ REŽIMU\nAktuálně je aktivní **{{ current }} režim**.\n{% elif days is not none and days <= 7 %}\n## ⚠️ Změna za {{ days }} {{ 'den' if days == 1 else 'dní' }}\n**{{ next_text }} → {{ next_mode }} režim**\nAutomatizace bude od tohoto data pracovat s novým sezónním rozvrhem ČEZ.\n{% else %}\nDalší změna: **{{ next_text }} → {{ next_mode }} režim**\n{% if days is not none %} Zbývá **{{ days }} dní**. {% endif %}\n{% endif %}\n"
+            },
+            {
+              "type": "markdown",
+              "title": "Nastavení a původní entity",
+              "content": "Variantu s Dynamickým tarifem nebo bez něj a zahrnutí stálých plateb nastavíte v **Nastavení → Zařízení a služby → ČEZ Dynamic Tariff → Konfigurovat**. Původní obchodní cena a tarifní entity zůstávají zachované. Nová celková cena přebírá z ČEZ HDO stav a rozvrh; jeho cenové entity se nemění.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Původní obchodní cena",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_effective_price",
+                  "name": "Původní obchodní cena / kWh"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_current_band",
+                  "name": "Aktuální dynamické pásmo"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "button",
+              "name": "Nastavení a import ceníku",
+              "icon": "mdi:file-pdf-box",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/config/integrations/integration/cez_dynamic_tariff"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Historie a profil spotřeby",
+              "icon": "mdi:chart-timeline-variant",
+              "heading_style": "title",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Měsíční profil odběru",
+              "content": "{% set e = 'sensor.cez_dynamic_tariff_accounting_status' %}\n**Úplnost:** {{ states(e) }} · **Hodnoty aktualizované:** {{ as_timestamp(state_attr(e,'statistics_read_at'))|timestamp_custom('%d.%m. %H:%M') if state_attr(e,'statistics_read_at') else '—' }}\n\n| Měsíc | Denní průměr | Úplné dny | Zdroj |\n|:--|--:|--:|:--|\n{% for row in state_attr(e,'consumption_profile') or [] %}| {{ row.month }} | {{ ('%.2f'|format(row.daily_kwh) ~ ' kWh') if row.daily_kwh is not none else 'chybí' }} | {{ row.sample_days }} | {{ 'Faktura' if row.source == 'settled_bill' else 'HA statistiky' }} |\n{% endfor %}\nProfil zachovává zimní a letní průběh. Chybějící hodiny se nevkládají jako nulová spotřeba. Odhad peněz používá průměr současného cenového výhledu.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Dostupná historie",
+              "content": "{% set e = 'sensor.cez_dynamic_tariff_accounting_status' %}\n| Měsíc | Odběr ze sítě | NT / VT | Dynamický tarif | Pokrytí |\n|:--|--:|:--|:--|:--|\n{% for month, row in (state_attr(e,'history_months') or {}).items()|sort %}| {{ month }} | {{ '%.1f'|format(row.kwh) }} kWh | {{ (row.nt_kwh|string ~ ' / ' ~ row.vt_kwh|string) if row.nt_kwh is defined else 'nedochováno' }} | {{ 'Od aktivace' if row.dynamic_active else 'Před aktivací' }} | {{ 'Úplné' if row.complete else 'Částečné' }} |\n{% endfor %}\nÚdaje jsou převzaté z dlouhodobých statistik nebo vyúčtování. Bez historického HDO a ceníku nelze z měsíčního součtu přesně určit cenu jednotlivých dynamických pásem.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Předchozí vyúčtování",
+              "content": "{% for b in state_attr('sensor.cez_dynamic_tariff_accounting_status','settled_bills') or [] %}\n### {{ b.start }} → {{ b.end }}\n**Ověřená faktura: {{ '%.2f'|format(b.cost) }} Kč · {{ b.energy_kwh }} kWh**\n\nZaplaceno {{ '%.2f'|format(b.paid) }} Kč · přeplatek {{ '%.2f'|format(b.paid - b.cost) }} Kč.\n\n{% endfor %}\nTato vyúčtování se nepřeceňují současným ceníkem. Faktura za období před 1. 11. 2025 neobsahuje výsledek Dynamického tarifu.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "markdown",
+              "title": "Zdroje a úplnost účetnictví",
+              "content": "{% set e = 'sensor.cez_dynamic_tariff_accounting_status' %}\n- Dynamický tarif smluvně od: **{{ state_attr(e,'dynamic_start') or 'nezadáno' }}**\n- Současná cena ve smlouvě od: **{{ state_attr(e,'current_price_start') or 'nezadáno' }}**\n- Smluvní režim: **{{ state_attr(e,'dynamic_contract_mode') or 'neurčeno' }}**\n- Zdroj odběru: {{ state_attr(e,'energy_source') or '—' }}\n- Zdroj již vypočtených nákladů: {{ state_attr(e,'cost_source') or '—' }}\n- Použité existující nákladové hodiny: {{ state_attr(e,'reused_cost_hours') or 0 }}\n- Převzaté nákladové úseky dnes: {{ state_attr(e,'reused_today_intervals') or 0 }}\n- Neoceněný odběr za období: {{ state_attr(e,'unpriced_period_kwh')|float(0)|round(3) }} kWh\n- Příjem ze sdílení dostupný do: {{ as_timestamp(state_attr(e,'shared_income_known_until'))|timestamp_custom('%d.%m. %H:%M') if state_attr(e,'shared_income_known_until') else 'údaje chybí' }}\n\n**Dynamická procenta ovlivňují pouze obchodní cenu za kWh. Distribuce, daně a stálé platby jsou nezávislé.** [Pravidla ČEZ](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif)\n\nU tarifu na zkoušku se případná úspora vyplácí dodatečně. ČEZ používá váženou obchodní cenu NT/VT za celé zkušební období; původní cenový model není potvrzenou vratkou.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "button",
+              "name": "Pomocný editor záloh",
+              "icon": "mdi:calendar-edit",
+              "tap_action": {
+                "action": "navigate",
+                "navigation_path": "/lovelace/cez-dynamic-tariff-zalohy"
+              },
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Podrobnosti vyúčtování",
+              "heading_style": "title",
+              "icon": "mdi:receipt-text"
+            },
+            {
+              "type": "markdown",
+              "content": "{% set a = 'sensor.cez_dynamic_tariff_accounting_status' %}\n{% set b = states('sensor.cez_dynamic_tariff_forecast_balance') %}\n## Vyúčtování\n**{{ state_attr(a,'billing_start') or '—' }} → {{ state_attr(a,'billing_end') or '—' }}**\n\n{% set energy_forecast = states('sensor.cez_dynamic_tariff_forecast_import_energy') %}\n{% if is_number(energy_forecast) %}\n### Odhad spotřeby z historie HA\n# {{ energy_forecast|float|round(0)|int }} kWh\n{% else %}\n### Odhad spotřeby čeká na úplný měsíční profil\n{% endif %}\n\n{% if is_number(b) %}\n### {{ 'Předpokládaný přeplatek' if b|float >= 0 else 'Předpokládaný nedoplatek' }}\n# {{ b|float|abs|round(0)|int }} Kč\n{% elif state_attr(a,'missing_advance_months') %}\n**Chybí zadaná záloha za {% for m in state_attr(a,'missing_advance_months') %}{{ m[5:7] }}/{{ m[0:4] }}{{ ', ' if not loop.last else '' }}{% endfor %}.**\n{% if is_number(energy_forecast) and is_number(states('sensor.cez_dynamic_tariff_forecast_gross_cost')) %}Spotřeba i náklady jsou odhadnuté; výsledek přeplatku nebo nedoplatku čeká na doplnění záloh.{% endif %}\n{% else %}\nVýsledek přeplatku nebo nedoplatku čeká na úplné finanční údaje.\n{% endif %}\n\n| Přehled za období | Hodnota |\n|:--|--:|\n| Odběr dosud | {{ (states('sensor.cez_dynamic_tariff_period_import_energy')|float|round(1)) ~ ' kWh' if is_number(states('sensor.cez_dynamic_tariff_period_import_energy')) else 'Historie je neúplná' }} |\n| Náklady dosud | {{ (states('sensor.cez_dynamic_tariff_period_gross_cost')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_period_gross_cost')) else 'Ocenění není úplné' }} |\n| **Zaplaceno dle nastavení** | **{{ states('sensor.cez_dynamic_tariff_advance_payments_paid')|float(0)|round(0)|int }} Kč** |\n| Plán záloh celkem | {{ states('sensor.cez_dynamic_tariff_advance_payments_total')|float(0)|round(0)|int }} Kč |\n| Odhad odběru z historie HA | {{ (states('sensor.cez_dynamic_tariff_forecast_import_energy')|float|round(0)|int) ~ ' kWh' if is_number(states('sensor.cez_dynamic_tariff_forecast_import_energy')) else 'Chybí sezónní profil' }} |\n| Odhad nákladů před sdílením | {{ (states('sensor.cez_dynamic_tariff_forecast_gross_cost')|float|round(0)|int) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_forecast_gross_cost')) else 'Nelze spolehlivě určit' }} |\n| Známé příjmy ze sdílení | {{ (states('sensor.cez_dynamic_tariff_period_shared_income')|float|round(2)) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_period_shared_income')) else 'Data nejsou dostupná' }} |\n| Odhad po odečtení sdílení | {{ (states('sensor.cez_dynamic_tariff_forecast_net_cost')|float|round(0)|int) ~ ' Kč' if is_number(states('sensor.cez_dynamic_tariff_forecast_net_cost')) else 'Čeká na údaje' }} |\n\n\n{% if not is_number(states('sensor.cez_dynamic_tariff_period_gross_cost')) %}\n{% set unpriced = state_attr(a,'unpriced_period_kwh')|float(0) %}\n{% set daily_unpriced = state_attr(a,'daily_unpriced_kwh')|float(0) %}\n{% if unpriced > 0.001 %}**Chybí historická cena pro {{ unpriced|round(2) }} kWh.** Odběr je známý, ale nelze ho ocenit bez tehdejšího HDO nebo již spočtených nákladů.{% endif %}\n{% if daily_unpriced > 0.001 %}Dnešní odběr bez určené ceny: **{{ daily_unpriced|round(2) }} kWh**.{% endif %}\n{% if state_attr(a,'missing_fee_days')|int(0) > 0 %}Chybí také sazby stálých poplatků pro **{{ state_attr(a,'missing_fee_days') }} dní**.{% endif %}\n{% if state_attr(a,'period_energy_coverage') is not none and state_attr(a,'period_energy_coverage')|float(0) < 1 %}Historie samotného odběru za část období není dostupná.{% endif %}\n{% if states(a) == 'contract_unconfirmed' %}V nastavení není potvrzený smluvní režim dynamického tarifu.{% endif %}\n{% endif %}\n\n{% if state_attr(a,'reference_date') %}Základ do **{{ state_attr(a,'reference_date') }}** je převzatý z odečtu dodavatele. Počítá se až následující odběr.{% endif %}\n\nOdhad HA používá dosavadní skutečný odběr a měsíční průměry úplných historických dní, včetně předchozí zimy. Budoucí ceny, počasí a výnosy ze sdílení nejsou zaručené.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Oba cenové modely",
+              "show_header_toggle": false,
+              "state_color": true,
+              "entities": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_price_with_dynamic",
+                  "name": "Model s dynamikou"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_price_without_dynamic",
+                  "name": "Bez Dynamického tarifu"
+                },
+                {
+                  "entity": "__HDO_ENTITY__",
+                  "name": "HDO nízký tarif"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_current_modifier",
+                  "name": "Změna obchodní ceny"
+                }
+              ],
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 2,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Srovnání s fakturou",
+              "heading_style": "title",
+              "icon": "mdi:chart-bar"
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "show": true,
+                "title": "Skutečná spotřeba a měsíční profil",
+                "show_states": false
+              },
+              "section_mode": true,
+              "grid_options": {
+                "columns": 12,
+                "rows": 8
+              },
+              "graph_span": "800d",
+              "span": {
+                "start": "day",
+                "offset": "-400d"
+              },
+              "now": {
+                "show": true,
+                "label": "Dnes"
+              },
+              "apex_config": {
+                "chart": {
+                  "height": 350,
+                  "toolbar": {
+                    "show": true
+                  },
+                  "events": {
+                    "mounted": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }",
+                    "updated": "EVAL:function(chart, opts) { const values=(opts.config.series || []).flatMap(s => s.data || []).map(p => Array.isArray(p) ? p[0] : p.x).filter(Number.isFinite); if (!values.length) return; const min=Math.min(...values), max=Math.max(...values); const x=opts.config.xaxis||{}; if(max > min && (!Number.isFinite(x.min)||!Number.isFinite(x.max)||(x.max-x.min)>(max-min)*1.2)) chart.updateOptions({xaxis:{min:min,max:max}},false,false,false); }"
+                  }
+                },
+                "plotOptions": {
+                  "bar": {
+                    "columnWidth": "45%"
+                  }
+                },
+                "dataLabels": {
+                  "enabled": false
+                },
+                "legend": {
+                  "show": true,
+                  "fontSize": "12px"
+                },
+                "markers": {
+                  "size": 3
+                },
+                "xaxis": {
+                  "labels": {
+                    "format": "MM/yy"
+                  },
+                  "tooltip": {
+                    "enabled": false
+                  }
+                },
+                "yaxis": {
+                  "min": 0,
+                  "labels": {
+                    "formatter": "EVAL:function(value){return Math.round(value).toLocaleString('cs-CZ')+' kWh';}"
+                  }
+                },
+                "tooltip": {
+                  "shared": true,
+                  "intersect": false
+                }
+              },
+              "series": [
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "unit": "kWh",
+                  "float_precision": 1,
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  },
+                  "extend_to": false,
+                  "name": "Skutečný odběr HA",
+                  "type": "column",
+                  "color": "#1976d2",
+                  "data_generator": "const a=entity.attributes;\nconst left=new Date(a.billing_start+'T00:00:00'), ending=new Date(a.billing_end+'T00:00:00');\nif(!Number.isFinite(left.getTime())||!Number.isFinite(ending.getTime())) return [];\nending.setDate(ending.getDate()+1);\nconst through=new Date(a.today_through||a.statistics_read_at);\nif(!Number.isFinite(through.getTime())) return [];\nconst parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:hass.config.time_zone||'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(through).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));\nconst current=parts.year+'-'+String(parts.month).padStart(2,'0');\nconst months=[];let cursor=new Date(left.getFullYear(),left.getMonth(),1);\nfor(let i=0;i<14&&cursor<ending;i++){const y=cursor.getFullYear(),m=cursor.getMonth()+1;months.push({y,m,key:y+'-'+String(m).padStart(2,'0'),stamp:Date.UTC(y,m-1,1,12),days:new Date(y,m,0).getDate()});cursor=new Date(y,m,1);}\nconst result=months.map(({y,m,key,stamp,days})=>{const row=a.history_months?.[key];const value=key<=current&&row&&row.kwh!=null&&(row.complete||key===current)?Number(row.kwh):null;return[stamp,Number.isFinite(value)?value:null];});return [[left.getTime(),null],...result,[ending.getTime(),null]];"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "unit": "kWh",
+                  "float_precision": 1,
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  },
+                  "extend_to": false,
+                  "name": "Faktura",
+                  "type": "line",
+                  "color": "#7e8794",
+                  "stroke_width": 2,
+                  "stroke_dash": 4,
+                  "curve": "straight",
+                  "data_generator": "const a=entity.attributes;\nconst left=new Date(a.billing_start+'T00:00:00'), ending=new Date(a.billing_end+'T00:00:00');\nif(!Number.isFinite(left.getTime())||!Number.isFinite(ending.getTime())) return [];\nending.setDate(ending.getDate()+1);\nconst through=new Date(a.today_through||a.statistics_read_at);\nif(!Number.isFinite(through.getTime())) return [];\nconst parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:hass.config.time_zone||'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(through).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));\nconst current=parts.year+'-'+String(parts.month).padStart(2,'0');\nconst months=[];let cursor=new Date(left.getFullYear(),left.getMonth(),1);\nfor(let i=0;i<14&&cursor<ending;i++){const y=cursor.getFullYear(),m=cursor.getMonth()+1;months.push({y,m,key:y+'-'+String(m).padStart(2,'0'),stamp:Date.UTC(y,m-1,1,12),days:new Date(y,m,0).getDate()});cursor=new Date(y,m,1);}\nconst bill=(a.settled_bills||[]).filter(b=>Array.isArray(b.months)&&b.months.length).sort((x,y)=>String(y.end).localeCompare(String(x.end)))[0];\nconst invoiceMonths=new Map((bill?.months||[]).map(row=>[Number(row.month.slice(5,7)),row]));\nconst result=months.map(({m,stamp})=>{const row=invoiceMonths.get(m);return[stamp,row?Number(row.nt_kwh)+Number(row.vt_kwh):null];});return [[left.getTime(),null],...result,[ending.getTime(),null]];"
+                },
+                {
+                  "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                  "unit": "kWh",
+                  "float_precision": 1,
+                  "show": {
+                    "legend_value": false,
+                    "in_header": false
+                  },
+                  "extend_to": false,
+                  "name": "Odhad podle faktury",
+                  "type": "line",
+                  "color": "#23a26d",
+                  "stroke_width": 3,
+                  "stroke_dash": 6,
+                  "curve": "straight",
+                  "data_generator": "const a=entity.attributes;\nconst left=new Date(a.billing_start+'T00:00:00'), ending=new Date(a.billing_end+'T00:00:00');\nif(!Number.isFinite(left.getTime())||!Number.isFinite(ending.getTime())) return [];\nending.setDate(ending.getDate()+1);\nconst through=new Date(a.today_through||a.statistics_read_at);\nif(!Number.isFinite(through.getTime())) return [];\nconst parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:hass.config.time_zone||'Europe/Prague',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(through).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));\nconst current=parts.year+'-'+String(parts.month).padStart(2,'0');\nconst months=[];let cursor=new Date(left.getFullYear(),left.getMonth(),1);\nfor(let i=0;i<14&&cursor<ending;i++){const y=cursor.getFullYear(),m=cursor.getMonth()+1;months.push({y,m,key:y+'-'+String(m).padStart(2,'0'),stamp:Date.UTC(y,m-1,1,12),days:new Date(y,m,0).getDate()});cursor=new Date(y,m,1);}\nconst bill=(a.settled_bills||[]).filter(b=>Array.isArray(b.months)&&b.months.length).sort((x,y)=>String(y.end).localeCompare(String(x.end)))[0];\nconst invoiceMonths=new Map((bill?.months||[]).map(row=>[Number(row.month.slice(5,7)),row]));\nconst result=months.map(({m,key,stamp,days})=>{\nif(key<current)return[stamp,null];\nconst row=invoiceMonths.get(m);if(!row)return[stamp,null];\nconst originalYear=Number(row.month.slice(0,4)),originalDays=new Date(originalYear,m,0).getDate();\nconst mean=(Number(row.nt_kwh)+Number(row.vt_kwh))/originalDays;\nif(key===current){const measured=a.history_months?.[key]?.kwh;if(measured==null)return[stamp,null];const daysLeft=days-parts.day+(24-parts.hour-parts.minute/60-parts.second/3600)/24;return[stamp,Number(measured)+Math.max(0,daysLeft)*mean];}\nreturn[stamp,days*mean];});return [[left.getTime(),null],...result,[ending.getTime(),null]];"
+                }
+              ]
+            },
+            {
+              "type": "markdown",
+              "content": "{% set a='sensor.cez_dynamic_tariff_accounting_status' %}\n{% set bills=(state_attr(a,'settled_bills') or [])|selectattr('months','defined')|selectattr('months')|sort(attribute='end',reverse=true)|list %}\n## Srovnávací odhad podle faktury\n{% if bills %}\n{% set bill=bills[0] %}\nDodané vyúčtování je za **{{ bill.start }} → {{ bill.end }}**: **{{ bill.energy_kwh }} kWh**.\n{% set means=namespace(values={}) %}\n{% for row in bill.months %}\n{% set first=as_datetime(row.month ~ '-01') %}\n{% set next=first.replace(year=first.year+1,month=1) if first.month==12 else first.replace(month=first.month+1) %}\n{% set means.values=dict(means.values,**{(first.month|string):(row.nt_kwh+row.vt_kwh)/(next-first).days}) %}\n{% endfor %}\n{% set through=as_datetime(state_attr(a,'today_through'),none) %}\n{% set start=state_attr(a,'billing_start') or '' %}\n{% set ending=state_attr(a,'billing_end') or '' %}\n{% if through and start and ending and state_attr(a,'period_energy_coverage')|float(0)>=1 and state_attr(a,'daily_energy_complete') %}\n{% set local=through|as_local %}\n{% if start <= local.date().isoformat() <= ending %}\n{% set midnight=local.replace(hour=0,minute=0,second=0,microsecond=0) %}\n{% set finish=midnight.replace(year=ending[0:4]|int,month=ending[5:7]|int,day=ending[8:10]|int) %}\n{% set ns=namespace(remaining=0,complete=true) %}\n{% for i in range((finish-midnight).days+1) %}\n{% set day=midnight+timedelta(days=i) %}\n{% set right=day+timedelta(days=1) %}\n{% set left=local if i==0 else day %}\n{% set mean=means.values.get(day.month|string) %}\n{% if mean is none %}{% set ns.complete=false %}{% else %}\n{% set ns.remaining=ns.remaining+mean*(right.timestamp()-left.timestamp())/(right.timestamp()-day.timestamp()) %}\n{% endif %}\n{% endfor %}\n{% if ns.complete %}\n{% set actual=state_attr(a,'known_period_energy')|float(0) %}\n### Přibližně {{ (actual+ns.remaining)|round(0)|int }} kWh za současné období\nDosud známý odběr **{{ actual|round(1) }} kWh** + odhad zbývající spotřeby **{{ ns.remaining|round(0)|int }} kWh** podle měsíčního profilu faktury.\n{% else %}Faktura nepokrývá všechny potřebné kalendářní měsíce.{% endif %}\n{% else %}Srovnávací odhad je určený pro právě probíhající zúčtovací období.{% endif %}\n{% else %}Srovnávací odhad čeká na úplné údaje skutečného odběru.{% endif %}\n{% else %}\nPro srovnání není uložené vyúčtování s měsíčním rozpisem. Hlavní odhad používá dostupnou historii HA.\n{% endif %}\n\nModré sloupce přebírají **již spočtené hodinové statistiky HA**. Aktuální měsíc je zatím necelý. Šedá křivka je profil dodané faktury, přenesený na stejné měsíce současného období. Zelená ukazuje srovnávací odhad měsíční spotřeby podle této faktury.\n\n{% if state_attr(a,'reference_date') %}Celkový základ z ČEZ je k **{{ state_attr(a,'reference_date') }}**. Tento součet nemá měsíční rozpis; měsíční sloupce proto nadále pocházejí z HA a mohou se od součtu ČEZ lišit.{% endif %}\n\nOdhad z faktury je samostatné srovnání. Hlavní senzor odhadu HA používá svou dostupnou historii.",
+              "grid_options": {
+                "columns": 12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "ČEZ – pomocný editor záloh",
+      "path": "cez-dynamic-tariff-zalohy",
+      "icon": "mdi:calendar-edit",
+      "type": "sections",
+      "subview": true,
+      "back_path": "/lovelace/cez-dynamic-tariff-detaily",
+      "max_columns": 1,
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "markdown",
+              "title": "Pomocný editor záloh",
+              "content": "Běžné zadávání je v **Nastavení integrace → Zálohy**. Od verze 1.0.6 tam zadáte společnou částku nebo celý měsíční přehled a potvrzení úhrad na jedné stránce.\n\nTato podstránka ponechává pomocný editor jednotlivých řádků. Hlavní dashboard obsahuje přehled výsledků.",
+              "grid_options": {
+                "columns": "full"
+              }
+            },
+            {
+              "type": "conditional",
+              "conditions": [
+                {
+                  "condition": "state",
+                  "entity": "binary_sensor.cez_dynamic_tariff_advance_editor_available",
+                  "state": "on"
+                }
+              ],
+              "card": {
+                "type": "custom:cez-advances-card",
+                "entity": "sensor.cez_dynamic_tariff_accounting_status",
+                "title": "Zálohy"
+              },
+              "grid_options": {
+                "columns": "full"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

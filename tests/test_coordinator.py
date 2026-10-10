@@ -65,6 +65,7 @@ def _load_coordinator_module():
     class Platform(StrEnum):
         SENSOR = "sensor"
         BINARY_SENSOR = "binary_sensor"
+        BUTTON = "button"
 
     ha_const.Platform = Platform
     sys.modules[ha_const.__name__] = ha_const

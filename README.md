@@ -17,6 +17,11 @@
 
 ### Features
 
+- **Generate dashboard** configuration button and settings-menu link generate the
+  current ČEZ overview and detail subviews. Adds the main view to the **top tab bar
+  of Overview (`/lovelace`)**, preserving existing views. Preview and YAML export
+  are read-only. Charts require ApexCharts Card. See [dashboard generation](docs/dashboard-generator.md).
+
 - Optional billing-period accounting reuses existing Recorder and EDC financial
   statistics, with annual or monthly advance payments, historical backfill,
   verified provider readings, settled bills, seasonal consumption profiles and

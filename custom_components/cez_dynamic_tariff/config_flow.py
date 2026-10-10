@@ -313,8 +313,23 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 "accounting",
                 "accounting_history",
                 "price_list",
+                "dashboard",
                 "general",
             ],
+        )
+
+    async def async_step_dashboard(self, user_input=None):
+        """Link to the helper while preserving the native settings menu."""
+        from .dashboard import PANEL_PATH
+
+        if user_input is not None:
+            return await self.async_step_init()
+        return self.async_show_form(
+            step_id="dashboard",
+            data_schema=vol.Schema({}),
+            description_placeholders={
+                "url": f"/{PANEL_PATH}?entry_id={self._config_entry.entry_id}"
+            },
         )
 
     def _accounting_values(self):

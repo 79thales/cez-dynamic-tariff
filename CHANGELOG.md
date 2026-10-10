@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.8 – 2026-10-10
+
+**Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**
+
+### Čeština
+
+- Další doplnění výrazného updatu: konfigurační tlačítko **Generate dashboard** a stejná volba v nastavení integrace otevírají generátor s náhledem a exportem YAML, podobně jako EDC Share.
+- Generátor zachovává současné složení hlavního přehledu, detailů a pomocného editoru záloh. Přidává hlavní pohled do **horní lišty existujícího Overview (`/lovelace`)**, detaily jako podstránky. Nezakládá samostatný dashboard v postranním panelu.
+- Používá aktuální ID entit z registru, včetně přejmenovaných senzorů a zvoleného HDO zařízení. Chybějící entity se označí; grafy stejně jako současný přehled vyžadují ApexCharts Card. Generátor ji neinstaluje.
+- Zachovává ostatní pohledy a nastavení dashboardu. Kolize adres zabrání přepsání i duplicitním kopiím; před uložením kontroluje změnu konfigurace. Náhled a YAML nic nemění. Přímé přidání je dostupné pouze správci; YAML spravovaný nebo automatický Overview se nepřepisuje.
+- Pokud současné pohledy ČEZ již existují, náhled přebírá přesně jejich místní složení i vlastní úpravy. Pro novou instalaci používá stejnou dodanou šablonu bez osobních faktur, částek záloh a ID konkrétního elektroměru; srovnání s fakturou čte uložené měsíční údaje instalace. Původní entity, výpočty a statistiky zůstávají zachované.
+
+### English
+
+Requires the installed and configured [ČEZ HDO integration by Cmajda](https://github.com/Cmajda/ha_cez_distribuce).
+
+- Continues the substantial Accounting update with a **Generate dashboard** configuration button and settings-menu link. Opens a preview/YAML generator following the EDC Share workflow.
+- Preserves the current main-view, detail and auxiliary advances-editor composition. Adds the main view to the **top tab bar of the existing Overview (`/lovelace`)**, with detail subviews, rather than creating a separate sidebar dashboard.
+- Resolves current registry entity IDs, including renamed sensors and the selected HDO device. Missing entities are flagged. Charts require ApexCharts Card, as in the current overview; the generator does not install it.
+- Preserves other views and dashboard settings. Path collisions prevent overwrites and duplicates; the configuration is rechecked before saving. Preview/YAML is read-only. Direct addition requires an administrator and does not replace YAML-managed or automatically generated Overview configurations.
+- Existing ČEZ views supply the exact local layout and user edits for the preview. Fresh installations use the current bundled template without customer invoices, advances or site-specific meter IDs; invoice comparisons read that installation's stored monthly readings. Existing entities, calculations and statistics are preserved.
+
 ## 1.0.7 – 2026-10-09
 
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce).**

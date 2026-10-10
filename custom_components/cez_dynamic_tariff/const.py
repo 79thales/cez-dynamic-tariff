@@ -2,7 +2,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "cez_dynamic_tariff"
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 
 CONF_NAME = "name"
 CONF_BASE_PRICE_KWH = "base_price_kwh"

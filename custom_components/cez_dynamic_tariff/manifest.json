@@ -5,7 +5,9 @@
     "recorder",
     "frontend",
     "http",
-    "energy"
+    "energy",
+    "lovelace",
+    "panel_custom"
   ],
   "codeowners": [
     "@79thales"
@@ -23,5 +25,5 @@
     "pypdf==6.19.0"
   ],
   "single_config_entry": true,
-  "version": "1.0.7"
+  "version": "1.0.8"
 }

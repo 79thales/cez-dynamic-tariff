@@ -48,6 +48,14 @@ jobs:
       - name: Run tests
         run: coverage run --source=custom_components/cez_dynamic_tariff -m unittest discover -s tests
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Test dashboard view creation
+        run: node --test tests/test_dashboard_frontend.js
+
       - name: Unit-test coverage
         run: coverage report --show-missing
 

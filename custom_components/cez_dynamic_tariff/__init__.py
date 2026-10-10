@@ -28,9 +28,11 @@ async def async_setup_entry(
 ) -> bool:
     """Set up ČEZ Dynamic Tariff from a config entry."""
     coordinator = CezDynamicTariffCoordinator(hass, entry)
+    from .dashboard_api import async_setup_dashboard_generator
     from .frontend import async_register_card
 
     await async_register_card(hass)
+    await async_setup_dashboard_generator(hass)
     if coordinator._option("pricing_enabled", False):
         coordinator.billing = ElectricityBilling(coordinator)
         await coordinator.billing.async_setup()

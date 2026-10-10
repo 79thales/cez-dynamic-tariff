@@ -36,7 +36,8 @@
           "accounting": "Billing period, contract and consumption sources",
           "accounting_history": "Backfill and starting totals",
           "price_list": "Import a CEZ price-list PDF",
-          "general": "Tariff schedules and other settings"
+          "general": "Tariff schedules and other settings",
+          "dashboard": "Generate dashboard"
         }
       },
       "thresholds": {
@@ -265,6 +266,10 @@
           "reference_energy": "Imported energy since period start (kWh)",
           "reference_cost": "Costs since period start, including standing fees (CZK)"
         }
+      },
+      "dashboard": {
+        "title": "Generate dashboard",
+        "description": "[Open the dashboard generator]({url}). Adds the main view to the top tab bar of Overview, using the current card layout and detail subviews. Charts require ApexCharts Card. Submit returns to the settings menu."
       }
     },
     "error": {
@@ -488,6 +493,11 @@
       },
       "advance_editor_available": {
         "name": "Monthly advances editor available"
+      }
+    },
+    "button": {
+      "generate_dashboard": {
+        "name": "Generate dashboard"
       }
     }
   },

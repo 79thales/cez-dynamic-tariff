@@ -36,7 +36,8 @@
           "accounting": "Období, tarif a zdroje spotřeby",
           "accounting_history": "Zpětný dopočet a počáteční stav",
           "price_list": "Načíst ceník ČEZ z PDF",
-          "general": "Tarifní rozvrhy a další nastavení"
+          "general": "Tarifní rozvrhy a další nastavení",
+          "dashboard": "Generate dashboard"
         }
       },
       "thresholds": {
@@ -265,6 +266,10 @@
           "reference_energy": "Odběr od začátku období (kWh)",
           "reference_cost": "Náklady od začátku období včetně jističe a poplatků (Kč)"
         }
+      },
+      "dashboard": {
+        "title": "Generate dashboard",
+        "description": "[Otevřít generátor dashboardu]({url}). Přidá hlavní přehled do horní lišty Overview, se současným složením karet a podstránkami detailů. Grafy vyžadují ApexCharts Card. Odeslat vás vrátí do nabídky nastavení."
       }
     },
     "error": {
@@ -488,6 +493,11 @@
       },
       "advance_editor_available": {
         "name": "Měsíční editor záloh dostupný"
+      }
+    },
+    "button": {
+      "generate_dashboard": {
+        "name": "Generate dashboard"
       }
     }
   },
