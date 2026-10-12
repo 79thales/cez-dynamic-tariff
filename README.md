@@ -659,3 +659,13 @@ sections:
 
 cards: []
 ```
+
+## Licence
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+
+Tento projekt je licencován pod GNU General Public License v3.0, pouze verze 3 (**GPL-3.0-only**). Podrobnosti jsou v [LICENSE](LICENSE).
+
+Copyright (c) 2026 Jiří Dvořák (79thales).
+
+Dříve zveřejněné verze pod MIT zůstávají pod původní licencí. Změna platí pro toto a následující vydání.
