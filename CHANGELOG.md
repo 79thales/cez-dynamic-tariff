@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.10 – 2026-10-19
+
+### Čeština
+
+- URL přibaleného editoru záloh přebírá verzi integrace z manifestu přes
+  loader Home Assistantu místo pevného `?v=1.0.8`. Aktualizace a restart HA
+  tak automaticky změní URL pro obnovení cache prohlížeče.
+- Regresní testy ověřují verzi manifestu, budoucí vydání, opakovaný setup,
+  registraci po startu a HTTP dostupnost editoru i generátoru dashboardu.
+- Entity, konfigurace, výpočty tarifů a složení dashboardů se nemění.
+
+### English
+
+- Use the integration manifest version from the Home Assistant loader in the
+  bundled advances editor URL instead of the hard-coded `?v=1.0.8`.
+  Updating and restarting HA automatically changes the browser cache URL.
+- Add regression coverage for the manifest version, future releases, repeated
+  setup, startup registration and HTTP access to both bundled frontend modules.
+- Entities, configuration, tariff calculations and dashboard layouts are unchanged.
+
 ## 1.0.9 – 2026-10-12
 
 ### Čeština

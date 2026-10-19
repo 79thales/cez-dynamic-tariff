@@ -19,6 +19,13 @@ Grafy používají **ApexCharts Card**, stejně jako současný přehled;
 generátor tuto kartu neinstaluje. Pokud chybí, nainstalujte ji přes HACS sami.
 Pomocný editor záloh je součástí integrace.
 
+Od verze **1.0.10** přebírá URL editoru záloh parametr `v` z `manifest.json`
+přes loader Home Assistantu, stejně jako generátor dashboardu. Například
+`/cez_dynamic_tariff/advances-card.js?v=1.0.10` se při dalším vydání změní
+automaticky. Po aktualizaci restartujte HA a obnovte stránku prohlížeče.
+Ruční výměna JavaScriptu bez změny verze URL nezmění a může vyžadovat vymazání
+cache prohlížeče. Ručně spravované zdroje Lovelace se touto opravou neupravují.
+
 Náhled ukáže nedostupné entity. Používá skutečná ID registru včetně přejmenování
 a zvoleného HDO zařízení. Údaje nejsou kopírované z jiné domácnosti; účetnictví,
 zálohy, historie a srovnání s fakturou čtou existující senzory a uložené údaje.
