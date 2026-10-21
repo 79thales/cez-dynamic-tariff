@@ -12,11 +12,14 @@ class AccountingStore(Store):
     Atomické ukládání, souběh a konečný zápis při shutdownu zajišťuje HA.
     Převod chyby v úzkém I/O hooku zajistí, že caller neposune/potvrdí
     kurzor při neúspěšném zápisu. Původní výjimka zůstane v tracebacku.
-    Tento hook je krytý testem se skutečným Store a chybou jeho zapisovače.
+    HA 2025 předává hooku cestu a data, HA 2026 pouze data. Argumenty
+    předáme beze změny nadřazenému Store téže instalace; nepřepočítáváme
+    cestu ani nepřeskakujeme jeho zámek a atomický zápis. Testy pokrývají
+    oba tvary volání, skutečné opětovné načtení i chybu zapisovače.
     """
 
-    async def _async_write_data(self, path, data):
+    async def _async_write_data(self, *args):
         try:
-            await super()._async_write_data(path, data)
+            await super()._async_write_data(*args)
         except (json_util.SerializationError, WriteError) as err:
             raise HomeAssistantError("accounting_archive_write_failed") from err
