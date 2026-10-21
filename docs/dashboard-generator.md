@@ -109,3 +109,16 @@ entities and existing statistics. ApexCharts Card and configured ČEZ HDO are
 required. YAML exports contain three `views` to append, not a replacement for
 the whole Overview configuration. Keep the bundled template and generator in
 sync with every layout change.
+
+## Vyúčtování a ceníky (připraveno pro 1.0.12)
+
+Hlavní i detailní vyúčtování obsahují označení náhradního historického
+ocenění, jeho kWh, Kč a zdrojovou fakturu. Při chybějících podkladech
+vysvětlí důvody blokace. Detail obsahuje odkaz na nastavení integrace,
+kde je nová administrace **Vyúčtování a ceníky**.
+
+Generate dashboard upravuje stejné části jako dodávaná šablona.
+Při převzetí místních pohledů doplní označený blok do účetních souhrnů
+a jeden odkaz do detailu. Opakovaný náhled blok ani tlačítko neduplikuje;
+ostatní karty, místní entity a tři dosavadní pohledy zachová.
+Samotná aktualizace integrace nepřepisuje uložený Lovelace dashboard.

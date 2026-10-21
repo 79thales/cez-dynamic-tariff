@@ -1,5 +1,9 @@
 # Účetnictví, zálohy a zpětný dopočet
 
+Správu historických faktur, ceníků a volitelné náhradní ocenění popisuje
+[samostatný návod administrace](accounting-administration.md). Přesné účetnictví
+a orientační výhled rozlišují úplnost historického ocenění.
+
 **Vyžaduje nainstalovanou a nakonfigurovanou integraci [ČEZ HDO od Cmajda](https://github.com/Cmajda/ha_cez_distribuce), zapnutou plnou cenu a měřič importu.** ČEZ HDO ani jeho entity se nemění.
 
 V nastavení otevřete **Období, tarif a zdroje spotřeby**. Nové senzory se přidají až po zapnutí účetnictví. Původních 39 entit zachovává ID, unique ID i význam. Doména zůstává `cez_dynamic_tariff`; mění se pouze název integrace na **ČEZ Dynamic Tariff & Accounting**.

@@ -29,6 +29,18 @@ MANIFEST_VERSION = json.loads(
 MODULE_URL = f"{CARD_URL}?v={MANIFEST_VERSION}"
 
 
+@pytest.fixture(autouse=True)
+async def finish_frontend_start_before_shutdown(hass):
+    """I testy bez HTTP klienta musejí dokončit odložený start před stopem.
+
+    HA 2025 spouští server po dokončení setupu v dalším tasku. Při rychlém
+    teardown na Windows se jinak může accept task vytvořit až během stopu.
+    Nezakazujeme server ani neměníme kontrolu úniku úloh.
+    """
+    yield
+    await hass.async_block_till_done()
+
+
 def lovelace_field(hass, key):
     """Číst pole slovníku HA 2025 i datového objektu novějších verzí."""
     data = hass.data["lovelace"]
@@ -80,6 +92,9 @@ async def test_restart_loads_stored_resource_then_updates_same_id(hass, hass_sto
     await async_register_card(hass)
     assert len(resources.async_items()) == 2
     assert sum(item["url"] == MODULE_URL for item in resources.async_items()) == 1
+    # Frontend spouští HTTP také odloženě. Před teardown necháme dokončit
+    # start, aby fixture ukončila skutečný server a nezůstal accept task.
+    await hass.async_block_till_done()
 
 
 async def test_new_lovelace_data_object_uses_same_collection(hass):

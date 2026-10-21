@@ -1,4 +1,28 @@
 # Changelog
+## 1.0.12 – připraveno, dosud nevydáno
+
+### Čeština
+- Přidána nativní administrace **Vyúčtování a ceníky**: přehled, přidání,
+  úprava a odstranění historických faktur a cenových období bez editace JSON.
+- Měsíční rozpis VT/NT, validace součtů, časových překryvů a jednotek.
+  Historický import PDF má náhled a nemění aktivní sazby.
+- Volitelné náhradní ocenění neznámého VT/NT používá výslovně vybranou
+  starší fakturu a ceník platný v době spotřeby. Výhled je označený jako
+  orientační; přesné účetnictví i ověřený archiv zůstávají oddělené.
+- Kontrola podkladů ukazuje neoceněné intervaly a důvody blokace. Přepočet
+  využívá existující službu a zámek. Generátor i šablona dashboardu
+  obsahují upozornění na odhad a odkaz na nastavení.
+- Dokumentace: [správa podkladů](docs/accounting-administration.md).
+
+### English
+- Native historical bill and dated price-list administration, including
+  monthly NT/VT data, validation, atomic edits and historical PDF review.
+- Optional, explicitly selected bill-ratio valuation of unpriced energy.
+  Forecasts remain visibly approximate; exact accounting and verified
+  archives are not replaced by estimated data.
+- Concrete interval diagnostics and the existing locked recalculation action;
+  matching updates to generated and bundled dashboards.
+
 
 ## 1.0.11 – 2026-10-21
 

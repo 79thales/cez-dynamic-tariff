@@ -37,7 +37,8 @@
           "accounting_history": "Backfill and starting totals",
           "price_list": "Import a CEZ price-list PDF",
           "general": "Tariff schedules and other settings",
-          "dashboard": "Generate dashboard"
+          "dashboard": "Generate dashboard",
+          "accounting_documents": "Bills and price lists"
         }
       },
       "thresholds": {
@@ -273,6 +274,157 @@
       "dashboard": {
         "title": "Generate dashboard",
         "description": "[Open the dashboard generator]({url}). Adds the main view to the top tab bar of Overview, using the current card layout and detail subviews. Charts require ApexCharts Card. Submit returns to the settings menu."
+      },
+      "accounting_documents": {
+        "title": "Bills and price lists",
+        "description": "{summary}",
+        "menu_options": {
+          "document_bills": "Bills",
+          "document_profiles": "Historical price lists",
+          "estimate_settings": "Approximate valuation",
+          "accounting_check": "Check and recalculate",
+          "active_prices": "Active price list – edit rates"
+        }
+      },
+      "document_bills": {
+        "title": "Stored bills",
+        "description": "Only bills stored in this integration are listed. Amounts include VAT. Historical bills do not change the current billing checkpoint.",
+        "data": {
+          "record": "Bill",
+          "action": "Action"
+        }
+      },
+      "document_profiles": {
+        "title": "Historical price lists",
+        "description": "The active price list starts on {current}. Historical periods must not overlap. Import the active PDF from the main settings, or edit active rates in tariff settings. Gaps mean unknown prices.",
+        "data": {
+          "record": "Price list",
+          "action": "Action"
+        }
+      },
+      "document_profile_source": {
+        "title": "New historical price list",
+        "description": "Select a source, then review validity and VAT-inclusive rates.",
+        "menu_options": {
+          "profile_manual": "Enter manually",
+          "profile_import": "Import PDF",
+          "profile_copy": "Copy active rates for review"
+        }
+      },
+      "document_bill": {
+        "title": "Bill",
+        "description": "Closed period, both dates inclusive. Energy in kWh; all amounts in CZK including VAT. NT+VT must equal total energy. Blank optional amounts remain unknown. Stored monthly rows: {months}. Only full calendar months form a seasonal profile. The current checkpoint is not added twice.",
+        "data": {
+          "source": "Source / label",
+          "start": "Period start",
+          "end": "Period end",
+          "energy_kwh": "Total energy",
+          "vt_kwh": "VT energy",
+          "nt_kwh": "NT energy",
+          "cost": "Total cost including VAT",
+          "paid": "Advances paid (optional)",
+          "fixed_cost": "Included standing fees (optional)",
+          "edit_months": "Edit monthly breakdown before saving",
+          "clear_months": "Remove the previous monthly breakdown"
+        }
+      },
+      "document_months": {
+        "title": "Monthly bill breakdown",
+        "description": "Enter NT and VT together for each full known month. Blank pairs remain unknown; zero means verified zero consumption. A complete breakdown must match the bill totals.",
+        "data": {
+          "nt_1": "{month_1} · NT (kWh)",
+          "vt_1": "{month_1} · VT (kWh)",
+          "nt_2": "{month_2} · NT (kWh)",
+          "vt_2": "{month_2} · VT (kWh)",
+          "nt_3": "{month_3} · NT (kWh)",
+          "vt_3": "{month_3} · VT (kWh)",
+          "nt_4": "{month_4} · NT (kWh)",
+          "vt_4": "{month_4} · VT (kWh)",
+          "nt_5": "{month_5} · NT (kWh)",
+          "vt_5": "{month_5} · VT (kWh)",
+          "nt_6": "{month_6} · NT (kWh)",
+          "vt_6": "{month_6} · VT (kWh)",
+          "nt_7": "{month_7} · NT (kWh)",
+          "vt_7": "{month_7} · VT (kWh)",
+          "nt_8": "{month_8} · NT (kWh)",
+          "vt_8": "{month_8} · VT (kWh)",
+          "nt_9": "{month_9} · NT (kWh)",
+          "vt_9": "{month_9} · VT (kWh)",
+          "nt_10": "{month_10} · NT (kWh)",
+          "vt_10": "{month_10} · VT (kWh)",
+          "nt_11": "{month_11} · NT (kWh)",
+          "vt_11": "{month_11} · VT (kWh)",
+          "nt_12": "{month_12} · NT (kWh)",
+          "vt_12": "{month_12} · VT (kWh)",
+          "nt_13": "{month_13} · NT (kWh)",
+          "vt_13": "{month_13} · VT (kWh)",
+          "nt_14": "{month_14} · NT (kWh)",
+          "vt_14": "{month_14} · VT (kWh)",
+          "nt_15": "{month_15} · NT (kWh)",
+          "vt_15": "{month_15} · VT (kWh)",
+          "nt_16": "{month_16} · NT (kWh)",
+          "vt_16": "{month_16} · VT (kWh)",
+          "nt_17": "{month_17} · NT (kWh)",
+          "vt_17": "{month_17} · VT (kWh)",
+          "nt_18": "{month_18} · NT (kWh)",
+          "vt_18": "{month_18} · VT (kWh)",
+          "nt_19": "{month_19} · NT (kWh)",
+          "vt_19": "{month_19} · VT (kWh)",
+          "nt_20": "{month_20} · NT (kWh)",
+          "vt_20": "{month_20} · VT (kWh)",
+          "nt_21": "{month_21} · NT (kWh)",
+          "vt_21": "{month_21} · VT (kWh)",
+          "nt_22": "{month_22} · NT (kWh)",
+          "vt_22": "{month_22} · VT (kWh)",
+          "nt_23": "{month_23} · NT (kWh)",
+          "vt_23": "{month_23} · VT (kWh)",
+          "nt_24": "{month_24} · NT (kWh)",
+          "vt_24": "{month_24} · VT (kWh)",
+          "nt_25": "{month_25} · NT (kWh)",
+          "vt_25": "{month_25} · VT (kWh)"
+        }
+      },
+      "document_profile": {
+        "title": "Dated price list",
+        "description": "Both dates inclusive. All prices include VAT: variable rates in CZK/kWh, standing fees in CZK/month. Enter verified zero rates explicitly. Import preview: {import_info}",
+        "data": {
+          "source": "Source / label",
+          "start": "Valid from",
+          "end": "Valid through",
+          "trade_vt": "Trading price VT (CZK/kWh)",
+          "trade_nt": "Trading price NT (CZK/kWh)",
+          "distribution_vt": "Distribution VT (CZK/kWh)",
+          "distribution_nt": "Distribution NT (CZK/kWh)",
+          "electricity_tax": "Electricity tax (CZK/kWh)",
+          "system_services": "System services (CZK/kWh)",
+          "poze_kwh": "Effective POZE (CZK/kWh)",
+          "supplier_monthly": "Supplier standing fee (CZK/month)",
+          "breaker_monthly": "Circuit breaker fee (CZK/month)",
+          "infrastructure_monthly": "Non-grid infrastructure (CZK/month)",
+          "other_kwh": "Other consumption charges (CZK/kWh)",
+          "other_monthly": "Other standing fees (CZK/month)"
+        }
+      },
+      "document_delete": {
+        "title": "Delete accounting document",
+        "description": "Confirm deletion of {period}. Deleting the selected ratio bill disables approximate valuation. Verified cost history is retained.",
+        "data": {
+          "confirm": "Delete this record"
+        }
+      },
+      "estimate_settings": {
+        "title": "Approximate valuation of unknown NT/VT",
+        "description": "Optional valuation uses the NT/VT ratio from a selected bill ending before the current period. Only prices valid on the consumption date and a known contract mode are used. Exact accounting remains incomplete. Forecasts are marked approximate.",
+        "data": {
+          "estimate_bill": "Bill supplying the NT/VT ratio"
+        }
+      },
+      "accounting_check": {
+        "title": "Check and recalculate",
+        "description": "{report}",
+        "data": {
+          "recalculate": "Start recalculating available history"
+        }
       }
     },
     "error": {
@@ -304,7 +456,24 @@
       "invalid_advances": "Enter nonnegative advance amounts. Paid money cannot exceed the advance; common mode requires a common amount.",
       "invalid_accounting_history": "Check the date within this period, imported kWh and costs in CZK. Do not replace unknown amounts with zero.",
       "sharing_already_in_energy": "⚠️ This sharing income is already selected as total compensation in Energy. Use import costs before sharing in Energy; net costs would deduct the income twice. The switch below deducts income only in the separate ČEZ accounting. Energy settings are unchanged.",
-      "energy_preferences_unavailable": "⚠️ Energy compensation settings could not be checked. If Energy uses this income, supply costs before sharing to avoid deducting the income twice."
+      "energy_preferences_unavailable": "⚠️ Energy compensation settings could not be checked. If Energy uses this income, supply costs before sharing to avoid deducting the income twice.",
+      "invalid_documents": "Invalid document format. Check stored data.",
+      "invalid_document_period": "Enter a valid inclusive period no longer than two years.",
+      "invalid_document_number": "Enter finite non-negative numbers; standing fees cannot exceed total cost.",
+      "bill_not_closed": "The bill must end before today.",
+      "document_overlap": "The period overlaps another stored record.",
+      "current_price_overlap": "The historical price list overlaps the active price list. Check the active start date in accounting settings.",
+      "incomplete_document_rates": "Enter every price component, including verified zeros.",
+      "bill_energy_mismatch": "NT plus VT does not match total energy.",
+      "invalid_bill_months": "Enter NT and VT together, one row per full calendar month within the bill.",
+      "bill_months_mismatch": "Monthly totals exceed the bill, or a complete breakdown does not match it.",
+      "documents_changed": "Documents changed while this form was open. Reopen settings.",
+      "select_existing_document": "Select an existing record for this action.",
+      "estimate_bill_invalid": "Choose an older bill with a verified non-zero NT/VT ratio.",
+      "recalculation_unavailable": "Recalculation is unavailable. Enable accounting and ensure the integration is loaded."
+    },
+    "abort": {
+      "invalid_documents": "Invalid document format. Check stored data."
     }
   },
   "entity": {

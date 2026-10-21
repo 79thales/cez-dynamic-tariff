@@ -6,6 +6,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
+from .accounting_options import AccountingDocumentsFlow
 from .const import (
     CONF_BASE_PRICE_KWH,
     CONF_CHEAP_THRESHOLD,
@@ -296,7 +297,7 @@ class CezDynamicTariffConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return CezDynamicTariffOptionsFlow(config_entry)
 
 
-class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
+class CezDynamicTariffOptionsFlow(AccountingDocumentsFlow, config_entries.OptionsFlow):
     """Handle integration options."""
 
     def __init__(self, config_entry) -> None:
@@ -316,6 +317,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 "monthly_advances",
                 "accounting",
                 "accounting_history",
+                "accounting_documents",
                 "price_list",
                 "dashboard",
                 "general",
@@ -668,6 +670,8 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_price_list_review(self, user_input=None):
         """Confirm/edit the parsed VAT-inclusive rates before saving."""
+        if getattr(self, "_import_historical", False):
+            return await self._historical_import_review()
         return await self.async_step_price_rates(user_input)
 
     async def async_step_price_rates(self, user_input=None):
@@ -779,6 +783,16 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                         date.fromisoformat(user_input[key])
             except (KeyError, ValueError, TypeError):
                 errors["base"] = "invalid_accounting_dates"
+            else:
+                from .accounting_documents import records
+
+                effective = user_input.get("current_price_start") or self._config_entry.options.get(
+                    "price_list_trade_effective", ""
+                )
+                if effective and any(r["end"] >= effective for r in records(
+                    self._config_entry.options.get("historical_profiles", "[]")
+                )):
+                    errors["current_price_start"] = "current_price_overlap"
             if user_input.get(
                 "accounting_enabled"
             ) and not self._config_entry.options.get("pricing_enabled"):

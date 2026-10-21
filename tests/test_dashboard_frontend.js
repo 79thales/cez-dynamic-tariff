@@ -183,10 +183,10 @@ test("accounting recovery is added once to copied details using generated regist
  const before=clone(existing),result=context.reuseCurrentCezViews(generated,existing);
  assert.deepEqual(existing,before);
  const cards=result.views[1].sections[0].cards;
- assert.equal(cards.length,2);assert.equal(cards[0].content,"místní detail");
+ assert.equal(cards.length,3);assert.equal(cards[0].content,"místní detail");
  assert.ok(JSON.stringify(cards[1]).includes("button.cez_dynamic_tariff_accounting_backfill"));
  context.cezAddAccountingRecovery(result.views[1],generated.views[1]);
- assert.equal(result.views[1].sections[0].cards.length,2);
+ assert.equal(result.views[1].sections[0].cards.length,3);
  assert.equal(result.views[0].cards[0].content,"místní hlavní karta");
  assert.equal(result.views[2].cards[0].content,"místní zálohy");
 });
@@ -213,4 +213,31 @@ test("repair preserves guarded bundled templates and unrelated is_state calls",(
  assert.deepEqual(clone(context.cezGuardHdoTemplates(bundled)),bundled);
  const unrelated="{{ is_state('binary_sensor.local_switch','on') }}";
  assert.equal(context.cezGuardHdoTemplates(unrelated),unrelated);
+});
+
+
+test("accounting document warnings and administration survive generation without duplicating cards",()=>{
+ const generated=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ const old=clone(generated);
+ const walk=(node,cb)=>{if(!node||typeof node!=="object")return;cb(node);Object.values(node).forEach(v=>Array.isArray(v)?v.forEach(x=>walk(x,cb)):walk(v,cb));};
+ walk(old,card=>{
+  if(card.type==="markdown"&&card.content?.includes("{# cez_accounting_estimate #}"))
+   card.content=card.content.split("{# cez_accounting_estimate #}")[0];
+ });
+ old.views[1].sections.at(-1).cards.pop();
+ const source=clone(old),first=context.reuseCurrentCezViews(generated,old);
+ assert.deepEqual(old,source);
+ const second=context.reuseCurrentCezViews(generated,clone(first));
+ assert.deepEqual(clone(first),clone(second));
+ let summaries=0,buttons=0;
+ walk(first,card=>{
+  if(card.type==="markdown"&&card.content?.includes("## Vyúčtování")){
+   summaries++;assert.ok(card.content.includes("forecast_approximate"));
+   assert.equal(card.content.split("{# cez_accounting_estimate #}").length,2);
+  }
+  if(card.type==="button"&&card.name==="Vyúčtování a ceníky – nastavení integrace")buttons++;
+ });
+ assert.equal(summaries,2);assert.equal(buttons,1);
+ assert.equal(first.views.length,3);assert.equal(first.views[0].subview,false);
+ assert.equal(first.views[1].subview,true);assert.equal(first.views[2].subview,true);
 });

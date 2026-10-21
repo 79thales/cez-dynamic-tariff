@@ -430,7 +430,11 @@ class AccountingRecovery:
             "archive_write_failed",
             "hdo_schedule_conflict",
         }
+        if meta.get("forecast_approximate") and "archive_invalid" in self._reasons:
+            blocking.add("archive_invalid")
         if blocking:
+            meta["forecast_approximate"] = False
+            meta["forecast_blockers"] = sorted(set(meta.get("forecast_blockers", [])) | blocking)
             self.result["accounting_status"] = "incomplete"
             for key in (
                 "period_gross_cost",

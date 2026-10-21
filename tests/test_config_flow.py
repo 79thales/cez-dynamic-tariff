@@ -77,7 +77,12 @@ def _load_config_flow_module():
     ha_const.Platform = Platform
     sys.modules[ha_const.__name__] = ha_const
 
+    # Administrace má vlastní testy proti skutečnému HA. Tyto rychlé testy
+    # zachovávají malý stub frameworku pro původní tarifní formuláře.
     package_name = "_cez_dynamic_tariff_config_flow_test"
+    documents = types.ModuleType(package_name + ".accounting_options")
+    documents.AccountingDocumentsFlow = type("AccountingDocumentsFlow", (), {})
+    sys.modules[documents.__name__] = documents
     package = types.ModuleType(package_name)
     package.__path__ = []
     sys.modules[package_name] = package
