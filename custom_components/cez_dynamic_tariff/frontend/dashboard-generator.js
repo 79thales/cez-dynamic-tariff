@@ -60,6 +60,7 @@ function cezNeutralCheckpoint(value) {
   // jako fakturu ČEZ. Změníme pouze obecné označení, žádné místní částky.
   if (typeof value === "string") return value
     .replace("je převzatý z odečtu dodavatele.", "má původ **{{ {'manual_verified':'ručně ověřený základ','ha_recovery':'obnovený výpočet HA','supplier':'odečet dodavatele'}.get(state_attr(a,'reference_source'),'starší základ s neurčeným původem') }}**.")
+    .replace("Odběr dosud: odečet ČEZ do", "Odběr dosud: uložený kontrolní základ do")
     .replace("Celkový základ z ČEZ je k", "Uložený kontrolní základ je k")
     .replace("od součtu ČEZ lišit", "od kontrolního součtu lišit");
   if (Array.isArray(value)) return value.map(cezNeutralCheckpoint);
