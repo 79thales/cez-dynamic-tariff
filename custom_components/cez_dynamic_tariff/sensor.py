@@ -337,6 +337,12 @@ def _invoice_price(data):
 
 ACCOUNTING_DESCRIPTIONS += (
     CezDynamicTariffSensorDescription(
+        key="accounting_backfill_status",
+        translation_key="accounting_backfill_status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: (data.billing or {}).get("settlement", {}).get("metadata", {}).get("backfill", {}).get("status", "idle"),
+    ),
+    CezDynamicTariffSensorDescription(
         key="accounting_price",
         translation_key="accounting_price",
         native_unit_of_measurement="CZK/kWh",
@@ -388,6 +394,8 @@ class CezDynamicTariffSensor(
     @property
     def native_value(self):
         """Return the sensor value."""
+        if self.entity_description.key == "accounting_backfill_status":
+            return self.coordinator.billing.settlement.backfill_state["status"]
         if self.coordinator.data is None:
             return None
         value = self.entity_description.value_fn(self.coordinator.data)
@@ -421,6 +429,11 @@ class CezDynamicTariffSensor(
 
         data = self.coordinator.data
         key = self.entity_description.key
+
+        if key == "accounting_backfill_status":
+            # Průběh čteme z runtime i mezi aktualizacemi cenového snapshotu.
+            obj = self.coordinator.billing.settlement
+            return obj.backfill_state
 
         if key in {description.key for description in ACCOUNTING_DESCRIPTIONS}:
             attributes = dict(

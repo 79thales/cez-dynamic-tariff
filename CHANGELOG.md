@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.0.11 – 2026-10-21
+
+### Čeština
+
+- Ověřené hodinové energie, variabilní náklady a historické rozvrhy HDO
+  ukládá vlastní atomický archiv. Restart ani zkrácení historie Recorderu
+  nesmažou již ověřené ocenění. Různé elektroměry a cenové revize se nesčítají.
+- Tlačítko **Dotáhnout a přepočítat data**, stavový senzor a akce
+  `backfill_accounting` kontrolují dostupnou minulost po blocích; opakovaný
+  stisk nevytváří souběžný úkol ani duplicitní náklady. Po přerušení lze pokračovat.
+- Automatická historie zachovává kontrolní odečet. Jeho vypnutí vyžaduje
+  výslovnou volbu. Diagnostika rozlišuje mezery spotřeby, HDO, cen a úložiště;
+  předchozí úplná predikce má při poruše označení zastarání a čas výpočtu.
+- Generátor i přibalená šablona zachovávají hlavní přehled, detaily a editor,
+  doplňují právě jednu kartu dotažení, ověřují HDO před čtením stavu a opravují
+  sdílené tooltipy grafů. Chybějící údaje se nevydávají za nulu.
+- Editor záloh se registruje také mezi zdroji Lovelace. Reload doplní
+  chybějící zdroj; opakovaný setup zachová jeho ID i cizí zdroje. Verzování
+  URL z manifestu zavedené v 1.0.10 zůstává zachované pro oba frontendové moduly.
+- Archiv chrání podklady ověřené touto verzí. Již ztracené historické HDO
+  nebo náklady bez dalšího důkazu neumí obnovit; dotažení přizná zbývající mezery.
+  Zálohy, kontrolní hodnoty, cizí statistiky a nasazené dashboardy se nepřepisují.
+
+### English
+
+- Persist verified hourly energy, variable costs and historical HDO schedules
+  in an atomic archive scoped to meter identity and price revision. Retention
+  and restarts preserve previously verified costs.
+- Add a resumable accounting backfill button, status sensor and service with
+  duplicate detection, bounded batches and explicit gap and storage diagnostics.
+- Preserve checkpoints unless explicitly disabled; retain the last complete
+  forecast only as a dated, stale diagnostic when current inputs are incomplete.
+- Synchronize the dashboard template and generator: preserve main/detail/editor
+  views, add one backfill card, guard HDO inputs and repair shared chart tooltips.
+- Register the advances editor as a Lovelace resource without duplicate setup
+  or changes to unrelated resources. Keep manifest-based frontend versioning
+  introduced in 1.0.10.
+- The archive protects newly verified inputs; it cannot invent already lost
+  historical schedules or costs. Backfill reports unresolved gaps and preserves
+  advances, checkpoints, external statistics and existing dashboards.
+
 ## 1.0.10 – 2026-10-19
 
 ### Čeština

@@ -1,3 +1,22 @@
+# Zahájení scanu na pozadí; stav a skutečný výsledek oznamuje diagnostický
+# senzor. Opakovaný stisk se připojí k běhu. Po restartu pokračuje tlačítkem.
+backfill_accounting:
+  name: Dotáhnout a přepočítat účetní data
+  description: Projde dostupnou historii a vlastní archiv po blocích. Nezmění zálohy ani kontrolní odečet. Chybějící HDO nevymýšlí; mezery uvede ve výsledku. Bez rozsahu pokračuje v přerušeném běhu nebo projde období a posledních 730 dní pro profil.
+  fields:
+    entry_id:
+      name: ID účetní instance
+      description: Povinné při více instancích integrace.
+      selector:
+        text:
+    start:
+      name: První den včetně
+      selector:
+        date:
+    end:
+      name: Poslední den včetně
+      selector:
+        date:
 update_advance:
   name: Upravit nebo potvrdit měsíční zálohu
   description: Pouze evidence záloh v Home Assistantu. Neprovádí bankovní platbu. Roční součet se nepřevádí na měsíce automaticky.

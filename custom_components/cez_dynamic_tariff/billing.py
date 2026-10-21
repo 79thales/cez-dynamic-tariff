@@ -49,6 +49,8 @@ class ElectricityBilling:
     async def async_setup(self):
         """Restore totals, subscribe to source events and flush on unload."""
         self.ledger = CostLedger(await self.store.async_load())
+        if self.settlement is not None:
+            await self.settlement.async_initialize()
         source_ids = [
             self.values[k]
             for k in (
@@ -95,6 +97,8 @@ class ElectricityBilling:
         self.store.async_delay_save(self.ledger.as_dict, 10)
 
     async def async_close(self):
+        if self.settlement is not None:
+            await self.settlement.async_close()
         await self.store.async_save(self.ledger.as_dict())
 
     def _state(self, key):

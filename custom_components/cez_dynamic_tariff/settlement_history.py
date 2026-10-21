@@ -7,9 +7,7 @@ import logging
 from bisect import bisect_right
 from calendar import monthrange
 from datetime import UTC, date, datetime, time, timedelta
-from functools import partial
 
-from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.history import get_significant_states
 from homeassistant.components.recorder.statistics import (
     get_metadata,
@@ -17,15 +15,21 @@ from homeassistant.components.recorder.statistics import (
 )
 
 from .accounting import CostLedger
+from .accounting_recovery import AccountingRecovery
 from .const import DOMAIN
 from .edc_source import income_statistic_id
-from .pricing import PriceProfile, finite_number, parse_hdo_schedule, price_timeline
+from .pricing import (
+    HdoInterval,
+    PriceProfile,
+    finite_number,
+    parse_hdo_schedule,
+    price_timeline,
+)
 from .settlement import (
     SETTLEMENT_DEFAULTS,
     advance_paid_amount,
     advances,
     consumption_profile,
-    default_period,
     period_advances,
     remaining_import,
     standing_fees,
@@ -34,7 +38,7 @@ from .settlement import (
 _LOGGER = logging.getLogger(__name__)
 
 
-class SettlementHistory:
+class SettlementHistory(AccountingRecovery):
     """No statistics imports, no new energy meters, no writes to other integrations."""
 
     def __init__(self, billing):
@@ -47,6 +51,7 @@ class SettlementHistory:
         self.result = {}
         self.last_read = None
         self.raw = None
+        self._init_recovery()
 
     @property
     def trial(self):
@@ -54,7 +59,7 @@ class SettlementHistory:
 
     @property
     def meter_id(self):
-        return (
+        return getattr(self, "_resolved_meter", None) or (
             self.values["accounting_energy_entity"]
             or self.billing.values["import_energy_entity"]
         )
@@ -73,12 +78,13 @@ class SettlementHistory:
         # multiplying shared kWh or summing receiver entities a second time.
         return income_statistic_id(state, entity)
 
-    def _read(self, now, start, revenue_id):
+    def _read(self, now, start, revenue_id, *, scan_end=None):
         meter = self.meter_id
-        cost = self.values["historical_cost_entity"] or f"sensor.{DOMAIN}_actual_cost"
+        own_ids = getattr(self, "_financial_ids", {})
+        cost = getattr(self, "_resolved_cost", None) or self.values["historical_cost_entity"] or own_ids.get("actual_cost", f"sensor.{DOMAIN}_actual_cost")
         ids = {meter, cost}
-        unpriced_id = f"sensor.{DOMAIN}_unpriced_energy"
-        savings_id = f"sensor.{DOMAIN}_realized_savings"
+        unpriced_id = own_ids.get("unpriced_energy", f"sensor.{DOMAIN}_unpriced_energy")
+        savings_id = own_ids.get("realized_savings", f"sensor.{DOMAIN}_realized_savings")
         if not self.values["historical_cost_entity"]:
             ids.add(unpriced_id)
             ids.add(savings_id)
@@ -89,27 +95,30 @@ class SettlementHistory:
         # Never consume a monetary statistic as energy, or multiply an already
         # monetary EDC statistic by the selling price.
         units = {k: meta[1].get("unit_of_measurement") for k, meta in metadata.items()}
-        reuse_default = meter == self.billing.values["import_energy_entity"]
+        reuse_default = meter == getattr(self, "_billing_meter", self.billing.values["import_energy_entity"])
         if not reuse_default and not self.values["historical_cost_entity"]:
             valid_ids.difference_update({cost, savings_id, unpriced_id})
         if units.get(meter) not in ("Wh", "kWh", "MWh"):
             valid_ids.discard(meter)
+        if units.get(unpriced_id) not in ("Wh", "kWh", "MWh"):
+            valid_ids.discard(unpriced_id)
         for monetary in (cost, revenue_id, savings_id):
             if units.get(monetary) != "CZK":
                 valid_ids.discard(monetary)
-        horizon = min(start, now - timedelta(days=730))
+        horizon = start if scan_end else min(start, now - timedelta(days=730))
         closed_hour = now.astimezone(UTC).replace(minute=0, second=0, microsecond=0)
+        read_end = min(scan_end, closed_hour) if scan_end else closed_hour
         hourly = (
             statistics_during_period(
                 self.hass,
                 horizon,
-                closed_hour,
+                read_end,
                 valid_ids,
                 "hour",
                 {"energy": "kWh"},
                 {"change"},
             )
-            if valid_ids
+            if valid_ids and horizon < read_end
             else {}
         )
         # State history is used only for today's uncompiled tail and public HDO
@@ -125,7 +134,7 @@ class SettlementHistory:
                 {"energy": "kWh"},
                 {"change", "state"},
             )
-            if valid_ids
+            if valid_ids and scan_end is None
             else {}
         )
         entities = [meter]
@@ -140,19 +149,34 @@ class SettlementHistory:
             entity_ids=[e for e in entities if e],
             significant_changes_only=False,
             minimal_response=False,
-        )
-        schedule_id = self.billing.values["hdo_schedule_entity"]
+        ) if scan_end is None else {}
+        reasons = []
+        if meter not in valid_ids:
+            reasons.append("energy_metadata_missing" if meter not in metadata else "energy_unit_invalid" if units.get(meter) not in ("Wh", "kWh", "MWh") else "energy_statistic_has_no_sum")
+        if revenue_id and revenue_id not in valid_ids:
+            reasons.append("income_metadata_invalid")
+        schedule_id = getattr(self, "_resolved_schedule", self.billing.values["hdo_schedule_entity"])
         if schedule_id:
-            history.update(
-                get_significant_states(
-                    self.hass,
-                    max(start, now - timedelta(days=14)),
-                    now,
-                    entity_ids=[schedule_id],
-                    significant_changes_only=False,
-                    minimal_response=False,
+            try:
+                history.update(
+                    get_significant_states(
+                        self.hass,
+                        start if scan_end else max(start, now - timedelta(days=14)),
+                        scan_end or now,
+                        entity_ids=[schedule_id],
+                        significant_changes_only=False,
+                        minimal_response=False,
+                    )
                 )
-            )
+                if self._hdo_read_failed:
+                    _LOGGER.info("Historical HDO recovered entity=%s", schedule_id)
+                self._hdo_read_failed = False
+            except Exception:
+                # Výpadek historie HDO nesmí zahodit nezávislé energie.
+                if not self._hdo_read_failed:
+                    _LOGGER.exception("Cannot read historical HDO entity=%s", schedule_id)
+                self._hdo_read_failed = True
+                reasons.append("hdo_history_unavailable")
         return {
             "hourly": hourly,
             "history": history,
@@ -164,47 +188,25 @@ class SettlementHistory:
             "unpriced_id": unpriced_id,
             "savings_id": savings_id,
             "short_today": short_today,
+            "reason_codes": reasons,
+            "requested_start": horizon.timestamp(),
+            "requested_end": read_end.timestamp(),
         }
 
-    async def async_refresh(self, now):
-        """Use Recorder's own executor, with a five-minute cache."""
-        if not self.values["accounting_enabled"]:
-            return
-        tz = self.coordinator._local_tz()
-        now = now.astimezone(tz)
-        start_text, end_text = default_period(now.date())
-        start = date.fromisoformat(self.values["billing_start"] or start_text)
-        end = date.fromisoformat(self.values["billing_end"] or end_text)
-        refresh = (
-            self.last_read is None
-            or self.last_read.date() != now.date()
-            or (now - self.last_read).total_seconds() >= 300
-        )
-        if refresh:
-            try:
-                self.raw = await get_instance(self.hass).async_add_executor_job(
-                    partial(
-                        self._read,
-                        now,
-                        datetime.combine(start, time.min, tzinfo=tz),
-                        self._revenue_id(),
-                    )
-                )
-                self.last_read = now
-                self.result = self._calculate(now, start, end)
-            except Exception:  # Recorder may be disabled or still starting.
-                _LOGGER.exception("Cannot read electricity accounting statistics")
-                self.last_read = now
-                self.result = {"accounting_status": "history_unavailable"}
-                return
-
     def _intervals(self, now):
-        schedule_id = self.billing.values["hdo_schedule_entity"]
+        schedule_id = getattr(self, "_resolved_schedule", self.billing.values["hdo_schedule_entity"])
         states = list(self.raw["history"].get(schedule_id, []))
         live = self.hass.states.get(schedule_id)
         if live:
             states.append(live)
         schedules = []
+        source = getattr(self, "_hdo_identity", None)
+        if source:
+            for stamp, rows in self.archive.data["schedules"].get(source, {}).items():
+                schedules.append((datetime.fromtimestamp(float(stamp), UTC), [
+                    HdoInterval(datetime.fromtimestamp(r["start"], UTC), datetime.fromtimestamp(r["end"], UTC), r["tariff"])
+                    for r in rows
+                ]))
         for state in states:
             try:
                 updated = datetime.fromisoformat(state.attributes["last_update"])
@@ -215,14 +217,68 @@ class SettlementHistory:
                     now.tzinfo,
                     updated + timedelta(days=6),
                 )
-                schedules.append((updated, rows))
+                if rows:
+                    if source and not self.archive.save_schedule(source, updated, rows):
+                        self._reasons.add("hdo_schedule_conflict")
+                        continue
+                    schedules.append((updated, rows))
+                else:
+                    self._reasons.add("hdo_schedule_invalid")
             except (KeyError, ValueError, TypeError):
+                self._reasons.add("hdo_schedule_invalid")
                 continue
         # Each day gets the newest public schedule which actually covers it.
-        return sorted(schedules, key=lambda item: item[0], reverse=True)
+        return sorted({s[0].timestamp(): s for s in schedules}.values(), key=lambda item: item[0], reverse=True)
+
+    def _hour_cost(self, row, monetary, schedules, now, timeline_cache):
+        """Cena jedné uzavřené hodiny: finance → historická cena → archiv.
+
+        Energie je kWh, výstup Kč a neoceněné kWh. Archiv obsahuje jen
+        kompletní hodiny, nula odběru je kompletní i bez HDO. Revidované
+        finance nahrazují stejný klíč; jiná energie nepoužije starou cenu.
+        """
+        energy, stamp = row["change"], row["start"]
+        revision = getattr(self, "_cost_revision", None)
+        if monetary is not None and monetary >= 0 and (energy > 0 or monetary == 0):
+            if revision:
+                self.archive.save_cost(revision, stamp, energy, monetary, "monetary_statistic")
+            return monetary, 0.0
+        old = self.archive.cost(revision, stamp, energy) if revision else None
+        when = datetime.fromtimestamp(stamp, now.tzinfo)
+        if self._profile_at(when.date()) is None and old is None and energy > 0:
+            self._reasons.add("historical_price_missing")
+        # Ověřené finance nelze zhoršit chybějícím rozvrhem. Historické HDO
+        # se při novém platném rozvrhu přepočítá; timeline sdílíme za celý den.
+        old_row = self.archive.data["costs"].get(revision, {}).get(str(int(stamp)), {})
+        if old is not None and old_row.get("source") == "monetary_statistic":
+            return old, 0.0
+        schedule_key = ("hdo_revision", when.date())
+        if schedule_key not in timeline_cache:
+            midnight = datetime.combine(when.date(), time.min, tzinfo=now.tzinfo).timestamp()
+            timeline_cache[schedule_key] = next((s.timestamp() for s, rows in schedules if any(r.start.timestamp() <= midnight < r.end.timestamp() for r in rows)), None)
+        updated = timeline_cache[schedule_key]
+        if old is not None and (old_row.get("hdo_updated") == updated or updated is None):
+            return old, 0.0
+        if when.date() not in timeline_cache:
+            timeline_cache[when.date()] = self._timeline(when.date(), schedules, now)
+        variable, seconds = 0.0, 0.0
+        left = when.astimezone(UTC)
+        right = left + timedelta(hours=1)
+        for price in timeline_cache[when.date()]:
+            overlap = max(0, (min(right, price["end"]) - max(left, price["start"])).total_seconds())
+            if price["price_kwh"] is not None:
+                variable += energy * overlap / 3600 * price["price_kwh"]
+                seconds += overlap
+        if seconds >= 3600 or energy == 0:
+            if revision:
+                self.archive.save_cost(revision, stamp, energy, variable, "historical_hdo")
+                self.archive.data["costs"][revision][str(int(stamp))]["hdo_updated"] = updated
+            return variable, 0.0
+        return (old, 0.0) if old is not None else (variable, energy * (1 - seconds / 3600))
 
     def _profile_at(self, day):
-        current = self.values["current_price_start"] or self.coordinator._option(
+        calculator = getattr(self, "_calculation_coordinator", self.coordinator)
+        current = self.values["current_price_start"] or calculator._option(
             "price_list_trade_effective", ""
         )
         if current and day >= date.fromisoformat(current):
@@ -263,7 +319,7 @@ class SettlementHistory:
             and (not dynamic_start or day >= date.fromisoformat(dynamic_start))
             and not self.trial
         )
-        if profile is None or not mode_known:
+        if profile is None or not mode_known or not intervals:
             return []
         if not self.contract_known and dynamic:
             return []
@@ -275,7 +331,7 @@ class SettlementHistory:
             intervals,
             profile,
             lambda when: (
-                self.coordinator._current_window(
+                getattr(self, "_calculation_coordinator", self.coordinator)._current_window(
                     when.astimezone(now.tzinfo)
                 ).modifier_percent
             ),
@@ -573,29 +629,8 @@ class SettlementHistory:
             if variable is not None and variable >= 0:
                 reused_hours += 1
             else:
-                if when.date() not in timeline_cache:
-                    timeline_cache[when.date()] = self._timeline(
-                        when.date(), schedules, now
-                    )
-                rows = timeline_cache[when.date()]
-                left, right = (
-                    when.astimezone(UTC),
-                    when.astimezone(UTC) + timedelta(hours=1),
-                )
-                variable, seconds = 0.0, 0.0
-                for price in rows:
-                    overlap = max(
-                        0,
-                        (
-                            min(right, price["end"]) - max(left, price["start"])
-                        ).total_seconds(),
-                    )
-                    if price["price_kwh"] is not None:
-                        variable += energy * overlap / 3600 * price["price_kwh"]
-                        seconds += overlap
-                if seconds < 3600:
-                    bin_unpriced = energy * (1 - seconds / 3600)
-                    unknown_kwh += bin_unpriced
+                variable, bin_unpriced = self._hour_cost(row, None, schedules, now, timeline_cache)
+                unknown_kwh += bin_unpriced
             actual_cost += variable
             bucket = monthly.setdefault(
                 when.strftime("%Y-%m"), {"kwh": 0.0, "known_variable_cost": 0.0}
@@ -1003,6 +1038,6 @@ class SettlementHistory:
                 "months": monthly,
                 "history_months": history_months,
                 "settled_bills": bills,
-                "historical_method": "existing_monetary_statistics_first_then_recorded_hdo_uniform_interval",
+                "historical_method": "compatible_monetary_statistics_then_historical_hdo_then_verified_archive",
             },
         }

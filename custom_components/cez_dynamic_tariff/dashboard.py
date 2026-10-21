@@ -11,7 +11,7 @@ from typing import Any
 PANEL_PATH = "cez-dynamic-tariff-dashboard"
 DEFAULT_VIEW_PATH = "cez-dynamic-tariff"
 ENTITY_PATTERN = re.compile(
-    r"\b(?:sensor|binary_sensor)\.cez_dynamic_tariff_([a-z0-9_]+)"
+    r"\b(?:sensor|binary_sensor|button)\.cez_dynamic_tariff_([a-z0-9_]+)"
 )
 TEMPLATE_PATH = Path(__file__).with_name("dashboard_template.json")
 
@@ -37,8 +37,12 @@ def build_views(
 ) -> dict[str, Any]:
     """Return three views, never a replacement for the user's whole dashboard.
 
-    Called in the executor. Keep dashboard_template.json in sync whenever the
-    live layout changes. It contains presentation only, not customer readings.
+    Volá se v executor threadu. Šablona obsahuje jen prezentaci, nikoli osobní
+    odečty. Při změně dashboardu se udržuje společně s generátorem. EVAL tooltipy
+    účetních grafů včetně českých komentářů se předají beze změny: null znamená
+    chybějící údaj, číselná nula zůstává platnou hodnotou v kWh nebo Kč. Párování
+    tooltipu podle X nemění účetní data ani zúčtovací období; přejmenují se pouze
+    registrované entity a interní navigace. Neplatný název/adresa vyvolá ValueError.
     """
     validate_view_name(title, view_path)
     raw = TEMPLATE_PATH.read_text(encoding="utf-8")

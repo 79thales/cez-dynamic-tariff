@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
@@ -39,6 +41,8 @@ from .settlement import (
     period_advances,
     update_advance_plan,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 SCHEDULE_OPTIONS = (
     CONF_WINTER_WORKDAY_SCHEDULE,
@@ -986,11 +990,20 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_history_auto(self, user_input=None):
-        """Explicitly use existing HA statistics instead of a manual checkpoint."""
+        """Automatické čtení zachová základ, vypnutí vyžaduje výslovný souhlas.
+
+        Prázdné potvrzení ani zrušení formuláře nesmí ztratit odečet.
+        Samotné energie/částky ponecháme pro audit; vyřadí se jen datum.
+        """
+        from homeassistant.helpers import selector
+
         if user_input is not None:
-            self._pending_options["reference_date"] = ""
+            if user_input.get("disable_reference", False):
+                self._pending_options["reference_date"] = ""
             return self._finish_options()
-        return self.async_show_form(step_id="history_auto", data_schema=vol.Schema({}))
+        return self.async_show_form(step_id="history_auto", data_schema=vol.Schema({
+            vol.Optional("disable_reference", default=False): selector.BooleanSelector(),
+        }))
 
     async def async_step_history_reading(self, user_input=None):
         """Reuse a verified cumulative invoice/app total exactly once."""
@@ -1027,6 +1040,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     reference_cost=cost,
                     reference_period_start=values["billing_start"],
                 )
+                # Původ nikdy neodhadujeme z částky. Nové ruční potvrzení je
+                # ručně ověřený základ; starší shodný záznam zachová původ.
+                if any(self._pending_options[k] != values[k] for k in ("reference_date", "reference_energy", "reference_cost", "reference_period_start")):
+                    self._pending_options["reference_source"] = "manual_verified"
                 return self._finish_options()
         valid_saved = bool(
             values["reference_date"]
@@ -1062,4 +1079,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         if self._restore_schedules:
             for option in SCHEDULE_OPTIONS:
                 options.pop(option, None)
+        changed = sorted(k for k in options.keys() | self._config_entry.options.keys()
+                         if options.get(k) != self._config_entry.options.get(k))
+        if changed:
+            # Audit uvádí názvy polí a původ, nikoli soukromé částky či token.
+            _LOGGER.info("Accounting/options saved entry=%s source=options_flow fields=%s",
+                         getattr(self._config_entry, "entry_id", "test"), changed)
         return self.async_create_entry(title="", data=options)

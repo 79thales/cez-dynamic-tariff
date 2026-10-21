@@ -80,6 +80,63 @@ Od **1.0.7** stránka **Nastavit → Období, tarif a zdroje spotřeby** automat
 
 ## Ověřený odečet a předchozí vyúčtování
 
+### Trvalý archiv a ruční dotažení historie
+
+Integrace uchovává vlastní ověřené hodinové energie a variabilní náklady
+v soukromém úložišti `.storage/cez_dynamic_tariff.accounting_<entry_id>`.
+Archiv přežije restart a zkrácení historie Recorderu. Energie mají klíč
+UTC hodiny a identity elektroměru; finanční výsledky navíc otisk cen,
+smluvního režimu a historických sazeb. Změna energie nahrazuje tentýž
+interval, změna cen nepoužije cenu z jiné revize. Zálohy a kontrolní
+odečet se dotažením nemění. Stálé platby se počítají zvlášť, takže se
+nesčítají s archivovanými variabilními částkami dvakrát.
+
+Tlačítko **Dotáhnout a přepočítat data** a akce
+`cez_dynamic_tariff.backfill_accounting` procházejí dostupnou minulost po
+sedmidenních blocích. Výchozí rozsah pokrývá aktuální zúčtovací období
+a posledních 730 dní potřebných pro sezonní profil. Služba přijímá
+volitelné `entry_id`, `start` a `end` (místní datum YYYY-MM-DD, obě hranice
+včetně dne, nejvýše tři roky a žádná budoucnost). Při více instancích se
+zdroj nehádá. Druhý stisk za běhu se připojí k existujícímu úkolu.
+
+Stav `accounting_backfill_status` rozlišuje čekání, běh, pozastavení,
+dokončení, neúplnost a chybu. Jeho atributy uvádějí fázi, rozsah, počet
+bloků, kurzor, počty nových/opravených/shodných/odmítnutých záznamů,
+zbývající mezery a poslední úspěch. Přijetí stisku není dokončená obnova.
+Po unloadu/restartu pokračuje pozastavený scan až dalším stiskem.
+Po dokončení nový stisk znovu kontroluje případné opravy zdrojů.
+
+Chybějící HDO se nikdy nenahrazuje dnešním rozvrhem. Pokud byl interval
+již úplně oceněn, zachová se jeho ověřený výsledek i při výpadku zdroje.
+Pokud ocenění nikdy nebylo známé, zůstane konkrétní mezera. Při poruše
+nového výpočtu se případná poslední úplná predikce uchovává pouze jako
+zastaralý atribut s časem; aktuální finanční senzory ji nevydávají jako
+nový úplný výsledek. Diagnostika `reason_codes` a `source_warnings`
+odlišuje vadný vstup, neúplné energie, historické HDO/ceny, metadata,
+chybějící/zakázané entity a nedostupný Recorder. Stejná opakovaná příčina
+se loguje při přechodu stavu a při zotavení.
+
+Úložiště používá atomické zápisy. Archiv a kurzor jsou jeden snapshot;
+chyba zápisu nesmí být potvrzena jako úspěch. Neplatná verze nebo obsah
+úložiště zablokuje další zápisy a tlačítko, původní soubor zůstane
+k dispozici pro ověření/obnovu. Syntakticky poškozený JSON může HA přesunout
+do svého souboru `.corrupt`; tuto zálohu nemažte. Zálohujte celý vlastní
+Store před nasazením a uchovávejte ho jako soukromá finanční data.
+
+Formulář automatické historie zachovává kontrolní základ. K jeho vyřazení
+slouží samostatná výslovná volba; prázdné potvrzení ho nevypne. Nově
+potvrzený základ má původ `manual_verified`, starší body bez doloženého
+původu `legacy_unspecified`. Starší bod se automaticky neoznačuje jako
+nový odečet dodavatele. Přejmenování registrovaného zdroje se sleduje
+podle jeho registry ID bez přepisování uživatelských options.
+
+Archiv, dotažení historie a ochrany kontrolního bodu jsou součástí verze
+1.0.11. Archiv začne chránit ověřené podklady po prvním úspěšném výpočtu;
+minulost, pro kterou nezůstalo HDO ani jiné doložené ocenění, nevymýšlí.
+Při přetrvávající mezeře zkontrolujte konkrétní důvody ve stavu dotažení.
+Předchozí úplná predikce z nevydaných/starších verzí není novým archivem
+a samotná aktualizace nemusí obnovit již ztracené historické podklady.
+
 Volitelný odečet dodavatele zadává kumulovaný odběr a kumulované náklady **včetně stálých plateb**, od začátku právě vybraného období do uvedeného dne. Tyto již spočítané hodnoty se převezmou; statistiky se přidávají až od následujícího dne. Při změně začátku období se starý odečet nepřenáší. Pokud vypnete stálé platby, jejich známá historická část se z převzatého nákladu odečte.
 
 Dříve uložená ověřená vyúčtování, měsíční profily a historické ceníky zůstávají zachované. Změna zálohy ani počátečního stavu je nepřepisuje. Již ověřené faktury se nepřeceňují současným ceníkem. Pro běžný zpětný dopočet ani pro zálohy nemusíte připravovat JSON.

@@ -256,7 +256,10 @@
       },
       "history_auto": {
         "title": "Automatic historical backfill",
-        "description": "Reuse existing consumption and calculated costs. Reconstruct missing costs only with valid historical prices and HDO. Submit disables the manual starting checkpoint without changing original sensors or history. Missing data is not zero."
+        "description": "Use available HA statistics and the verified archive. The saved starting checkpoint is preserved. Disabling it requires the checkbox below and may make accounting incomplete. Start the historical scan using the separate backfill button.",
+        "data": {
+          "disable_reference": "Explicitly disable the saved starting checkpoint"
+        }
       },
       "history_reading": {
         "title": "Starting totals from an invoice or CEZ",
@@ -476,6 +479,17 @@
       },
       "accounting_price": {
         "name": "Invoiced kWh accounting price"
+      },
+      "accounting_backfill_status": {
+        "name": "Accounting history backfill",
+        "state": {
+          "idle": "Idle",
+          "running": "Running",
+          "paused": "Paused",
+          "completed": "Completed",
+          "incomplete": "Incomplete",
+          "failed": "Failed"
+        }
       }
     },
     "binary_sensor": {
@@ -498,6 +512,9 @@
     "button": {
       "generate_dashboard": {
         "name": "Generate dashboard"
+      },
+      "accounting_backfill": {
+        "name": "Backfill and recalculate data"
       }
     }
   },

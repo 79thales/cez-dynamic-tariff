@@ -256,7 +256,10 @@
       },
       "history_auto": {
         "title": "Automatický dopočet z historie",
-        "description": "Použije existující spotřebu a již spočtené náklady. Chybějící náklady dopočítá jen při dostupných tehdejších cenách a HDO. Odeslat vypne použití ručního počátečního odečtu; původní senzory a historie se nemění. Chybějící údaje nejsou nuly."
+        "description": "Použije dostupné statistiky HA a ověřený archiv. Uložený kontrolní základ zůstane zachován. Jeho vyřazení vyžaduje zaškrtnout volbu níže; chybějící historie pak může zneúplnit účetnictví. Dotažení historie spustíte samostatným tlačítkem.",
+        "data": {
+          "disable_reference": "Výslovně vyřadit uložený kontrolní základ"
+        }
       },
       "history_reading": {
         "title": "Počáteční stav podle faktury nebo ČEZ",
@@ -476,6 +479,17 @@
       },
       "accounting_price": {
         "name": "Cena kWh pro účetnictví"
+      },
+      "accounting_backfill_status": {
+        "name": "Dotažení účetní historie",
+        "state": {
+          "idle": "Čeká",
+          "running": "Běží",
+          "paused": "Pozastaveno",
+          "completed": "Dokončeno",
+          "incomplete": "Neúplné",
+          "failed": "Chyba"
+        }
       }
     },
     "binary_sensor": {
@@ -498,6 +512,9 @@
     "button": {
       "generate_dashboard": {
         "name": "Generate dashboard"
+      },
+      "accounting_backfill": {
+        "name": "Dotáhnout a přepočítat data"
       }
     }
   },
