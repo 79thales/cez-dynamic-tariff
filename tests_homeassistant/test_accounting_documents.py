@@ -2,7 +2,7 @@
 
 import copy
 import json
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -405,3 +405,37 @@ async def test_accounting_date_editor_cannot_create_price_overlap(hass):
     )
     assert result["errors"]["current_price_start"] == "current_price_overlap"
     assert dict(entry.options) == before
+
+
+async def test_midnight_hdo_trim_is_not_conflict_and_keeps_original_intervals(hass):
+    from tests_homeassistant.test_settlement import state
+
+    obj = adapter(hass, {})
+    obj._hdo_identity = "hdo"
+    updated = datetime(2026, 10, 19, 2, tzinfo=TZ)
+    left = datetime(2026, 10, 19, tzinfo=TZ)
+    right = datetime(2026, 10, 21, tzinfo=TZ)
+    full = {
+        "last_update": updated.isoformat(),
+        "schedule": [
+            {"start": left.isoformat(), "end": right.isoformat(), "tariff": "NT"}
+        ],
+    }
+    trimmed = {
+        **full,
+        "schedule": [
+            {**full["schedule"][0], "start": (left + timedelta(days=1)).isoformat()}
+        ],
+    }
+    obj.raw = {
+        "history": {
+            "sensor.schedule": [
+                state("sensor.schedule", "ready", updated, full),
+                state("sensor.schedule", "ready", updated + timedelta(days=1), trimmed),
+            ]
+        }
+    }
+    intervals = obj._intervals(right)
+    assert "hdo_schedule_conflict" not in obj._reasons
+    assert intervals[0][1][0].start == left.astimezone(UTC)
+    assert intervals[0][1][-1].end == right.astimezone(UTC)

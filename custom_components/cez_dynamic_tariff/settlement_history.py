@@ -222,6 +222,17 @@ class SettlementHistory(AccountingRecovery):
                     if source and not self.archive.save_schedule(source, updated, rows):
                         self._reasons.add("hdo_schedule_conflict")
                         continue
+                    if source:
+                        # Použij celé sjednocené pokrytí archivu, ne poslední
+                        # zkrácený denní výřez stejné revize ze zdroje HDO.
+                        rows = [
+                            HdoInterval(
+                                datetime.fromtimestamp(r["start"], UTC),
+                                datetime.fromtimestamp(r["end"], UTC),
+                                r["tariff"],
+                            )
+                            for r in self.archive.data["schedules"][source][str(updated.timestamp())]
+                        ]
                     schedules.append((updated, rows))
                 else:
                     self._reasons.add("hdo_schedule_invalid")

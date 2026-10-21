@@ -130,3 +130,8 @@ součástí administrace. Dříve dodané místní podklady lze využít pro ov�
 a vyplnění; do živého HA se nedostanou pouhou přítomností na disku.
 Nasazení a kontrola skutečných zákaznických dat jsou samostatným krokem
 po dokončení a ověření implementace.
+
+Historické rozvrhy stejné revize se sjednocují podle skutečného pokrytí.
+Odstranění minulého dne ze zdrojového seznamu po půlnoci není konflikt.
+Rozdílné NT/VT v překrývajícím se časovém intervalu se nadále odmítne;
+taková odpověď nepřepíše ověřený archiv a blokuje finanční výhled.

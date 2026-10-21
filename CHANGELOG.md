@@ -12,6 +12,9 @@
 - Kontrola podkladů ukazuje neoceněné intervaly a důvody blokace. Přepočet
   využívá existující službu a zámek. Generátor i šablona dashboardu
   obsahují upozornění na odhad a odkaz na nastavení.
+- Denní zkrácení rozvrhu HDO při stejném last_update již není falešný
+  konflikt. Kompatibilní pokrytí se sjednocuje, skutečný rozpor tarifu
+  ve stejném čase dál blokuje ocenění.
 - Dokumentace: [správa podkladů](docs/accounting-administration.md).
 
 ### English
