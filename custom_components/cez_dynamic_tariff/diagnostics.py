@@ -18,6 +18,7 @@ TO_REDACT = {
     "monthly_advances",
     "advance_common_amount",
     "settled_bills",
+    "estimate_bill",
     "reference_energy",
     "reference_cost",
     "reference_date",
@@ -53,6 +54,8 @@ async def async_get_config_entry_diagnostics(
         "accounting_recovery": {
             "backfill": coordinator.billing.settlement.backfill_state,
             "runs": coordinator.billing.settlement.archive.data["runs"],
+            "unpriced_intervals": coordinator.billing.settlement.result.get("metadata", {}).get("unpriced_intervals", []),
+            "forecast_blockers": coordinator.billing.settlement.result.get("metadata", {}).get("forecast_blockers", []),
             "reason_codes": sorted(coordinator.billing.settlement._reasons),
         } if coordinator.billing and coordinator.billing.settlement else None,
         "coordinator": {

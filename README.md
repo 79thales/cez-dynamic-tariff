@@ -32,7 +32,8 @@ zůstávají zachované. Postup a omezení: [dva cenové režimy](docs/dynamic-p
 - Optional billing-period accounting reuses existing Recorder and EDC financial
   statistics, with annual or monthly advance payments, historical backfill,
   verified provider readings, settled bills, seasonal consumption profiles and
-  surplus/deficit estimates. See [accounting setup and data limitations](docs/accounting.md).
+  surplus/deficit estimates. See [accounting setup and data limitations](docs/accounting.md)
+  and [historical bills, price lists and approximate valuation](docs/accounting-administration.md).
 
 - Optional full electricity pricing with public ČEZ HDO entities, VAT-inclusive
   distribution and regulated charges, standing fees, today/tomorrow forecasts,

@@ -63,6 +63,38 @@ class ArchiveTests(unittest.TestCase):
             restored.energy_rows("meter", STAMP, STAMP + 3600)[0]["change"], 13
         )
 
+    def test_midnight_hdo_trim_preserves_older_coverage_and_accepts_extension(self):
+        archive = a.AccountingArchive()
+        updated = datetime.fromtimestamp(STAMP, UTC)
+
+        def interval(left, right, tariff="NT"):
+            return SimpleNamespace(
+                start=datetime.fromtimestamp(STAMP + left, UTC),
+                end=datetime.fromtimestamp(STAMP + right, UTC),
+                tariff=tariff,
+            )
+
+        full = [interval(0, 86400), interval(86400, 172800)]
+        self.assertTrue(archive.save_schedule("hdo", updated, full))
+        self.assertTrue(
+            archive.save_schedule("hdo", updated, [interval(86400, 172800)])
+        )
+        saved = archive.snapshot()
+        rows = archive.data["schedules"]["hdo"][str(updated.timestamp())]
+        self.assertEqual(
+            rows, [{"start": STAMP, "end": STAMP + 172800, "tariff": "NT"}]
+        )
+        self.assertFalse(
+            archive.save_schedule("hdo", updated, [interval(90000, 100000, "VT")])
+        )
+        self.assertEqual(saved, archive.snapshot())
+        self.assertTrue(
+            archive.save_schedule("hdo", updated, [interval(172800, 176400, "VT")])
+        )
+        self.assertEqual(
+            len(archive.data["schedules"]["hdo"][str(updated.timestamp())]), 2
+        )
+
     def test_same_hdo_revision_cannot_silently_change(self):
         archive = a.AccountingArchive()
         updated = datetime.fromtimestamp(STAMP, UTC)

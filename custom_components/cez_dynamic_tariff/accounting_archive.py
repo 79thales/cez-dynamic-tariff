@@ -219,16 +219,32 @@ class AccountingArchive:
         }
 
     def save_schedule(self, source, updated, rows):
-        """Stejný last_update se dvěma obsahy je konflikt, nikoli nová revize."""
+        """Spoj kompatibilní části stejné revize, rozpor tarifu odmítni.
+
+        Zdroj po půlnoci odstraní minulý den, aniž změní last_update.
+        Zkrácení či doplnění pokrytí není změna tarifu. UTC intervaly proto
+        sjednotíme; rozdílný tarif ve společném nenulovém čase je skutečný
+        konflikt. Při konfliktu neprovedeme žádný zápis a archiv zůstane celý.
+        """
         records = self.data["schedules"].setdefault(source, {})
         key = str(updated.timestamp())
         encoded = [
             {"start": r.start.timestamp(), "end": r.end.timestamp(), "tariff": r.tariff}
             for r in rows
         ]
-        if key in records and records[key] != encoded:
-            return False
-        records[key] = encoded
+        combined = sorted(
+            records.get(key, []) + encoded,
+            key=lambda r: (r["start"], r["end"]),
+        )
+        merged = []
+        for row in combined:
+            if merged and row["start"] < merged[-1]["end"] and row["tariff"] != merged[-1]["tariff"]:
+                return False
+            if merged and row["start"] <= merged[-1]["end"] and row["tariff"] == merged[-1]["tariff"]:
+                merged[-1]["end"] = max(merged[-1]["end"], row["end"])
+            else:
+                merged.append(dict(row))
+        records[key] = merged
         return True
 
     def prune(self, horizon):

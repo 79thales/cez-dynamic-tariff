@@ -33,6 +33,8 @@ SETTLEMENT_DEFAULTS = {
     "reference_source": "legacy_unspecified",
     "historical_profiles": "[]",
     "settled_bills": "[]",
+    # Prázdná volba zakazuje náhradní ocenění. Odkaz je období vybrané faktury.
+    "estimate_bill": "",
 }
 
 

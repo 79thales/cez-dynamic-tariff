@@ -126,6 +126,43 @@ function cezUpdatePriceStrategy(view, generated) {
   return view;
 }
 
+function cezUpdateAccountingDocuments(view, generated) {
+  // Doplníme stejné upozornění do místních účetních souhrnů. Ostatní obsah,
+  // registry entity_id, složení a subviews zůstávají z místního dashboardu.
+  // Zdroj je aktuální šablona po překladu ID. Značka zaručuje idempotenci.
+  const marker = "{# cez_accounting_estimate #}";
+  let status = "", admin = null;
+  const walk = (node, callback) => {
+    if (!node || typeof node !== "object") return;
+    callback(node);
+    Object.values(node).forEach(value => {
+      if (Array.isArray(value)) value.forEach(child => walk(child, callback));
+      else if (value && typeof value === "object") walk(value, callback);
+    });
+  };
+  walk(generated, card => {
+    if (card.type === "markdown" && card.content?.includes(marker)) {
+      status = card.content.slice(card.content.indexOf(marker));
+    }
+    if (card.type === "button" && card.name === "Vyúčtování a ceníky – nastavení integrace") admin = card;
+  });
+  let hasAdmin = false;
+  walk(view, card => {
+    if (card.type === "markdown" && card.content?.includes("## Vyúčtování")) {
+      const old = card.content.indexOf(marker);
+      if (old >= 0) card.content = card.content.slice(0, old).trimEnd();
+      if (status) card.content = card.content.trimEnd() + "\n\n" + status;
+      card.content = card.content.replaceAll("Chybí historická cena pro", "Chybí přesné historické ocenění pro");
+    }
+    if (card.type === "button" && card.name === admin?.name) hasAdmin = true;
+  });
+  if (admin && !hasAdmin) {
+    const target = view.sections?.at(-1) || view;
+    target.cards = [...(target.cards || []), JSON.parse(JSON.stringify(admin))];
+  }
+  return view;
+}
+
 function reuseCurrentCezViews(generated, current) {
   // Převzaté místní složení včetně všech detailů zachováme; opravíme pouze
   // čtení HDO a tooltipy účetních grafů. Nové instalace používají tutéž šablonu.
@@ -140,6 +177,7 @@ function reuseCurrentCezViews(generated, current) {
     const cloned = cezNeutralCheckpoint(cezGuardHdoTemplates(JSON.parse(JSON.stringify(source).replaceAll(`/lovelace/${base}`, `/lovelace/${path}`))));
     cezRepairChartTooltips(cloned, generated);
     cezUpdatePriceStrategy(cloned, fallback);
+    cezUpdateAccountingDocuments(cloned, fallback);
     if (index === 1) cezAddAccountingRecovery(cloned, fallback);
     cloned.path = path + suffixes[index];
     cloned.subview = index > 0;

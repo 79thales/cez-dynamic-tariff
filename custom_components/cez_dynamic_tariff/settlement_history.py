@@ -15,6 +15,7 @@ from homeassistant.components.recorder.statistics import (
 )
 
 from .accounting import CostLedger
+from .accounting_documents import estimate_gaps, selected_ratio
 from .accounting_recovery import AccountingRecovery
 from .const import DOMAIN
 from .edc_source import income_statistic_id
@@ -221,6 +222,17 @@ class SettlementHistory(AccountingRecovery):
                     if source and not self.archive.save_schedule(source, updated, rows):
                         self._reasons.add("hdo_schedule_conflict")
                         continue
+                    if source:
+                        # Použij celé sjednocené pokrytí archivu, ne poslední
+                        # zkrácený denní výřez stejné revize ze zdroje HDO.
+                        rows = [
+                            HdoInterval(
+                                datetime.fromtimestamp(r["start"], UTC),
+                                datetime.fromtimestamp(r["end"], UTC),
+                                r["tariff"],
+                            )
+                            for r in self.archive.data["schedules"][source][str(updated.timestamp())]
+                        ]
                     schedules.append((updated, rows))
                 else:
                     self._reasons.add("hdo_schedule_invalid")
@@ -458,6 +470,7 @@ class SettlementHistory(AccountingRecovery):
             else:
                 covered = False
         previous_state = None
+        gaps = []
         reused = 0
         baseline_known = True
         for state in selected:
@@ -499,12 +512,18 @@ class SettlementHistory(AccountingRecovery):
                 if known_costs is not None:
                     reused += 1
                     baseline_known = baseline_known and "without_cost" in known_costs
+            unpriced_before = ledger.totals["unpriced_kwh"]
             ledger.sample(when, value, timeline, tz=now.tzinfo, known_costs=known_costs)
+            unpriced_delta = ledger.totals["unpriced_kwh"] - unpriced_before
+            if unpriced_delta > 1e-6 and previous_state is not None:
+                gaps.append({"start": max(previous_state.last_updated, midnight),
+                             "end": when, "kwh": unpriced_delta})
             previous_state = state
         if not selected or (now - selected[-1].last_updated).total_seconds() > 900:
             covered = False
         totals = ledger.totals
         totals["baseline_known"] = baseline_known
+        totals["unpriced_intervals"] = gaps
         totals["energy_complete"] = covered
         totals["through"] = selected[-1].last_updated.isoformat() if selected else None
         complete = covered and totals["unpriced_kwh"] < 1e-6
@@ -533,6 +552,7 @@ class SettlementHistory(AccountingRecovery):
         timeline = self._timeline(now.date(), schedules, now)
         ledger.sample(midnight, energy, timeline, tz=now.tzinfo)
         cursor, complete, reused, baseline_known = midnight, True, 0, True
+        gaps = []
         for row in rows:
             left = datetime.fromtimestamp(row["start"], UTC)
             right = datetime.fromtimestamp(row.get("end", row["start"] + 300), UTC)
@@ -568,10 +588,15 @@ class SettlementHistory(AccountingRecovery):
                     baseline_known = baseline_known and baseline is not None
                     reused += 1
             energy += amount
+            unpriced_before = ledger.totals["unpriced_kwh"]
             ledger.sample(right, energy, timeline, tz=now.tzinfo, known_costs=known)
+            unpriced_delta = ledger.totals["unpriced_kwh"] - unpriced_before
+            if unpriced_delta > 1e-6:
+                gaps.append({"start": left, "end": right, "kwh": unpriced_delta})
             cursor = right
         totals = ledger.totals
         totals["baseline_known"] = baseline_known
+        totals["unpriced_intervals"] = gaps
         totals["energy_complete"] = (
             complete and (now.astimezone(UTC) - cursor).total_seconds() <= 900
         )
@@ -590,9 +615,10 @@ class SettlementHistory(AccountingRecovery):
         today, today_complete, reused = self._today(now, schedules)
         include_fixed = self.billing.values["include_standing_fees"]
         fixed = self.billing.profile.monthly
+        today_profile = self._profile_at(now.date())
         daily_fee = (
-            standing_fees(now.date(), now.date(), lambda _: fixed)
-            if include_fixed
+            standing_fees(now.date(), now.date(), lambda _: today_profile.monthly)
+            if include_fixed and today_profile is not None
             else 0
         )
         paid_total, paid, missing_advances = advances(self.values, start, end)
@@ -642,6 +668,7 @@ class SettlementHistory(AccountingRecovery):
                     cost_rows.pop(row["start"], None)
         energy_rows = raw["hourly"].get(meter, [])
         unknown_kwh = 0.0
+        unpriced_intervals = []
         known_hours = set()
         reused_hours = 0
         timeline_cache = {}
@@ -665,6 +692,12 @@ class SettlementHistory(AccountingRecovery):
             else:
                 variable, bin_unpriced = self._hour_cost(row, None, schedules, now, timeline_cache)
                 unknown_kwh += bin_unpriced
+                if bin_unpriced > 1e-6:
+                    unpriced_intervals.append({
+                        "start": when.astimezone(UTC),
+                        "end": when.astimezone(UTC) + timedelta(hours=1),
+                        "kwh": bin_unpriced,
+                    })
             actual_cost += variable
             bucket = monthly.setdefault(
                 when.strftime("%Y-%m"), {"kwh": 0.0, "known_variable_cost": 0.0}
@@ -705,6 +738,8 @@ class SettlementHistory(AccountingRecovery):
             actual_energy += today["energy_kwh"] + today["unpriced_kwh"]
             actual_cost += today["actual_cost"] + daily_fee
         current_day_in_period = after <= now.date() <= end
+        if current_day_in_period and include_fixed and today_profile is None:
+            missing_fee_days += 1
         period_complete = (
             coverage >= 1
             and unknown_kwh < 1e-6
@@ -739,7 +774,11 @@ class SettlementHistory(AccountingRecovery):
             sum(r["change"] for r in today_revenue_rows) if today_revenue_rows else None
         )
         deduct = self.values["deduct_shared_income"]
-        gross_today = today["actual_cost"] + daily_fee if today_complete else None
+        gross_today = (
+            today["actual_cost"] + daily_fee
+            if today_complete and (not include_fixed or today_profile is not None)
+            else None
+        )
         net_today = (
             gross_today - (today_revenue if deduct else 0)
             if gross_today is not None and (not deduct or today_revenue is not None)
@@ -855,9 +894,66 @@ class SettlementHistory(AccountingRecovery):
             if duration and forecast_complete and self.contract_known
             else None
         )
+        # Náhradní ocenění je samostatná orientační větev. Nikdy neopravuje
+        # period_complete, actual_cost ani ověřený archiv. Základ obsahuje jen
+        # spotřebu po kontrolním odečtu, takže odečet nepřičítáme podruhé.
+        gaps = unpriced_intervals + (
+            today.get("unpriced_intervals", []) if current_day_in_period else []
+        )
+        gaps = [{**g, "start": g["start"].astimezone(now.tzinfo),
+                 "end": g["end"].astimezone(now.tzinfo)} for g in gaps]
+        missing_cost_energy = unknown_kwh + (
+            today["unpriced_kwh"] if current_day_in_period else 0
+        )
+        blockers = []
+        if coverage < 1 or (current_day_in_period and not today.get("energy_complete", today_complete)):
+            blockers.append("energy_history_gap")
+        if missing_fee_days:
+            blockers.append("price_profile_missing")
+        if not self.contract_known:
+            blockers.append("contract_unconfirmed")
+        if remaining is None:
+            blockers.append("consumption_profile_missing")
+        if mean_price is None:
+            blockers.append("future_price_missing")
+        if missing_cost_energy > 1e-6 and not self.values["estimate_bill"]:
+            blockers.append("estimate_not_enabled")
+        estimated_cost = 0.0 if period_complete else None
+        ratio, ratio_bill = None, None
+        if not period_complete and not blockers and missing_cost_energy > 1e-6:
+            try:
+                ratio, ratio_bill = selected_ratio(bills, self.values["estimate_bill"], start)
+                if ratio is None:
+                    blockers.append("estimate_bill_invalid")
+                elif abs(sum(g["kwh"] for g in gaps) - missing_cost_energy) > 1e-6:
+                    blockers.append("unpriced_intervals_missing")
+                else:
+                    calculator = getattr(self, "_calculation_coordinator", self.coordinator)
+                    dynamic_start = self.values["dynamic_start"]
+                    # Neznámé datum aktivace dynamiky nelze nahradit dnešním stavem.
+                    if self.billing.values["dynamic_pricing"] and not self.trial and not dynamic_start:
+                        blockers.append("contract_unconfirmed")
+                    else:
+                        estimated_cost = estimate_gaps(
+                            gaps, ratio, self._profile_at,
+                            lambda when: calculator._current_window(
+                                when.astimezone(now.tzinfo)
+                            ).modifier_percent,
+                            lambda day: self.billing.values["dynamic_pricing"] and not self.trial
+                            and bool(dynamic_start) and day >= date.fromisoformat(dynamic_start),
+                        )
+                        if estimated_cost is None:
+                            blockers.append("historical_price_missing")
+            except (KeyError, TypeError, ValueError):
+                blockers.append("estimate_bill_invalid")
+        if not period_complete and missing_cost_energy <= 1e-6:
+            blockers.append("accounting_incomplete")
+        approximate = not period_complete and estimated_cost is not None and not blockers
+        forecast_base = actual_cost + (estimated_cost or 0)
         projection = (
-            actual_cost + remaining * mean_price
-            if period_complete and remaining is not None and mean_price is not None
+            forecast_base + remaining * mean_price
+            if (period_complete or approximate) and remaining is not None and mean_price is not None
+            and self.contract_known
             else None
         )
         if projection is not None and include_fixed:
@@ -919,8 +1015,8 @@ class SettlementHistory(AccountingRecovery):
             )
             actual_series = [[timestamp, actual_cost]]
         if projection is not None and now.date() <= end:
-            forecast_series.append([through.timestamp() * 1000, actual_cost])
-            projected = actual_cost + remaining_today * mean_price
+            forecast_series.append([through.timestamp() * 1000, forecast_base])
+            projected = forecast_base + remaining_today * mean_price
             cursor = max(start, now.date() + timedelta(days=1))
             while cursor <= end:
                 projected += daily_means[cursor.month] * mean_price
@@ -1062,6 +1158,20 @@ class SettlementHistory(AccountingRecovery):
                 "shared_income_forecast_method": "known_revenue_only_no_future_income_assumed",
                 "missing_advance_months": missing_advances,
                 "missing_profile_months": missing_months,
+                "forecast_approximate": approximate,
+                "estimated_history_cost": estimated_cost if approximate else None,
+                "estimated_history_kwh": missing_cost_energy if approximate else 0,
+                "estimate_method": "bill_nt_vt_ratio_with_valid_prices_and_local_dynamic_bands" if approximate else None,
+                "estimate_bill_period": (ratio_bill["start"] + "/" + ratio_bill["end"]) if approximate else None,
+                "estimate_nt_ratio": ratio if approximate else None,
+                "forecast_blockers": sorted(set(blockers)) if projection is None else [],
+                "unpriced_intervals": [
+                    {"start": g["start"].isoformat(), "end": g["end"].isoformat(),
+                     "kwh": g["kwh"],
+                     "reason": "historical_price_missing" if self._profile_at(
+                         g["start"].astimezone(now.tzinfo).date()) is None else "historical_hdo_missing"}
+                    for g in gaps
+                ],
                 "forecast_method": "seasonal_daily_demand_with_current_two_day_mean_price",
                 "forecast_price_kwh": mean_price,
                 "cost_actual_series": actual_series,

@@ -38,7 +38,8 @@
           "price_list": "Načíst ceník ČEZ z PDF",
           "general": "Tarifní rozvrhy a další nastavení",
           "dashboard": "Generate dashboard",
-          "tariff_strategy": "Způsob výpočtu dynamického tarifu"
+          "tariff_strategy": "Způsob výpočtu dynamického tarifu",
+          "accounting_documents": "Vyúčtování a ceníky"
         }
       },
       "thresholds": {
@@ -300,6 +301,157 @@
           "other_monthly": "Ostatní stálé platby (Kč/měsíc)",
           "confirm_price_list": "Zkontroloval(a) jsem částky a chci je nyní použít"
         }
+      },
+      "accounting_documents": {
+        "title": "Vyúčtování a ceníky",
+        "description": "{summary}",
+        "menu_options": {
+          "document_bills": "Vyúčtování",
+          "document_profiles": "Historické ceníky",
+          "estimate_settings": "Nastavení orientačního ocenění",
+          "accounting_check": "Kontrola a přepočet",
+          "active_prices": "Aktivní ceník – upravit sazby"
+        }
+      },
+      "document_bills": {
+        "title": "Uložená vyúčtování",
+        "description": "Seznam obsahuje pouze podklady uložené v integraci. Částky jsou v Kč s DPH. Přidání faktury nemění kontrolní odečet současného období.",
+        "data": {
+          "record": "Vyúčtování",
+          "action": "Akce"
+        }
+      },
+      "document_profiles": {
+        "title": "Historické ceníky",
+        "description": "Aktivní ceník platí od {current}. Spravujte starší nepřekrývající se období. Aktivní ceník lze načíst z PDF v hlavním nastavení; ruční sazby jsou v tarifním nastavení. Mezery v platnosti znamenají neznámou cenu.",
+        "data": {
+          "record": "Ceník",
+          "action": "Akce"
+        }
+      },
+      "document_profile_source": {
+        "title": "Nový historický ceník",
+        "description": "Zvolte zdroj sazeb. Platnost a částky před uložením ověřte.",
+        "menu_options": {
+          "profile_manual": "Zadat ručně",
+          "profile_import": "Načíst ceník PDF",
+          "profile_copy": "Převzít aktivní sazby jako návrh"
+        }
+      },
+      "document_bill": {
+        "title": "Vyúčtování",
+        "description": "Uzavřené období včetně obou krajních dní. Energie v kWh, všechny částky v Kč s DPH. Součet VT+NT musí odpovídat celku. Prázdná volitelná částka znamená neznámou hodnotu. Uloženo měsíčních záznamů: {months}. Profil se používá jen pro celé měsíce; faktura nepřičítá druhou spotřebu ke kontrolnímu odečtu.",
+        "data": {
+          "source": "Zdroj / označení podkladu",
+          "start": "Začátek období",
+          "end": "Konec období",
+          "energy_kwh": "Spotřeba celkem",
+          "vt_kwh": "Spotřeba VT",
+          "nt_kwh": "Spotřeba NT",
+          "cost": "Celkové náklady s DPH",
+          "paid": "Zaplacené zálohy (volitelné)",
+          "fixed_cost": "Z toho stálé platby (volitelné)",
+          "edit_months": "Upravit měsíční rozpis před uložením",
+          "clear_months": "Odstranit dosavadní měsíční rozpis"
+        }
+      },
+      "document_months": {
+        "title": "Měsíční rozpis vyúčtování",
+        "description": "Zadejte NT i VT u každého známého celého měsíce. Prázdná dvojice znamená chybějící údaj. Nula označuje skutečně doloženou nulovou spotřebu. U úplného rozpisu musí součty odpovídat faktuře.",
+        "data": {
+          "nt_1": "{month_1} · NT (kWh)",
+          "vt_1": "{month_1} · VT (kWh)",
+          "nt_2": "{month_2} · NT (kWh)",
+          "vt_2": "{month_2} · VT (kWh)",
+          "nt_3": "{month_3} · NT (kWh)",
+          "vt_3": "{month_3} · VT (kWh)",
+          "nt_4": "{month_4} · NT (kWh)",
+          "vt_4": "{month_4} · VT (kWh)",
+          "nt_5": "{month_5} · NT (kWh)",
+          "vt_5": "{month_5} · VT (kWh)",
+          "nt_6": "{month_6} · NT (kWh)",
+          "vt_6": "{month_6} · VT (kWh)",
+          "nt_7": "{month_7} · NT (kWh)",
+          "vt_7": "{month_7} · VT (kWh)",
+          "nt_8": "{month_8} · NT (kWh)",
+          "vt_8": "{month_8} · VT (kWh)",
+          "nt_9": "{month_9} · NT (kWh)",
+          "vt_9": "{month_9} · VT (kWh)",
+          "nt_10": "{month_10} · NT (kWh)",
+          "vt_10": "{month_10} · VT (kWh)",
+          "nt_11": "{month_11} · NT (kWh)",
+          "vt_11": "{month_11} · VT (kWh)",
+          "nt_12": "{month_12} · NT (kWh)",
+          "vt_12": "{month_12} · VT (kWh)",
+          "nt_13": "{month_13} · NT (kWh)",
+          "vt_13": "{month_13} · VT (kWh)",
+          "nt_14": "{month_14} · NT (kWh)",
+          "vt_14": "{month_14} · VT (kWh)",
+          "nt_15": "{month_15} · NT (kWh)",
+          "vt_15": "{month_15} · VT (kWh)",
+          "nt_16": "{month_16} · NT (kWh)",
+          "vt_16": "{month_16} · VT (kWh)",
+          "nt_17": "{month_17} · NT (kWh)",
+          "vt_17": "{month_17} · VT (kWh)",
+          "nt_18": "{month_18} · NT (kWh)",
+          "vt_18": "{month_18} · VT (kWh)",
+          "nt_19": "{month_19} · NT (kWh)",
+          "vt_19": "{month_19} · VT (kWh)",
+          "nt_20": "{month_20} · NT (kWh)",
+          "vt_20": "{month_20} · VT (kWh)",
+          "nt_21": "{month_21} · NT (kWh)",
+          "vt_21": "{month_21} · VT (kWh)",
+          "nt_22": "{month_22} · NT (kWh)",
+          "vt_22": "{month_22} · VT (kWh)",
+          "nt_23": "{month_23} · NT (kWh)",
+          "vt_23": "{month_23} · VT (kWh)",
+          "nt_24": "{month_24} · NT (kWh)",
+          "vt_24": "{month_24} · VT (kWh)",
+          "nt_25": "{month_25} · NT (kWh)",
+          "vt_25": "{month_25} · VT (kWh)"
+        }
+      },
+      "document_profile": {
+        "title": "Ceník s vymezenou platností",
+        "description": "Obě data jsou včetně dne. Všechny ceny obsahují DPH: spotřební složky v Kč/kWh, stálé platby v Kč/měsíc. Zadejte i doložené nuly. Náhled importu: {import_info}",
+        "data": {
+          "source": "Zdroj / označení ceníku",
+          "start": "Platí od",
+          "end": "Platí do",
+          "trade_vt": "Obchodní cena VT (Kč/kWh)",
+          "trade_nt": "Obchodní cena NT (Kč/kWh)",
+          "distribution_vt": "Distribuce VT (Kč/kWh)",
+          "distribution_nt": "Distribuce NT (Kč/kWh)",
+          "electricity_tax": "Daň z elektřiny (Kč/kWh)",
+          "system_services": "Systémové služby (Kč/kWh)",
+          "poze_kwh": "Efektivní POZE (Kč/kWh)",
+          "supplier_monthly": "Stálá platba dodavateli (Kč/měsíc)",
+          "breaker_monthly": "Platba za jistič (Kč/měsíc)",
+          "infrastructure_monthly": "Nesíťová infrastruktura (Kč/měsíc)",
+          "other_kwh": "Ostatní platby podle odběru (Kč/kWh)",
+          "other_monthly": "Ostatní stálé platby (Kč/měsíc)"
+        }
+      },
+      "document_delete": {
+        "title": "Odstranit účetní podklad",
+        "description": "Potvrďte odstranění záznamu {period}. Pokud je faktura zdrojem poměru VT/NT, náhradní ocenění se vypne. Historie ověřených nákladů zůstává uložená.",
+        "data": {
+          "confirm": "Odstranit tento záznam"
+        }
+      },
+      "estimate_settings": {
+        "title": "Orientační ocenění neznámého VT/NT",
+        "description": "Volitelné náhradní ocenění použije poměr NT/VT z vybrané faktury uzavřené před začátkem nynějšího období. Použije pouze ceník platný v době spotřeby a známý smluvní režim. Přesné účetnictví zůstane neúplné; výhled bude označen jako orientační. Vypnutí volby obnoví přísný výpočet.",
+        "data": {
+          "estimate_bill": "Vyúčtování jako zdroj poměru VT/NT"
+        }
+      },
+      "accounting_check": {
+        "title": "Kontrola a přepočet",
+        "description": "{report}",
+        "data": {
+          "recalculate": "Spustit přepočet dostupné historie"
+        }
       }
     },
     "error": {
@@ -335,10 +487,26 @@
       "invalid_activation": "Zadejte ISO datum a čas s offsetem, například 2028-04-08T00:00:00+02:00.",
       "activation_in_past": "Aktivace nesmí být v minulosti.",
       "invalid_tariff_mode": "Neplatný způsob výpočtu.",
-      "fixed_profile_missing": "Nejprve nahrajte a vyberte pevný dynamický ceník."
+      "fixed_profile_missing": "Nejprve nahrajte a vyberte pevný dynamický ceník.",
+      "invalid_documents": "Podklad má neplatný formát. Zkontrolujte uložená data.",
+      "invalid_document_period": "Zadejte platné období od–do dlouhé nejvýše dva roky.",
+      "invalid_document_number": "Zadejte konečná nezáporná čísla a stálé platby nejvýše do celkové částky.",
+      "bill_not_closed": "Vyúčtování musí končit před dnešním dnem.",
+      "document_overlap": "Období se překrývá s jiným uloženým záznamem.",
+      "current_price_overlap": "Historický ceník se překrývá s aktivním ceníkem. Ověřte také začátek aktivního ceníku v nastavení období.",
+      "incomplete_document_rates": "Doplňte všechny cenové složky včetně doložených nul.",
+      "bill_energy_mismatch": "Součet VT a NT neodpovídá celkové spotřebě.",
+      "invalid_bill_months": "Zadejte NT i VT, každý měsíc jen jednou a pouze celé měsíce uvnitř faktury.",
+      "bill_months_mismatch": "Měsíční součty překračují fakturu nebo úplný rozpis neodpovídá jejím součtům.",
+      "documents_changed": "Podklady se mezitím změnily. Znovu otevřete nastavení.",
+      "select_existing_document": "Pro tuto akci vyberte existující záznam.",
+      "estimate_bill_invalid": "Zvolte starší vyúčtování s doloženým nenulovým poměrem NT/VT.",
+      "recalculation_unavailable": "Přepočet nelze spustit. Ověřte, že je účetnictví zapnuté a integrace načtená.",
+      "historical_dynamic_price_list": "Historická tabulka NT/VT nepodporuje časová pásma. Dynamický ceník nahrajte přes Nahrát ceník a zvolte jeho smluvní účinnost ve Způsobu výpočtu."
     },
     "abort": {
-      "pricing_activation_pending": "Je naplánovaná aktivace ceníku. Před jinou změnou cenového nastavení zvolte okamžitý režim ve Způsobu výpočtu dynamického tarifu; potom plán nastavte znovu."
+      "pricing_activation_pending": "Je naplánovaná aktivace ceníku. Před jinou změnou cenového nastavení zvolte okamžitý režim ve Způsobu výpočtu dynamického tarifu; potom plán nastavte znovu.",
+      "invalid_documents": "Podklad má neplatný formát. Zkontrolujte uložená data."
     }
   },
   "entity": {

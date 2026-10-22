@@ -1,5 +1,9 @@
 # Audit a ověření vydání 1.1.0
 
+Tento záznam zachycuje původní lokální ověření před publikací. Následné
+sloučení nasazené administrace 1.0.12 a výsledky vydání zaznamenává
+[dokument nasazení](release-1.1.0.md).
+
 Datum: 22. 10. 2026. Rozsah: dvě cenové strategie, import obou nových ceníků,
 aktivace, semafory, dashboard, účetní návaznosti a příprava českého vydání.
 Nejde o audit tokenové spotřeby ani o nasazení do živého Home Assistantu.
