@@ -1,5 +1,12 @@
 # Changelog
 
+## Připravované změny
+
+- Při úplném náhradním ocenění se v hlavním přehledu a detailech zobrazují
+  **Náklady dosud – orientačně** se symbolem ≈. Přesná částka má přednost;
+  chybějící podklady zůstávají přiznané. Generátor zachová stejné zobrazení
+  i při převzetí místních karet.
+
 ## 1.1.0 – 2026-10-22
 
 ### Čeština

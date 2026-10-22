@@ -131,7 +131,7 @@ function cezUpdateAccountingDocuments(view, generated) {
   // registry entity_id, složení a subviews zůstávají z místního dashboardu.
   // Zdroj je aktuální šablona po překladu ID. Značka zaručuje idempotenci.
   const marker = "{# cez_accounting_estimate #}";
-  let status = "", admin = null;
+  let status = "", admin = null, costDisplay = "", costRow = "";
   const walk = (node, callback) => {
     if (!node || typeof node !== "object") return;
     callback(node);
@@ -143,12 +143,27 @@ function cezUpdateAccountingDocuments(view, generated) {
   walk(generated, card => {
     if (card.type === "markdown" && card.content?.includes(marker)) {
       status = card.content.slice(card.content.indexOf(marker));
+      // Sdílíme stejný výpočet i text s přibalenou šablonou. V místní
+      // sestavě měníme jen řádek nákladů, žádné faktury nebo ostatní karty.
+      const start = card.content.indexOf("{# cez_period_cost_display:");
+      const endMarker = "{# /cez_period_cost_display #}";
+      const end = card.content.indexOf(endMarker, start);
+      if (start >= 0 && end >= 0) {
+        costDisplay = card.content.slice(start, end + endMarker.length);
+        costRow = card.content.split("\n").find(line => line.startsWith("| {{ 'Náklady dosud – orientačně'")) || "";
+      }
     }
     if (card.type === "button" && card.name === "Vyúčtování a ceníky – nastavení integrace") admin = card;
   });
   let hasAdmin = false;
   walk(view, card => {
     if (card.type === "markdown" && card.content?.includes("## Vyúčtování")) {
+      if (costDisplay && costRow) {
+        // Odstranění pouze našeho označeného bloku zajistí idempotenci.
+        // Bez známé peněžní částky šablona dál přizná chybějící údaje.
+        card.content = card.content.replace(/\{# cez_period_cost_display:[\s\S]*?\{# \/cez_period_cost_display #\}\n?/, "");
+        card.content = costDisplay + "\n" + card.content.replace(/^\| (?:Náklady dosud|\{\{ 'Náklady dosud – orientačně')[^\n]*$/m, costRow);
+      }
       const old = card.content.indexOf(marker);
       if (old >= 0) card.content = card.content.slice(0, old).trimEnd();
       if (status) card.content = card.content.trimEnd() + "\n\n" + status;

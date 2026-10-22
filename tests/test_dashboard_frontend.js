@@ -254,3 +254,20 @@ test("accounting document warnings and administration survive generation without
  assert.equal(first.views.length,3);assert.equal(first.views[0].subview,false);
  assert.equal(first.views[1].subview,true);assert.equal(first.views[2].subview,true);
 });
+
+
+test("old local cost rows receive the marked estimate without losing local content",()=>{
+ const generated=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ const local={views:[{path:"cez-dynamic-tariff",cards:[{type:"markdown",content:
+  "## Vyúčtování\nMoje místní poznámka\n| Náklady dosud | Původní částka |"}]}]};
+ const first=clone(context.reuseCurrentCezViews(generated,local));
+ const content=first.views[0].cards[0].content;
+ assert.ok(content.includes("Moje místní poznámka"));
+ assert.ok(content.includes("known_period_cost"));
+ assert.ok(content.includes("estimated_history_cost"));
+ assert.ok(content.includes("Náklady dosud – orientačně"));
+ assert.ok(!content.includes("Původní částka"));
+ assert.equal(content.split("{# cez_period_cost_display:").length,2);
+ assert.deepEqual(clone(context.reuseCurrentCezViews(generated,first)),first);
+ assert.equal(local.views[0].cards[0].content.includes("known_period_cost"),false);
+});

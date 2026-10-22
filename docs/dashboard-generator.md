@@ -138,3 +138,16 @@ Při převzetí místních pohledů doplní označený blok do účetních souhr
 a jeden odkaz do detailu. Opakovaný náhled blok ani tlačítko neduplikuje;
 ostatní karty, místní entity a tři dosavadní pohledy zachová.
 Samotná aktualizace integrace nepřepisuje uložený Lovelace dashboard.
+
+## Náklady dosud při náhradním ocenění
+
+Přesná částka má vždy přednost. Pokud přesná částka chybí, ale účetnictví
+výslovně potvrzuje úplný orientační podklad (`forecast_approximate`) a obě
+částky jsou číselné, přehled ukáže **Náklady dosud – orientačně** jako
+`known_period_cost + estimated_history_cost` v Kč. Symbol ≈ a upozornění
+na chybějící historické HDO zůstávají viditelné. Nulová cena je platná;
+chybějící údaj se na nulu nepřevádí. Při neúplném odhadu zůstane „Údaje chybí“.
+
+Stejný řádek používají hlavní přehled a detaily. Generátor při převzetí
+místní sestavy upraví jen označený blok výpočtu a řádek nákladů; ostatní
+obsah a podstránky zachová. Výpočet účetního senzoru se tím nemění.

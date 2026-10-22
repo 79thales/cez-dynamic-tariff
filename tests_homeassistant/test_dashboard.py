@@ -469,3 +469,44 @@ async def test_manual_hdo_yaml_matches_bundled_card_and_keeps_comments(hass):
     assert "HDO: **neznámé**" in template.Template(
         exported["content"], hass
     ).async_render(parse_result=False)
+
+
+@pytest.mark.parametrize("exact,known,estimated,approximate,expected", [
+    ("unknown", 8642.65, 64.82, True, "≈ 8707,47 Kč"),
+    ("9000", 8642.65, 64.82, True, "9000,00 Kč"),
+    ("0", 8642.65, 64.82, True, "0,00 Kč"),
+    ("unknown", 0, 0, True, "≈ 0,00 Kč"),
+    ("unknown", None, 64.82, True, "Údaje chybí"),
+    ("unknown", 8642.65, None, True, "Údaje chybí"),
+    ("unknown", 8642.65, 64.82, False, "Údaje chybí"),
+    ("unknown", "unknown", 64.82, True, "Údaje chybí"),
+])
+async def test_period_cost_display_distinguishes_exact_estimate_and_missing(
+    hass, exact, known, estimated, approximate, expected
+):
+    """Skutečné šablony obou souhrnů nesmějí vydat odhad za přesnou cenu.
+
+    Přesný součet se nepřičítá k náhradnímu ocenění podruhé. Platná nula
+    zůstává cenou, chybějící dílčí částka nebo nepotvrzený odhad cenou není.
+    """
+    from custom_components.cez_dynamic_tariff.dashboard import build_views
+
+    config = build_views("ČEZ", "cez-test", {}, {})["config"]
+    summaries = [card["content"] for view in config["views"]
+                 for section in view.get("sections", []) for card in section["cards"]
+                 if card.get("type") == "markdown"
+                 and "{# cez_period_cost_display:" in card.get("content", "")]
+    assert len(summaries) == 2
+    hass.states.async_set("sensor.cez_dynamic_tariff_period_gross_cost", exact)
+    hass.states.async_set("sensor.cez_dynamic_tariff_accounting_status", "incomplete", {
+        "known_period_cost": known, "estimated_history_cost": estimated,
+        "forecast_approximate": approximate,
+    })
+    for content in summaries:
+        end_marker = "{# /cez_period_cost_display #}"
+        setup = content[:content.index(end_marker) + len(end_marker)]
+        row = next(line for line in content.splitlines()
+                   if line.startswith("| {{ 'Náklady dosud – orientačně'"))
+        rendered = template.Template(setup + "\n" + row, hass).async_render()
+        assert expected in rendered
+        assert ("Náklady dosud – orientačně" in rendered) == expected.startswith("≈")
