@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0 – 2026-10-22 (připraveno, dosud nevydáno)
+## 1.1.0 – 2026-10-22
 
 ### Čeština
 
@@ -30,53 +30,78 @@ Zkontrolujte také dosavadní volbu skutečného ocenění versus simulace na zk
 Již uložený dashboard se sám nepřepíše; nové cenové karty převezměte z náhledu
 generátoru. Předpovědi úplné ceny vyžadují platná data nakonfigurovaného HDO.
 
-## 1.0.9 – 2026-10-12 (připraveno, dosud nevydáno)
+## 1.0.11 – 2026-10-21
 
 ### Čeština
 
-- Pomocný editor záloh se registruje jako verzovaný modul také mezi zdroji
-  Lovelace. Reload napraví chybějící zdroj; restart a souběžné setupy nevytvářejí
-  duplicity. YAML zdroje se zachovají. Oprava řeší chybějící načtení
-  `cez-advances-card`; nemění účetní údaje ani složení dashboardů.
-- Cache editoru záloh i Generate dashboard se odlišuje podle SHA-256 obsahu
-  JavaScriptu. Oprava tak nevyžaduje zvýšení revize integrace; číslo v manifestu
-  se touto změnou neupravuje. Starší URL vlastního editoru se při reloadu odstraní
-  z úvodního HTML, ostatní zdroje zůstávají zachované.
-- Ověřené hodinové energie, ceny a historické rozvrhy HDO mají vlastní
-  verzovaný atomický archiv. Ztráta Recorder historie nesmaže již spočtené
-  náklady; jiné elektroměry a cenové revize se neslučují.
+- Ověřené hodinové energie, variabilní náklady a historické rozvrhy HDO
+  ukládá vlastní atomický archiv. Restart ani zkrácení historie Recorderu
+  nesmažou již ověřené ocenění. Různé elektroměry a cenové revize se nesčítají.
 - Tlačítko **Dotáhnout a přepočítat data**, stavový senzor a akce
-  `backfill_accounting` procházejí minulost po blocích a pokračují po
-  přerušení. Opakované stisky, překryvy a opravené vstupy nezvyšují součty.
-- Automatická historie zachovává kontrolní základ; vyřazení vyžaduje
-  výslovnou volbu. Diagnostika vysvětluje mezery a loguje přechody/zotavení.
-- Šablona a Generate dashboard přidávají právě jednu kartu dotažení
-  v detailu a používají neutrální původ starších kontrolních bodů.
-- Nové regresní testy pokrývají simulovaný purge, restart, diskové chyby,
-  souběh, změnu cen/energie, přejmenování zdroje a zachování options.
+  `backfill_accounting` kontrolují dostupnou minulost po blocích; opakovaný
+  stisk nevytváří souběžný úkol ani duplicitní náklady. Po přerušení lze pokračovat.
+- Automatická historie zachovává kontrolní odečet. Jeho vypnutí vyžaduje
+  výslovnou volbu. Diagnostika rozlišuje mezery spotřeby, HDO, cen a úložiště;
+  předchozí úplná predikce má při poruše označení zastarání a čas výpočtu.
+- Generátor i přibalená šablona zachovávají hlavní přehled, detaily a editor,
+  doplňují právě jednu kartu dotažení, ověřují HDO před čtením stavu a opravují
+  sdílené tooltipy grafů. Chybějící údaje se nevydávají za nulu.
+- Editor záloh se registruje také mezi zdroji Lovelace. Reload doplní
+  chybějící zdroj; opakovaný setup zachová jeho ID i cizí zdroje. Verzování
+  URL z manifestu zavedené v 1.0.10 zůstává zachované pro oba frontendové moduly.
+- Archiv chrání podklady ověřené touto verzí. Již ztracené historické HDO
+  nebo náklady bez dalšího důkazu neumí obnovit; dotažení přizná zbývající mezery.
+  Zálohy, kontrolní hodnoty, cizí statistiky a nasazené dashboardy se nepřepisují.
 
 ### English
 
-- Persist verified hourly energy, costs and historical HDO schedules in
-  an atomic, versioned archive scoped to the meter and price revision.
-- Add a resumable background backfill button, status sensor and action
-  with duplicate detection, scoped ranges and explicit gap reporting.
-- Preserve checkpoints unless explicitly disabled, expose failure reasons
-  and synchronize the bundled dashboard and current-layout generator.
-- Add regression coverage for retention, restarts, storage failure,
-  concurrency, corrected inputs and source identity.
+- Persist verified hourly energy, variable costs and historical HDO schedules
+  in an atomic archive scoped to meter identity and price revision. Retention
+  and restarts preserve previously verified costs.
+- Add a resumable accounting backfill button, status sensor and service with
+  duplicate detection, bounded batches and explicit gap and storage diagnostics.
+- Preserve checkpoints unless explicitly disabled; retain the last complete
+  forecast only as a dated, stale diagnostic when current inputs are incomplete.
+- Synchronize the dashboard template and generator: preserve main/detail/editor
+  views, add one backfill card, guard HDO inputs and repair shared chart tooltips.
+- Register the advances editor as a Lovelace resource without duplicate setup
+  or changes to unrelated resources. Keep manifest-based frontend versioning
+  introduced in 1.0.10.
+- The archive protects newly verified inputs; it cannot invent already lost
+  historical schedules or costs. Backfill reports unresolved gaps and preserves
+  advances, checkpoints, external statistics and existing dashboards.
 
-## Unreleased – oprava HDO dashboardu 2026-10-10
+## 1.0.10 – 2026-10-19
 
-- Markdown karta HDO ověřuje typ a celé entity_id před čtením stavu. Při startu,
-  reloadu, chybějícím cenovém senzoru nebo neplatném atributu zobrazí „neznámé“;
-  `on` zůstává NT a `off` VT. Výpočty cen, trial režim a ID entit se nemění.
-- Generate dashboard opraví také nebezpečné HDO výrazy při převzetí existujících
-  místních pohledů; zachová hlavní stránku, detaily i editor záloh.
-- Doplněny skutečné HA regresní testy vykreslení, odběru stavů, pozdního vzniku
-  HDO, reloadu a exportu YAML. Ruční oprava karty: `examples/hdo_status_card.yaml`.
-- HDO dashboard templates validate the source before reading its state, including
-  copied existing views. Unknown inputs remain unknown; NT/VT and prices are preserved.
+### Čeština
+
+- URL přibaleného editoru záloh přebírá verzi integrace z manifestu přes
+  loader Home Assistantu místo pevného `?v=1.0.8`. Aktualizace a restart HA
+  tak automaticky změní URL pro obnovení cache prohlížeče.
+- Regresní testy ověřují verzi manifestu, budoucí vydání, opakovaný setup,
+  registraci po startu a HTTP dostupnost editoru i generátoru dashboardu.
+- Entity, konfigurace, výpočty tarifů a složení dashboardů se nemění.
+
+### English
+
+- Use the integration manifest version from the Home Assistant loader in the
+  bundled advances editor URL instead of the hard-coded `?v=1.0.8`.
+  Updating and restarting HA automatically changes the browser cache URL.
+- Add regression coverage for the manifest version, future releases, repeated
+  setup, startup registration and HTTP access to both bundled frontend modules.
+- Entities, configuration, tariff calculations and dashboard layouts are unchanged.
+
+## 1.0.9 – 2026-10-12
+
+### Čeština
+
+- Licence projektu změněna z MIT na GNU GPL v3.0 (GPL-3.0-only). Dříve vydané verze zůstávají dostupné pod licencí, pod kterou byly původně zveřejněny.
+- Plný text licence a oznámení jsou také součástí instalačního ZIPu HACS.
+
+### English
+
+- Changed project license from MIT to GNU GPL v3.0 (GPL-3.0-only). Previously released versions remain available under the license under which they were originally published.
+- The full license text and notices are also included in the HACS installer ZIP.
 
 ## 1.0.8 – 2026-10-10
 

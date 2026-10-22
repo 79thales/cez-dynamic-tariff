@@ -459,3 +459,46 @@ async def test_seasonal_energy_does_not_require_prices_outside_billing_period(ha
     assert obj.result["accounting_status"] == "complete"
     assert obj.result["forecast_gross_cost"] is not None
     assert "historical_price_missing" not in obj.result["metadata"]["reason_codes"]
+
+
+@pytest.mark.parametrize("arguments", [({"value": 1},), ("/storage/test", {"value": 1})])
+@pytest.mark.parametrize("write_fails", [False, True])
+async def test_storage_hook_preserves_ha_call_shape(hass, arguments, write_fails):
+    """HA 2025/2026 musí dostat původní argumenty; chyba se nesmí skrýt.
+
+    Rozdílné interní rozhraní zůstává v nadřazeném Store. Adaptér pouze
+    zachová volání a převede diskovou chybu na potvrzené selhání zápisu.
+    """
+    store = AccountingStore(hass, 1, "cez_storage_signature_test", atomic_writes=True)
+    with patch(
+        "homeassistant.helpers.storage.Store._async_write_data",
+        new_callable=AsyncMock,
+        side_effect=WriteError("disk full") if write_fails else None,
+    ) as writer:
+        if write_fails:
+            with pytest.raises(HomeAssistantError, match="accounting_archive_write_failed"):
+                await store._async_write_data(*arguments)
+        else:
+            await store._async_write_data(*arguments)
+        writer.assert_awaited_once_with(*arguments)
+
+
+async def test_actual_store_round_trip_preserves_verified_hour(hass):
+    """Skutečný atomický Store uloží archiv a nová instance obnoví tutéž hodinu.
+
+    Ověřujeme veřejné async_save/async_load celé podporované verze HA,
+    takže nekompatibilní interní podpis nebo ztracené potvrzení zápisu
+    zachytí také CI matice, nejen test adaptéru s náhradním zapisovačem.
+    """
+    archive = AccountingArchive()
+    stamp = LEFT.timestamp()
+    archive.merge_energy("meter", [{"start": stamp, "change": 2.5}])
+    archive.save_cost("revision", stamp, 2.5, 9.25, "historical_hdo")
+    store = AccountingStore(hass, 1, "cez_archive_roundtrip_test", private=True, atomic_writes=True)
+    await store.async_save(archive.snapshot())
+    restored_store = AccountingStore(hass, 1, "cez_archive_roundtrip_test", private=True, atomic_writes=True)
+    restored = AccountingArchive(await restored_store.async_load())
+    assert restored.energy_rows("meter", stamp, stamp + 3600) == [
+        {"start": stamp, "end": stamp + 3600, "change": 2.5}
+    ]
+    assert restored.cost("revision", stamp, 2.5) == 9.25

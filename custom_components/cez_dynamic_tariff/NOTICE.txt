@@ -1,0 +1,7 @@
+Copyright (c) 2026 Jiří Dvořák (79thales)
+SPDX-License-Identifier: GPL-3.0-only
+
+Project-owned code and assets in this version are licensed under the
+GNU General Public License, version 3 only. See LICENSE for the full text.
+Previously published MIT versions retain their original license.
+Corresponding source: https://github.com/79thales/cez-dynamic-tariff/tree/v1.0.9
