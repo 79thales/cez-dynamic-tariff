@@ -1,11 +1,11 @@
-# ČEZ Dynamic Tariff & Accounting for Home Assistant
+# ČEZ Dynamic Tariff – dynamický tarif a vyúčtování pro Home Assistant
 
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.1.0%2B-41BDF5?logo=home-assistant&logoColor=white&style=flat)](https://www.home-assistant.io/)
-[![HACS Integration](https://img.shields.io/badge/HACS-Integration-41BDF5?logo=home-assistant-community-store&logoColor=white&style=flat)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
-[![Latest release](https://img.shields.io/github/v/release/79thales/cez-dynamic-tariff?label=Release&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
-[![Installer downloads, all releases](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/cez_dynamic_tariff.zip?label=Downloads%20total&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases)
-[![Installer downloads, latest release](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/latest/cez_dynamic_tariff.zip?label=Downloads%20latest&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
-[![Validation](https://img.shields.io/github/check-suites/79thales/cez-dynamic-tariff/master_HA?label=Validation&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/actions)
+[![Integrace HACS](https://img.shields.io/badge/HACS-Integrace-41BDF5?logo=home-assistant-community-store&logoColor=white&style=flat)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
+[![Nejnovější vydání](https://img.shields.io/github/v/release/79thales/cez-dynamic-tariff?label=Vyd%C3%A1n%C3%AD&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
+[![Stažení instalátoru celkem](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/cez_dynamic_tariff.zip?label=Sta%C5%BEen%C3%AD%20celkem&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases)
+[![Stažení instalátoru nejnovější verze](https://img.shields.io/github/downloads/79thales/cez-dynamic-tariff/latest/cez_dynamic_tariff.zip?label=Sta%C5%BEen%C3%AD%20verze&displayAssetName=false&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
+[![Kontroly](https://img.shields.io/github/check-suites/79thales/cez-dynamic-tariff/master_HA?label=Kontroly&logo=github&style=flat)](https://github.com/79thales/cez-dynamic-tariff/actions)
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/79thales/cez-dynamic-tariff/master_HA/custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
@@ -18,74 +18,7 @@ Nadřazený výběr umožňuje zachovat původní procenta, nebo používat pevn
 import sám nezmění aktivní režim. Semafory, původní procentní entity a historie
 zůstávají zachované. Postup a omezení: [dva cenové režimy](docs/dynamic-pricing-1.1.md).
 
-## English overview
-
-ČEZ Dynamic Tariff is an independent custom integration for Home Assistant users of the ČEZ Dynamic Tariff product in the Czech Republic. It determines the current tariff period and percentage price modifier from a daily schedule, then exposes the result through sensors, binary sensors, and attributes suitable for Home Assistant dashboards and automations.
-
-### Features
-
-- **Generate dashboard** configuration button and settings-menu link generate the
-  current ČEZ overview and detail subviews. Adds the main view to the **top tab bar
-  of Overview (`/lovelace`)**, preserving existing views. Preview and YAML export
-  are read-only. Charts require ApexCharts Card. See [dashboard generation](docs/dashboard-generator.md).
-
-- Optional billing-period accounting reuses existing Recorder and EDC financial
-  statistics, with annual or monthly advance payments, historical backfill,
-  verified provider readings, settled bills, seasonal consumption profiles and
-  surplus/deficit estimates. See [accounting setup and data limitations](docs/accounting.md)
-  and [historical bills, price lists and approximate valuation](docs/accounting-administration.md).
-
-- Optional full electricity pricing with public ČEZ HDO entities, VAT-inclusive
-  distribution and regulated charges, standing fees, today/tomorrow forecasts,
-  selectable pricing with or without Dynamic Tariff, and persisted consumption-based
-  cost and savings estimates. See the [full-price design and setup](docs/full-electricity-price.md).
-
-- 17 sensors for the current tariff period and modifier, season and day type, optional effective trading price, the next tariff change, current and next cheap periods, configurable thresholds, and tariff maps for today and tomorrow.
-- 4 binary sensors indicating cheap, super cheap, expensive, and very expensive periods.
-- Four bundled schedules covering April-September and October-March, each split into workdays and weekends or Czech public holidays.
-- Editable schedule entries in `HH:MM=modifier` format, with support for adding or removing tariff periods and changing their percentage modifiers.
-- Configurable classification thresholds used by tariff maps, binary sensors, and automations.
-- Three optional example automation blueprints are included in the repository for controlling devices during cheap, super cheap, and expensive periods.
-
-### Tariff data and pricing
-
-| Term | Meaning in this integration |
-|---|---|
-| **Tariff schedule** | One of four daily tables selected by season and day type. Each entry defines a start time and a percentage modifier. |
-| **Tariff period** | The interval from one schedule entry to the next. The current period determines the active modifier. |
-| **Tariff modifier** | The percentage assigned to a tariff period, such as `-50 %` or `+25 %`. It is not an electricity price. |
-| **Effective price** | A calculated value using the user-entered base trading price: `base price × (1 + modifier / 100)`. It is unavailable when the base price is `0` and covers only the trading component. |
-| **Full electricity price** | Optional calculation from an editable VAT-inclusive price profile and existing ČEZ HDO entities. Includes distribution, tax and other consumption charges. Standing fees are separate, with optional estimated per-kWh allocation. It does not download contract prices. |
-
-The bundled schedules are transcribed from the official [ČEZ Dynamic Tariff product page](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif) and the ČEZ document [Prices in ČEZ Dynamic Tariff time periods](https://www.cez.cz/webpublic/file/edee/2024/09/dynamickytarif_pasma.pdf). Their internal revision is `cez-public-table-2024-09`.
-
-This is a schedule-based integration. It does **not** download current prices, contract data, or revised tariff schedules from the internet. Users can edit all four schedules in the integration options if their contract differs from the bundled data. ČEZ may change its product terms, so users should compare the bundled schedule with their current contract before relying on it for financially significant automations.
-
-The original optional base price and `effective_price` sensor still cover only the trading component. New full-price sensors use a separate optional profile; existing sensors keep their IDs and meaning.
-
-### Requirements, installation, and configuration
-
-Home Assistant `2025.1.0` or newer is required.
-
-1. Install the repository through HACS. If it is not yet available in the default HACS catalog, add `https://github.com/79thales/cez-dynamic-tariff` as a custom repository of type **Integration**. Manual installation is also documented below.
-2. Restart Home Assistant.
-3. Go to **Settings → Devices & services → Add integration** and select **ČEZ Dynamic Tariff**.
-4. Set a name, the optional base trading price, and whether Czech public holidays should use the weekend/holiday schedule.
-5. Use **Configure** on the integration entry to edit thresholds and schedules or restore the bundled defaults.
-
-[Open this repository in HACS](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration) · [Start the configuration flow](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff) · [Latest release](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
-
-## Installer downloads
-
-The header uses the same badge order and style as EDC Sharing Stats, Entity Audit and VSChrudim Watermeter. `Validation` summarizes the default branch's GitHub check suites, including HACS, Hassfest and tests. The Home Assistant badge states the minimum supported version, not the newest version tested.
-
-Every Quality workflow run resolves the latest stable Home Assistant from PyPI and tests it with a matching `pytest-homeassistant-custom-component` version, alongside Home Assistant 2025.1.4 and 2026.8.3. A missing matching plugin fails the check instead of silently substituting an older or beta HA release.
-
-From v0.5.1, HACS installs the `cez_dynamic_tariff.zip` release asset. The download badges count only this installer, including manual downloads and updates, not unique users or active installations. HACS's download indicator covers the selected release; the total badge combines installer downloads across releases. Source-code archives, default-branch installations and blueprint samples are not counted. Earlier downloads cannot be reconstructed, and cached counts may take time to refresh. No telemetry is added to the integration.
-
-For manual installation from the installer ZIP, extract its contents directly into `custom_components/cez_dynamic_tariff`, with `manifest.json` at that directory's root. GitHub's automatic **Source code (zip)** archive has a different layout. Older releases retain their original installation method. See [release packaging](scripts/README.md) for the maintainer workflow.
-
-## Česká dokumentace
+## O integraci
 
 **Nové volitelné rozšíření:** [Celková cena, ČEZ HDO a úspory](docs/full-electricity-price.md)
 popisuje připravený profil D57d / 3×25 A, přepínání variant s Dynamickým tarifem
@@ -95,13 +28,17 @@ odkazu na `www.cez.cz`, zkontrolovat rozpoznané částky a aktualizovat nový c
 profil. Podmínky podporovaných ceníků a postup jsou ve stejné dokumentaci.
 Původní entity i entity cizí integrace ČEZ HDO zůstávají zachované.
 
-Vlastní integrace pro Home Assistant, která vystavuje aktuální pásmo ČEZ Dynamického tarifu jako senzory a binární senzory. Výchozí rozvrh je součástí projektu a časová pásma i jejich změny ceny lze upravit přímo v možnostech integrace; integrace nestahuje aktuální ceny z internetu.
+Nezávislá integrace pro Home Assistant pro sledování Dynamického tarifu ČEZ, ceny elektřiny, nákladů a vyúčtování. Podporuje původní procentní pásma i přímé pásmové ceny nových ceníků ČEZ. Ceník lze nahrát z PDF nebo načíst z přímého odkazu na web ČEZ; automatické stahování burzovních cen ani změn smlouvy neprobíhá.
 
 [Aktuální vydání](https://github.com/79thales/cez-dynamic-tariff/releases/latest)
 
 Od v0.5.1 HACS používá instalační přílohu `cez_dynamic_tariff.zip`. Odznaky stažení počítají pouze tento balíček včetně aktualizací, nikoli uživatele. Horní ikona v HACS patří vybrané verzi; odznak celkových stažení sčítá balíčky všech vydání. Starší stažení, zdrojové archivy, výchozí větev ani ukázkové blueprinty se nezapočítávají. Integrace kvůli tomu neposílá telemetrii.
 
 Při ruční instalaci lze ZIP rozbalit přímo do `custom_components/cez_dynamic_tariff`; `manifest.json` musí být přímo v této složce. Starší vydání zůstávají instalovatelná původním způsobem.
+
+Další návody: [vytvoření přehledu](docs/dashboard-generator.md),
+[nastavení účetnictví](docs/accounting.md) a
+[správa faktur, ceníků a náhradního ocenění](docs/accounting-administration.md).
 
 ## Požadavky
 
@@ -110,6 +47,12 @@ Při ruční instalaci lze ZIP rozbalit přímo do `custom_components/cez_dynami
 - připojení k internetu pouze při instalaci/aktualizaci závislosti `holidays`
 
 ## Co integrace umí
+
+- nabídne přepnutí mezi procentním režimem a přímými pásmovými cenami z PDF,
+- zobrazuje celkovou cenu elektřiny podle HDO včetně distribučních a dalších spotřebních poplatků,
+- sleduje náklady, zálohy a odhad přeplatku či nedoplatku za zúčtovací období,
+- umožňuje spravovat historické faktury a ceníky; náhradní ocenění je vždy označené jako orientační,
+- vytvoří hlavní přehled, detaily a editor záloh při zachování ostatních pohledů; grafy používají kartu ApexCharts Card,
 
 - vypočítá aktuální změnu ceny podle výchozího nebo vlastního rozpisu ČEZ
 - vystaví aktuální tarifní pásmo, sezónu, typ dne a nejbližší další levné okno
@@ -150,7 +93,7 @@ Po restartu:
 
 ### Varianta 2: instalace přes HACS
 
-[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
+[![Otevřít tento repozitář v HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=79thales&repository=cez-dynamic-tariff&category=integration)
 
 Pokud repozitář ještě není ve výchozím katalogu HACS, přidej jej jako vlastní repozitář:
 
@@ -165,8 +108,8 @@ Pokud repozitář ještě není ve výchozím katalogu HACS, přidej jej jako vl
 
 Po zařazení do výchozího katalogu HACS bude možné přeskočit krok s vlastním repozitářem.
 
-[![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff)
-[![Open your Home Assistant instance and show your integrations.](https://my.home-assistant.io/badges/integrations.svg)](https://my.home-assistant.io/redirect/config/)
+[![Přidat integraci do Home Assistantu.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=cez_dynamic_tariff)
+[![Zobrazit integrace v Home Assistantu.](https://my.home-assistant.io/badges/integrations.svg)](https://my.home-assistant.io/redirect/config/)
 
 ## Nastavení tarifních pásem
 
@@ -191,7 +134,7 @@ Vestavěná pásma odpovídají veřejné tabulce na stránce
 [Dynamický tarif ČEZ](https://www.cez.cz/cs/nova-energetika/dynamicky-tarif)
 a dokumentu [Ceny v časových pásmech Dynamického tarifu od ČEZ](https://www.cez.cz/webpublic/file/edee/2024/09/dynamickytarif_pasma.pdf).
 Revize vestavěných dat je `cez-public-table-2024-09`; shoda všech čtyř rozvrhů
-s tabulkou je chráněná regresním testem. ČEZ může podmínky produktu změnit, proto
+s tabulkou byla ověřena. ČEZ může podmínky produktu změnit, proto
 je před použitím pro finančně významnou automatizaci vhodné porovnat rozvrh s
 aktuální smlouvou. Vlastní smluvní pásma lze kdykoliv zadat v možnostech integrace.
 
@@ -302,13 +245,10 @@ Binární senzory:
 - `binary_sensor.cez_dynamic_tariff_expensive_now`
 - `binary_sensor.cez_dynamic_tariff_very_expensive_now`
 
-Bez volitelného cenového profilu integrace vytváří původních 21 vlastních entit: 17 senzorů a 4 binární senzory. Zapnutý cenový profil přidává 18 nových senzorů, celkem tedy 39 entit. Jejich význam a ID jsou v [dokumentaci celkové ceny](docs/full-electricity-price.md). Aktualizační entitu HACS vytváří HACS samostatně.
+Výše jsou původní procentní entity. Nový cenový režim přidává volič `select.cez_dynamic_tariff_tariff_mode` a senzory `active_trade_price`, `active_price_level` a `active_tariff_mode` s předponou `sensor.cez_dynamic_tariff_`. Volitelné sledování cen a účetnictví přidává další entity; jejich význam popisuje [dokumentace celkové ceny](docs/full-electricity-price.md) a [účetnictví](docs/accounting.md). Aktualizační entitu HACS vytváří HACS samostatně.
 
 `current_cheap_end` ukazuje konec právě probíhajícího souvislého levného období podle prahu `cheap_threshold`, včetně navazujících super levných pásem a přechodu přes půlnoc. Pokud právě není levno nebo konec není nalezen během následujících osmi dnů, stav je `unknown`. Při změně času sleduje skutečné minuty a stejný lokální rozvrh jako `cheap_now`; v opakované hodině tak může vlastní rozvrh projít pásmem znovu. Senzor se aktualizuje spolu s koordinátorem každých 60 sekund, nikoli nutně přesně na hranici minuty.
 
-The `current_cheap_end` timestamp gives the end of the currently active continuous cheap period using `cheap_threshold`. It includes adjacent super-cheap bands and continues across midnight. It is `unknown` when not currently cheap or when no end is found within the next eight days. It follows real elapsed minutes and the same local-clock schedule as `cheap_now` through DST; a custom band can therefore occur again during the repeated hour. Updates follow the coordinator's 60-second interval, which is not necessarily aligned with tariff boundaries. Existing `next_cheap_*` sensors continue to describe a future individual window.
-
-Developer tests: install `requirements-test.txt` before running `python -m unittest discover -s tests`. The `tzdata` dependency ensures DST tests also run on Windows; timezone data is required rather than silently replaced with a fixed UTC offset. Real Home Assistant test environments are specified in `.github/workflows/quality.yaml`.
 
 Všechny entity jsou při nové registraci přiřazené ke společnému zařízení **ČEZ Dynamic Tariff**. Integrace od verze `0.2.3` explicitně navrhuje výchozí ID podle stabilních interních klíčů uvedených výše, takže jejich suffix nezávisí na jazyku ani překladu názvu entity. Home Assistant zachovává dříve vytvořená nebo uživatelem změněná ID; ta lze přejmenovat v nastavení entity bez změny jejího `unique_id`.
 
@@ -328,42 +268,6 @@ Stavy senzorů sezóny a typu dne zůstávají kvůli kompatibilitě české (`L
 - všechny čtyři prahy `-50/-10/+10/+25 %` lze změnit v nastavení integrace
 - časová pásma a jejich změny ceny lze změnit v **Nastavení → Zařízení a služby → Integrace → ČEZ Dynamic Tariff → Konfigurovat**
 - zaškrtnutím **Obnovit výchozí rozvrhy z projektu** se vlastní časy i změny ceny zahodí
-
-## Vydání nové verze
-
-Verze integrace je uvedena v `custom_components/cez_dynamic_tariff/manifest.json`. Pro vydání nové verze:
-
-1. Změň verzi v `manifest.json`.
-2. Nech projít workflow HACS validation, Hassfest a Quality.
-3. Vytvoř GitHub Release se stejnou verzí, například `vX.Y.Z`.
-
-Pouhé vytvoření Git tagu bez GitHub Release nemusí HACS rozpoznat jako vydání.
-
-## Vývoj a kontrola
-
-Lokální kontrola syntaxe:
-
-```bash
-python -m compileall -q custom_components
-```
-
-Kontrola Ruff:
-
-```bash
-ruff check custom_components
-```
-
-Rychlé jednotkové testy bez instalace Home Assistantu:
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Skutečné lifecycle testy používají odpovídající dvojici verzí Home Assistantu a
-`pytest-homeassistant-custom-component` ze CI workflow. Workflow je spouští pro
-nejstarší deklarovanou verzi HA i aktuální stabilní vydání a vypisuje coverage.
-
-Pull requesty a vydání automaticky kontrolují HACS, Hassfest a Ruff přes GitHub Actions.
 
 ## Blueprinty automatizací
 
@@ -668,9 +572,11 @@ sections:
 cards: []
 ```
 
+Podklady pro přispěvatele jsou v samostatné [dokumentaci vývoje](docs/vyvoj.md).
+
 ## Licence
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
+[![Licence GPL v3](https://img.shields.io/badge/Licence-GPL%20v3-blue.svg)](LICENSE)
 
 Tento projekt je licencován pod GNU General Public License v3.0, pouze verze 3 (**GPL-3.0-only**). Podrobnosti jsou v [LICENSE](LICENSE).
 
