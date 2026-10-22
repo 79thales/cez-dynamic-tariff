@@ -1,5 +1,71 @@
 # Changelog
 
+## 1.1.0 – 2026-10-22 (připraveno, dosud nevydáno)
+
+### Čeština
+
+- Nový nadřazený výběr umožňuje používat dosavadní procenta ze standardního
+  ceníku, nebo přímé ceny obchodních časových pásem z dynamického ceníku ČEZ.
+  Oba profily zůstávají uložené samostatně. Na pevné pásmové ceny se procenta
+  znovu neuplatňují.
+- Nahrávání PDF podporuje Dynamický tarif na dobu neurčitou i Dynamický tarif
+  na 2 roky. Před uložením zobrazí čtyři sezónní rozvrhy, ceny včetně DPH,
+  distribuční sazbu, jistič a poplatky. Nahrání samo nový produkt neaktivuje.
+- Ceník lze připravit předem a zvolit okamžik jeho aktivace. Plán zůstane
+  uložený i po restartu; změny cen mají vlastní časové revize.
+- Semafory zůstávají zachované. Přehled rozlišuje obchodní pásmo a úplnou
+  cenu odebrané kWh podle HDO. Předpověď zahrnuje oba cenové režimy.
+- Aktualizovaná šablona i generátor dashboardu zobrazují výběr cenového režimu.
+  Hlavní přehled, detailní podstránky a editor záloh zůstávají zachované.
+- Původní procentní senzory a jejich význam se nemění. Dosavadní nastavení
+  se zachová; existující automatizace se samy nepřepojují na nové výstupy.
+- Účetní archiv a obnovení historie uchovávají ověřené podklady a náklady.
+  Modelované úspory jsou oddělené od potvrzené vratky ČEZ; chybějící cena
+  nebo neplatné HDO se nenahrazují nulou ani odhadem vysokého tarifu.
+
+**Po aktualizaci:** restartujte Home Assistant a obnovte prohlížeč. Pro nový
+produkt nejprve nahrajte PDF v nastavení integrace a potom otevřete
+**Způsob výpočtu dynamického tarifu**, vyberte profil a začátek jeho používání.
+Zkontrolujte také dosavadní volbu skutečného ocenění versus simulace na zkoušku.
+Již uložený dashboard se sám nepřepíše; nové cenové karty převezměte z náhledu
+generátoru. Předpovědi úplné ceny vyžadují platná data nakonfigurovaného HDO.
+
+## 1.0.9 – 2026-10-12 (připraveno, dosud nevydáno)
+
+### Čeština
+
+- Pomocný editor záloh se registruje jako verzovaný modul také mezi zdroji
+  Lovelace. Reload napraví chybějící zdroj; restart a souběžné setupy nevytvářejí
+  duplicity. YAML zdroje se zachovají. Oprava řeší chybějící načtení
+  `cez-advances-card`; nemění účetní údaje ani složení dashboardů.
+- Cache editoru záloh i Generate dashboard se odlišuje podle SHA-256 obsahu
+  JavaScriptu. Oprava tak nevyžaduje zvýšení revize integrace; číslo v manifestu
+  se touto změnou neupravuje. Starší URL vlastního editoru se při reloadu odstraní
+  z úvodního HTML, ostatní zdroje zůstávají zachované.
+- Ověřené hodinové energie, ceny a historické rozvrhy HDO mají vlastní
+  verzovaný atomický archiv. Ztráta Recorder historie nesmaže již spočtené
+  náklady; jiné elektroměry a cenové revize se neslučují.
+- Tlačítko **Dotáhnout a přepočítat data**, stavový senzor a akce
+  `backfill_accounting` procházejí minulost po blocích a pokračují po
+  přerušení. Opakované stisky, překryvy a opravené vstupy nezvyšují součty.
+- Automatická historie zachovává kontrolní základ; vyřazení vyžaduje
+  výslovnou volbu. Diagnostika vysvětluje mezery a loguje přechody/zotavení.
+- Šablona a Generate dashboard přidávají právě jednu kartu dotažení
+  v detailu a používají neutrální původ starších kontrolních bodů.
+- Nové regresní testy pokrývají simulovaný purge, restart, diskové chyby,
+  souběh, změnu cen/energie, přejmenování zdroje a zachování options.
+
+### English
+
+- Persist verified hourly energy, costs and historical HDO schedules in
+  an atomic, versioned archive scoped to the meter and price revision.
+- Add a resumable background backfill button, status sensor and action
+  with duplicate detection, scoped ranges and explicit gap reporting.
+- Preserve checkpoints unless explicitly disabled, expose failure reasons
+  and synchronize the bundled dashboard and current-layout generator.
+- Add regression coverage for retention, restarts, storage failure,
+  concurrency, corrected inputs and source identity.
+
 ## Unreleased – oprava HDO dashboardu 2026-10-10
 
 - Markdown karta HDO ověřuje typ a celé entity_id před čtením stavu. Při startu,

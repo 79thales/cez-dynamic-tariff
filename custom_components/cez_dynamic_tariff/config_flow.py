@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import logging
+
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
+from .band_pricing import (
+    MODES,
+    PRODUCT_NAMES,
+    instant,
+    record_change,
+    snapshot,
+    validate_bands,
+)
 from .const import (
     CONF_BASE_PRICE_KWH,
     CONF_CHEAP_THRESHOLD,
@@ -39,6 +51,8 @@ from .settlement import (
     period_advances,
     update_advance_plan,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 SCHEDULE_OPTIONS = (
     CONF_WINTER_WORKDAY_SCHEDULE,
@@ -301,6 +315,9 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         self._pending_options = {}
         self._restore_schedules = False
         self._price_list_info = None
+        self._pending_fixed_profile = None
+        self._pricing_activation = None
+        self._force_pricing_change = False
 
     async def async_step_init(self, user_input=None):
         """Open the requested task without requiring unrelated financial forms."""
@@ -309,6 +326,7 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_menu(
             step_id="init",
             menu_options=[
+                "tariff_strategy",
                 "monthly_advances",
                 "accounting",
                 "accounting_history",
@@ -317,6 +335,55 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                 "general",
             ],
         )
+
+    async def async_step_tariff_strategy(self, user_input=None):
+        """Vybere strategii a explicitní začátek smlouvy; import ji sám nemění.
+
+        Čas s offsetem je jednoznačný i při přechodu zimního času. Prázdný čas
+        znamená uložení nyní. Nová volba nahrazuje dosud nenastalý plán.
+        Původní volba skutečného ocenění / zkušební simulace zůstane zachována.
+        """
+        from homeassistant.helpers import selector
+        from homeassistant.util import dt as dt_util
+
+        profiles = self._config_entry.options.get("fixed_price_profiles", [])
+        errors = {}
+        if user_input is not None:
+            now = dt_util.utcnow()
+            try:
+                activation = instant(user_input["activate_at"]) if user_input.get("activate_at") else now
+                if activation < now:
+                    raise ValueError("activation_in_past")
+                mode = user_input["tariff_mode"]
+                if mode not in MODES:
+                    raise ValueError("invalid_tariff_mode")
+                if mode == "fixed_bands":
+                    profile = next((p for p in profiles if p["id"] == user_input.get("fixed_profile_id")), None)
+                    if profile is None:
+                        raise ValueError("fixed_profile_missing")
+                    validate_bands(profile["schedules"])
+                    local = activation.astimezone(dt_util.get_time_zone(self.hass.config.time_zone))
+                    if local.date().isoformat() < max(profile["trade_effective"], profile["distribution_effective"]):
+                        raise ValueError("future_price_list")
+                self._pending_options.update({"tariff_mode": mode})
+                if user_input.get("fixed_profile_id"):
+                    self._pending_options["fixed_profile_id"] = user_input["fixed_profile_id"]
+                self._pricing_activation = activation if user_input.get("activate_at") else None
+                self._force_pricing_change = True
+                return self._finish_options()
+            except (ValueError, KeyError) as err:
+                errors["base"] = str(err) if str(err) in (
+                    "activation_in_past", "fixed_profile_missing", "future_price_list",
+                    "invalid_tariff_mode", "incomplete_price_list", "unsupported_price_list") else "invalid_activation"
+        schema = {
+            vol.Required("tariff_mode", default=_option_default(self._config_entry, user_input, "tariff_mode", "percentage")):
+                selector.SelectSelector(selector.SelectSelectorConfig(options=list(MODES), translation_key="tariff_mode")),
+            vol.Optional("activate_at", default=""): str,
+        }
+        if profiles:
+            schema[vol.Optional("fixed_profile_id", description={"suggested_value": self._config_entry.options.get("fixed_profile_id", profiles[-1]["id"])})] = selector.SelectSelector(
+                selector.SelectSelectorConfig(options=[{"value": p["id"], "label": f"{PRODUCT_NAMES.get(p['product'], p['product'])} · {p['trade_effective']} · {p['distribution_rate']} · {p['breaker']}"} for p in profiles]))
+        return self.async_show_form(step_id="tariff_strategy", data_schema=vol.Schema(schema), errors=errors)
 
     async def async_step_dashboard(self, user_input=None):
         """Link to the helper while preserving the native settings menu."""
@@ -588,12 +655,29 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     )
                     if (
                         max(imported.trade_effective, imported.distribution_effective)
-                        > dt_util.now().date().isoformat()
+                        > dt_util.now().date().isoformat() and imported.product == "standard"
                     ):
                         raise PriceListError("future_price_list")
                 except PriceListError as err:
                     errors["base"] = str(err)
                 else:
+                    if imported.schedules is not None:
+                        self._pending_fixed_profile = {
+                            "product": imported.product, "schedules": imported.schedules,
+                            "rates": {"other_kwh": self._config_entry.options.get("other_kwh", 0.0),
+                                      "other_monthly": self._config_entry.options.get("other_monthly", 0.0), **imported.rates},
+                            "trade_effective": imported.trade_effective,
+                            "distribution_effective": imported.distribution_effective,
+                            "source": source, "sha256": imported.digest,
+                            "imported_at": dt_util.utcnow().isoformat(),
+                            "distribution_rate": user_input["distribution_rate"],
+                            "breaker": f"{user_input['breaker_phases']}×{user_input['breaker_amperes']} A",
+                            "breaker_amperes": user_input["breaker_amperes"],
+                            "breaker_phases": user_input["breaker_phases"],
+                            "poze_estimated": imported.poze_estimated,
+                            "annual_import_kwh": annual,
+                        }
+                        return await self.async_step_fixed_price_review()
                     self._price_list_info = {
                         "source": source,
                         "rate": user_input["distribution_rate"],
@@ -665,6 +749,45 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
     async def async_step_price_list_review(self, user_input=None):
         """Confirm/edit the parsed VAT-inclusive rates before saving."""
         return await self.async_step_price_rates(user_input)
+
+    async def async_step_fixed_price_review(self, user_input=None):
+        """Uloží až potvrzený neměnný profil; standardní ceník a režim ponechá.
+
+        Regulované položky lze opravit, rozvrhy se zobrazí celé z PDF.
+        Oprava částek vytvoří jinou revizi i při shodném zdrojovém PDF.
+        """
+        profile = self._pending_fixed_profile
+        errors = {}
+        if user_input is not None:
+            for key in profile["rates"]:
+                value = finite_number(user_input.get(key))
+                if value is None or value < 0:
+                    errors[key] = "invalid_price"
+            if not user_input.get("confirm_price_list"):
+                errors["base"] = "confirm_price_list"
+            if not errors:
+                profile = {**profile, "rates": {k: float(user_input[k]) for k in profile["rates"]}}
+                profile["rates_edited"] = profile["rates"] != self._pending_fixed_profile["rates"]
+                payload = json.dumps(profile, sort_keys=True, ensure_ascii=False).encode()
+                profile["id"] = hashlib.sha256(payload).hexdigest()
+                profiles = list(self._config_entry.options.get("fixed_price_profiles", []))
+                profiles.append(profile)
+                self._pending_options["fixed_price_profiles"] = profiles
+                return self._finish_options()
+        def clock(minute):
+            return f"{minute // 60:02d}:{minute % 60:02d}"
+        labels = dict(zip(SCHEDULE_OPTIONS, ("Říjen–březen: pracovní dny", "Říjen–březen: víkendy a svátky",
+                                             "Duben–září: pracovní dny", "Duben–září: víkendy a svátky"), strict=True))
+        bands = "\n\n".join(f"**{labels[key]}**: " + ", ".join(
+            f"{clock(r['start_minute'])}–{clock(r['end_minute'])}: {r['price_kwh']:.3f} Kč/kWh"
+            for r in rows) for key, rows in profile["schedules"].items())
+        schema = {vol.Required(k, default=(user_input or {}).get(k, v)): vol.All(vol.Coerce(float), vol.Range(min=0))
+                  for k, v in profile["rates"].items()}
+        schema[vol.Required("confirm_price_list", default=False)] = bool
+        return self.async_show_form(step_id="fixed_price_review", data_schema=vol.Schema(schema), errors=errors,
+            description_placeholders={"bands": bands, "product": PRODUCT_NAMES.get(profile["product"], profile["product"]), "source": profile["source"],
+                "trade_effective": profile["trade_effective"], "distribution_effective": profile["distribution_effective"],
+                "rate": profile["distribution_rate"], "breaker": profile["breaker"]})
 
     async def async_step_price_rates(self, user_input=None):
         """All component prices include VAT and are freely editable."""
@@ -986,11 +1109,20 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         )
 
     async def async_step_history_auto(self, user_input=None):
-        """Explicitly use existing HA statistics instead of a manual checkpoint."""
+        """Automatické čtení zachová základ, vypnutí vyžaduje výslovný souhlas.
+
+        Prázdné potvrzení ani zrušení formuláře nesmí ztratit odečet.
+        Samotné energie/částky ponecháme pro audit; vyřadí se jen datum.
+        """
+        from homeassistant.helpers import selector
+
         if user_input is not None:
-            self._pending_options["reference_date"] = ""
+            if user_input.get("disable_reference", False):
+                self._pending_options["reference_date"] = ""
             return self._finish_options()
-        return self.async_show_form(step_id="history_auto", data_schema=vol.Schema({}))
+        return self.async_show_form(step_id="history_auto", data_schema=vol.Schema({
+            vol.Optional("disable_reference", default=False): selector.BooleanSelector(),
+        }))
 
     async def async_step_history_reading(self, user_input=None):
         """Reuse a verified cumulative invoice/app total exactly once."""
@@ -1027,6 +1159,10 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
                     reference_cost=cost,
                     reference_period_start=values["billing_start"],
                 )
+                # Původ nikdy neodhadujeme z částky. Nové ruční potvrzení je
+                # ručně ověřený základ; starší shodný záznam zachová původ.
+                if any(self._pending_options[k] != values[k] for k in ("reference_date", "reference_energy", "reference_cost", "reference_period_start")):
+                    self._pending_options["reference_source"] = "manual_verified"
                 return self._finish_options()
         valid_saved = bool(
             values["reference_date"]
@@ -1062,4 +1198,31 @@ class CezDynamicTariffOptionsFlow(config_entries.OptionsFlow):
         if self._restore_schedules:
             for option in SCHEDULE_OPTIONS:
                 options.pop(option, None)
+        from homeassistant.util import dt as dt_util
+
+        billing = getattr(getattr(self._config_entry, "runtime_data", None), "billing", None)
+        archive_revision = getattr(getattr(billing, "settlement", None), "_cost_revision", None)
+        old_prices = {**self._config_entry.data, **self._config_entry.options}
+        new_prices = {**self._config_entry.data, **options}
+        if (not self._force_pricing_change and snapshot(old_prices, PROFILE_DEFAULTS) != snapshot(new_prices, PROFILE_DEFAULTS)
+                and any(instant(e["starts_at"]) > dt_util.utcnow() for e in old_prices.get("pricing_events", []))):
+            # Nahrání nevybraného profilu je povolené; jiná změna ceny nesmí
+            # nepozorovaně uskutečnit nebo přepsat naplánovanou smluvní změnu.
+            return self.async_abort(reason="pricing_activation_pending")
+        recorded = record_change(
+            {**self._config_entry.data, **self._config_entry.options},
+            {**self._config_entry.data, **options}, PROFILE_DEFAULTS, dt_util.utcnow(),
+            self._pricing_activation,
+            archive_revision,
+            self._force_pricing_change,
+            getattr(getattr(billing, "settlement", None), "_archive_source_identity", None),
+        )
+        if "pricing_events" in recorded:
+            options["pricing_events"] = recorded["pricing_events"]
+        changed = sorted(k for k in options.keys() | self._config_entry.options.keys()
+                         if options.get(k) != self._config_entry.options.get(k))
+        if changed:
+            # Audit uvádí názvy polí a původ, nikoli soukromé částky či token.
+            _LOGGER.info("Accounting/options saved entry=%s source=options_flow fields=%s",
+                         getattr(self._config_entry, "entry_id", "test"), changed)
         return self.async_create_entry(title="", data=options)

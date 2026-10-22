@@ -44,7 +44,7 @@ class DashboardTests(unittest.TestCase):
                 "Nejlevnější odběr",
             ],
         )
-        self.assertEqual([len(s["cards"]) for s in main["sections"]], [4, 4, 4, 4, 4])
+        self.assertEqual([len(s["cards"]) for s in main["sections"]], [5, 4, 4, 4, 4])
         self.assertFalse(main["dense_section_placement"])
         self.assertNotIn("Srovnávací odhad", json.dumps(main, ensure_ascii=False))
         self.assertEqual(len(self.build()["config"]["views"][1]["sections"]), 6)

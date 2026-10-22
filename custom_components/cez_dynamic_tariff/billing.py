@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from calendar import monthrange
 from datetime import UTC, datetime, time, timedelta
+from itertools import pairwise
 
 from homeassistant.core import callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import (
+    async_track_point_in_utc_time,
+    async_track_state_change_event,
+)
 from homeassistant.helpers.storage import Store
 
 from .accounting import CostLedger
+from .band_pricing import BandPricing, instant
 from .const import DOMAIN
 from .pricing import (
     PROFILE_DEFAULTS,
@@ -20,6 +24,7 @@ from .pricing import (
     price_timeline,
     tariff_at,
 )
+from .schedule import DEFAULT_SCHEDULES
 
 
 class ElectricityBilling:
@@ -32,11 +37,19 @@ class ElectricityBilling:
             k: coordinator._option(k, v) for k, v in PROFILE_DEFAULTS.items()
         }
         self.profile = PriceProfile(self.values)
+        self.strategy = BandPricing(
+            {**coordinator.entry.data, **coordinator.entry.options}, PROFILE_DEFAULTS,
+            coordinator._local_tz(), lambda day: coordinator._holidays is not None and day in coordinator._holidays,
+            {k: [(r.start_minute, r.modifier_percent) for r in rows]
+             for k, rows in DEFAULT_SCHEDULES.items()},
+        )
+        self._cancel_boundary = None
         self.store = Store(
             self.hass, 1, f"{DOMAIN}.billing_{coordinator.entry.entry_id}"
         )
         self.ledger = CostLedger()
         self.last_fixed = None
+        self.last_pricing_refresh = None
         self.timeline = []
         self.minimum = None
         self.status = "initializing"
@@ -48,7 +61,21 @@ class ElectricityBilling:
 
     async def async_setup(self):
         """Restore totals, subscribe to source events and flush on unload."""
-        self.ledger = CostLedger(await self.store.async_load())
+        saved = await self.store.async_load()
+        self.ledger = CostLedger(saved)
+        # Rozpracovaný interval se obnoví pouze se všemi časovými hranicemi.
+        # Delší výpadek dál označí CostLedger jako neoceněnou energii (>15 min).
+        pending = (saved or {}).get("pending_sample")
+        if pending and (saved or {}).get("meter_source") == self.values["import_energy_entity"]:
+            rows = [{**r, "start": instant(r["start"]), "end": instant(r["end"])}
+                    for r in pending["rows"]]
+            self.ledger.previous = (instant(pending["at"]), pending["energy"], rows, pending["minimum"])
+        if (saved or {}).get("last_fixed"):
+            self.last_fixed = instant(saved["last_fixed"])
+        if (saved or {}).get("last_pricing_refresh"):
+            self.last_pricing_refresh = instant(saved["last_pricing_refresh"])
+        if self.settlement is not None:
+            await self.settlement.async_initialize()
         source_ids = [
             self.values[k]
             for k in (
@@ -92,10 +119,33 @@ class ElectricityBilling:
 
     @callback
     def _save(self):
-        self.store.async_delay_save(self.ledger.as_dict, 10)
+        self.store.async_delay_save(self._saved_data, 10)
+
+    def _saved_data(self):
+        """Uloží cenu předchozího měření; reload nesmí zpětně změnit jeho cenu."""
+        result = self.ledger.as_dict()
+        result["meter_source"] = self.values["import_energy_entity"]
+        result["last_fixed"] = self.last_fixed.isoformat() if self.last_fixed else None
+        result["last_pricing_refresh"] = self.last_pricing_refresh.isoformat() if self.last_pricing_refresh else None
+        if self.ledger.previous:
+            at, energy, rows, minimum = self.ledger.previous
+            result["pending_sample"] = {"at": at.isoformat(), "energy": energy,
+                "minimum": minimum, "rows": [{**r, "start": r["start"].isoformat(),
+                "end": r["end"].isoformat()} for r in rows]}
+        return result
 
     async def async_close(self):
-        await self.store.async_save(self.ledger.as_dict())
+        if self._cancel_boundary:
+            self._cancel_boundary()
+        if self.settlement is not None:
+            await self.settlement.async_close()
+        await self.store.async_save(self._saved_data())
+
+    @callback
+    def _boundary_changed(self, now):
+        """Jednorázová obnova v přesném okamžiku ceny/aktivace; unload ji ruší."""
+        self._cancel_boundary = None
+        self.hass.async_create_task(self.coordinator.async_refresh())
 
     def _state(self, key):
         entity = self.values[key]
@@ -106,7 +156,8 @@ class ElectricityBilling:
         tz = self.coordinator._local_tz()
         now = now.astimezone(tz)
         utc = now.astimezone(UTC)
-        dynamic = self.values["dynamic_pricing"]
+        settings = self.strategy.settings(utc)
+        dynamic = settings["dynamic_pricing"]
         valid = self._state("hdo_valid_entity")
         live = self._state("hdo_entity")
         schedule = self._state("hdo_schedule_entity")
@@ -152,37 +203,45 @@ class ElectricityBilling:
             lambda when: (
                 self.coordinator._current_window(when.astimezone(tz)).modifier_percent
             ),
-            dynamic,
+            None,
+            self.strategy,
         )
         future = [r for r in self.timeline if r["end"] > utc]
         complete = bool(future) and all(r["price_kwh"] is not None for r in future)
         known = [r for r in future if r["price_kwh"] is not None]
         best = min(known, key=lambda r: r["price_kwh"]) if complete else None
         self.minimum = best["price_kwh"] if best else None
-        current = (
-            self.profile.price(live_tariff, modifier, dynamic) if live_tariff else None
-        )
-        baseline = (
-            self.profile.price(live_tariff, modifier, False) if live_tariff else None
-        )
-        simulated = (
-            self.profile.price(live_tariff, modifier, True) if live_tariff else None
-        )
+        quote = self.strategy.quote(utc, live_tariff, modifier, dynamic)
+        current, baseline, simulated = (quote[k] for k in (
+            "price_kwh", "without_dynamic_kwh", "with_dynamic_kwh"))
+        if quote["strategy_status"] != "ok":
+            self.status = quote["strategy_status"]
+        if self._cancel_boundary:
+            self._cancel_boundary()
+        # Půlnoc obnoví denní účetnictví i při stejné ceně po celé dva dny.
+        midnight = datetime.combine(now.date() + timedelta(days=1), time.min, tzinfo=tz).astimezone(UTC)
+        next_edge = min([midnight, *(r["end"] for r in self.timeline if r["end"] > utc)])
+        if next_edge is not None:
+            self._cancel_boundary = async_track_point_in_utc_time(self.hass, self._boundary_changed, next_edge)
         # Preserve observed past prices, and replace only the future of the
         # active meter interval. Unknown periods remain visible as unpriced kWh.
         if self.ledger.previous is not None:
             observed_at, previous_energy, previous_rows, previous_best = (
                 self.ledger.previous
             )
+            # Aktivace platí od uloženého okamžiku, nikoli až od dokončení
+            # reloadu. Již pozorované ceny před touto hranicí zůstávají původní.
+            seen = self.last_pricing_refresh or observed_at
+            cutoff = min([utc, *self.strategy.edges(seen - timedelta(microseconds=1), utc)])
             past = [
-                {**row, "end": min(row["end"], utc)}
+                {**row, "end": min(row["end"], cutoff)}
                 for row in previous_rows
-                if row["start"] < utc and row["end"] > observed_at
+                if row["start"] < cutoff and row["end"] > observed_at
             ]
             upcoming = [
-                {**row, "start": max(row["start"], utc)}
+                {**row, "start": max(row["start"], cutoff)}
                 for row in self.timeline
-                if row["end"] > utc
+                if row["end"] > cutoff
             ]
             self.ledger.previous = (
                 observed_at,
@@ -190,33 +249,60 @@ class ElectricityBilling:
                 past + upcoming,
                 previous_best,
             )
+        self.last_pricing_refresh = utc
         energy = self._meter_value(self._state("import_energy_entity"))
         if self.ledger.previous is None:
             self.ledger.sample(utc, energy, self.timeline, self.minimum, tz)
-        if self.last_fixed is not None:
-            self.ledger.accrue_fixed(self.last_fixed, utc, self.profile.monthly, tz)
+        if self.last_fixed is not None and utc > self.last_fixed:
+            edges = sorted({self.last_fixed, utc, *self.strategy.edges(self.last_fixed, utc)})
+            for left, right in pairwise(edges):
+                selected = self.strategy.settings(left)["dynamic_pricing"]
+                for key, variant in (("fixed_cost", selected), ("without_fixed_cost", False),
+                                     ("dynamic_fixed_cost", True)):
+                    monthly = self.strategy.monthly(left, variant)
+                    if monthly is not None:
+                        self.ledger.accrue_fixed(left, right, monthly, tz, key)
         self.last_fixed = utc
         self._save()
         totals = self.ledger.totals
         today = self.ledger.days.get(now.date().isoformat(), {})
-        daily_fixed = self.profile.monthly / monthrange(now.year, now.month)[1]
+        day_end = datetime.combine(now.date() + timedelta(days=1), time.min, tzinfo=tz).astimezone(UTC)
+        day_start = start.astimezone(UTC)
+        daily_fixed = self.strategy.daily_fee(day_start, day_end, None)
+        baseline_daily = self.strategy.daily_fee(day_start, day_end, False)
+        monthly = self.strategy.monthly(utc, dynamic)
+        active_profile = settings.get("fixed_profile") if settings["tariff_mode"] == "fixed_bands" else None
+        # Roční odběr z pevného importu patří k jeho POZE a odhadu stálé kWh;
+        # standardní referenční profil si ponechá svůj dosavadní odhad.
+        annual = active_profile.get("annual_import_kwh", settings["annual_import_kwh"]) if dynamic and active_profile else settings["annual_import_kwh"]
+        allocation = monthly * 12 / annual if monthly is not None and annual > 0 else None
         include_fixed = self.values["include_standing_fees"]
         meter_configured = bool(self.values["import_energy_entity"])
+        comparison_complete = not totals["comparison_unpriced_kwh"] and not totals["unpriced_kwh"] and quote["strategy_status"] == "ok"
+        display_rates = {k: settings.get(k, v) for k, v in PROFILE_DEFAULTS.items()}
+        if active_profile:
+            display_rates.update(active_profile["rates"])
+            for key in ("distribution_rate", "breaker_amperes", "breaker_phases", "annual_import_kwh"):
+                display_rates[key] = active_profile.get(key, display_rates[key])
         result = {
             "total_price": current,
             "price_without_dynamic": baseline,
             "price_with_dynamic": simulated,
-            "allocated_price": (current + self.profile.allocation)
-            if current is not None and self.profile.allocation is not None
+            "active_trade_price": quote["trade_price"],
+            "active_price_level": quote["price_level"] if current is not None and simulated is not None else None,
+            "active_tariff_mode": quote["tariff_mode"],
+            "allocated_price": (current + allocation)
+            if current is not None and allocation is not None
             else None,
-            "monthly_fixed_cost": self.profile.monthly,
+            "monthly_fixed_cost": monthly,
             "daily_fixed_cost": daily_fixed,
             "daily_cost": today.get("actual_cost", 0)
             + (daily_fixed if include_fixed else 0)
-            if meter_configured
+            if meter_configured and (not include_fixed or daily_fixed is not None)
             else None,
             "daily_savings": today.get("without_cost", 0) - today.get("actual_cost", 0)
-            if meter_configured
+            + (baseline_daily - daily_fixed if include_fixed else 0)
+            if meter_configured and comparison_complete and (not include_fixed or daily_fixed is not None)
             else None,
             "minimum_price": self.minimum,
             "best_price_start": max(best["start"], utc) if best else None,
@@ -240,16 +326,27 @@ class ElectricityBilling:
             if meter_configured
             else None,
             "dynamic_savings": totals["without_cost"] - totals["dynamic_cost"]
-            if meter_configured
+            + (totals["without_fixed_cost"] - totals["dynamic_fixed_cost"] if include_fixed else 0)
+            if meter_configured and comparison_complete
             else None,
             "realized_savings": totals["without_cost"] - totals["actual_cost"]
-            if meter_configured
+            + (totals["without_fixed_cost"] - totals["fixed_cost"] if include_fixed else 0)
+            if meter_configured and comparison_complete
             else None,
             "potential_savings": totals["potential_savings"]
             if meter_configured
             else None,
             "unpriced_energy": totals["unpriced_kwh"] if meter_configured else None,
             "metadata": {
+                **quote,
+                "hdo_tariff": live_tariff,
+                "planned_activations": [{"starts_at": e["starts_at"], "mode": e["settings"]["tariff_mode"]}
+                    for e in self.strategy.options.get("pricing_events", []) if instant(e["starts_at"]) > utc],
+                "comparison_reference": "standard_profile_without_dynamic",
+                "allocation_annual_import_kwh": annual,
+                "comparison_complete": comparison_complete,
+                "comparison_unpriced_kwh": totals["comparison_unpriced_kwh"],
+                "savings_status": "model_not_confirmed_cez_refund",
                 "pricing_status": self.status,
                 "dynamic_pricing": dynamic,
                 "include_standing_fees": include_fixed,
@@ -261,7 +358,7 @@ class ElectricityBilling:
                 "breaker_amperes": self.values["breaker_amperes"],
                 "breaker_phases": self.values["breaker_phases"],
                 "vat_included": True,
-                "price_list": {
+                "price_list": active_profile or {
                     key.removeprefix("price_list_"): self.coordinator._option(key, None)
                     for key in (
                         "price_list_source",
@@ -284,7 +381,8 @@ class ElectricityBilling:
                     for k in ("distribution_rate", "breaker_amperes", "breaker_phases")
                 )
                 else "custom",
-                "rates": dict(self.values),
+                "rates": display_rates,
+                "standard_rates": {k: settings.get(k, v) for k, v in PROFILE_DEFAULTS.items()},
                 "monitored_energy_kwh": totals["energy_kwh"],
                 "unpriced_energy_kwh": totals["unpriced_kwh"],
                 "accounting_method": "meter_deltas_uniform_within_15_minutes",

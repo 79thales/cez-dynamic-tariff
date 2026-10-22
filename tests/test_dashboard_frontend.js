@@ -3,6 +3,100 @@ const fs=require("node:fs"),vm=require("node:vm"),assert=require("node:assert/st
 const context=vm.createContext({HTMLElement:class{},customElements:{get:()=>false,define:()=>{}}});
 vm.runInContext(fs.readFileSync("custom_components/cez_dynamic_tariff/frontend/dashboard-generator.js","utf8"),context);
 const clone=value=>JSON.parse(JSON.stringify(value));
+const bundledCharts=()=>JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"))
+  .views.flatMap(view=>view.sections||[]).flatMap(section=>section.cards||[]).filter(card=>card.type==="custom:apexcharts-card");
+
+// Spouštíme skutečné EVAL funkce šablony. Ověřujeme význam dat, ne jen volbu
+// konfigurace: komplementární null není nula, ani hodnota jiného času/období.
+test("accounting tooltips omit null while retaining zero, coverage and exact X",()=>{
+ for(const card of bundledCharts()){
+  const tooltip=vm.runInNewContext("("+card.apex_config.tooltip.custom.slice(5)+")");
+  const x=Date.UTC(2026,5,1,12),other=x+86400000;
+  const points=[{name:"Úplný měsíc",data:[[x,null],[x,0],[other,78.65]]},
+   {name:"Neúplný měsíc",data:[[other,149.56],[x,null]]},
+   {name:"Odhad <jiný>",data:[{x,y:undefined},{x:other,y:400}]}];
+  const w={config:{series:points},globals:{collapsedSeriesIndices:[]}};
+  let html=tooltip({seriesIndex:0,dataPointIndex:1,w});
+  assert.ok(html.includes("Úplný měsíc: <strong>0,0 "));
+  assert.ok(!html.includes("Neúplný měsíc"));assert.ok(!html.includes("null"));assert.ok(!html.includes("400"));
+  assert.ok(html.includes("2026"));assert.ok(html.includes(card.series[0].unit==="kWh"?"kWh":"Kč"));
+  html=tooltip({seriesIndex:0,dataPointIndex:2,w});
+  assert.ok(html.includes("78,7"));assert.ok(html.includes("149,6"));assert.ok(html.includes("&lt;jiný&gt;"));
+  w.globals.collapsedSeriesIndices=[1];
+  assert.ok(!tooltip({seriesIndex:0,dataPointIndex:2,w}).includes("Neúplný měsíc"));
+  assert.equal(tooltip({seriesIndex:0,dataPointIndex:99,w}),"");
+  assert.equal(tooltip({seriesIndex:2,dataPointIndex:0,w:{config:{series:[points[2]]},globals:{}}}),"");
+ }
+});
+
+test("copied charts receive canonical tooltips without changing local series or layout",()=>{
+ const generated=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ const existing=clone(generated),before=clone(existing);
+ existing.views[0].sections[3].cards[1].apex_config.tooltip={shared:true,intersect:false};
+ existing.views[0].sections[3].cards[1].series[0].entity="sensor.my_accounting";
+ const local=clone(existing.views[0].sections[3].cards[1]);
+ const unrelated={type:"custom:apexcharts-card",header:{title:"Můj jiný graf"},apex_config:{tooltip:{shared:false}}};
+ existing.views[1].sections[0].cards.push(unrelated);
+ const input=clone(existing),result=context.reuseCurrentCezViews(generated,existing);
+ assert.deepEqual(existing,input);
+ const repaired=result.views[0].sections[3].cards[1];
+ assert.deepEqual(clone(repaired.series),local.series);
+ assert.deepEqual(clone(repaired.apex_config.tooltip),before.views[0].sections[3].cards[1].apex_config.tooltip);
+ assert.deepEqual(clone(result.views[1].sections[0].cards.at(-1)),unrelated);
+ assert.deepEqual(clone(context.cezRepairChartTooltips(result,generated)),clone(result));
+});
+
+test("monthly series stay in current billing year and distinguish incomplete, missing and zero",()=>{
+ const card=bundledCharts().find(card=>card.header.title==="Měsíční odběr podle měření HA");
+ const entity={attributes:{billing_start:"2026-04-01",billing_end:"2027-03-31",today_through:"2026-10-12T19:30:00Z",
+  history_months:{"2025-06":{kwh:999,complete:true},"2026-04":{kwh:0,complete:true},
+   "2026-06":{kwh:78.65,complete:true},"2026-07":{kwh:13.44,complete:false},
+   "2026-09":{kwh:null,complete:false},"2026-10":{kwh:149.56,complete:true}}}};
+ const values=card.series.map(s=>new Function("entity","hass",s.data_generator)(entity,{config:{time_zone:"Europe/Prague"}}));
+ assert.deepEqual(values[0].map(p=>p[0]),values[1].map(p=>p[0]));
+ assert.equal(values[0].length,7);assert.equal(new Date(values[0][0][0]).getUTCFullYear(),2026);
+ assert.equal(values[0][0][1],0);assert.equal(values[1][0][1],null);
+ assert.equal(values[0][2][1],78.65);assert.equal(values[1][2][1],null);
+ assert.equal(values[0][3][1],null);assert.equal(values[1][3][1],13.44);
+ assert.equal(values[0][5][1],null);assert.equal(values[1][5][1],null);
+ assert.equal(values[0][6][1],null);assert.equal(values[1][6][1],149.56);
+ entity.attributes.today_through="not-a-date";
+ assert.deepEqual(new Function("entity","hass",card.series[0].data_generator)(entity,{config:{}}),[]);
+});
+
+test("financial series clip to billing boundaries without replacing zero or missing values",()=>{
+ const card=bundledCharts().find(card=>card.header.title==="Náklady a zálohy za zúčtovací období");
+ const left=new Date("2026-04-01T00:00:00").getTime(),right=new Date("2027-04-01T00:00:00").getTime();
+ const points=[[left-1,999],[left,0],[left+86400000,null],[right,123],[right+1,999]];
+ const entity={attributes:{billing_start:"2026-04-01",billing_end:"2027-03-31",
+  cost_actual_series:points,cost_forecast_series:points,advance_paid_series:points,advance_planned_series:points}};
+ for(const s of card.series){
+  const result=new Function("entity",s.data_generator)(entity);
+  assert.deepEqual(result,[[left,null],...points.slice(1,4),[right,null]]);
+ }
+});
+
+test("comparison keeps current-year X and separates measured energy, prior invoice and forecast",()=>{
+ const card=bundledCharts().find(card=>card.header.title==="Skutečná spotřeba a měsíční profil");
+ const entity={attributes:{billing_start:"2026-04-01",billing_end:"2027-03-31",today_through:"2026-10-12T19:30:00Z",
+  history_months:{"2026-04":{kwh:0,complete:true},"2026-06":{kwh:78.65,complete:true},
+   "2026-07":{kwh:13.44,complete:false},"2026-10":{kwh:149.56,complete:false}},
+  settled_bills:[{start:"2024-04-01",end:"2025-03-31",months:[{month:"2024-06",nt_kwh:900,vt_kwh:9}]},
+   {start:"2025-04-01",end:"2026-03-31",months:[{month:"2025-04",nt_kwh:0,vt_kwh:0},
+    {month:"2025-06",nt_kwh:100,vt_kwh:10},{month:"2025-10",nt_kwh:310,vt_kwh:0},
+    {month:"2025-11",nt_kwh:300,vt_kwh:0}]}]}};
+ const values=card.series.map(s=>new Function("entity","hass",s.data_generator)(entity,{config:{time_zone:"Europe/Prague"}}));
+ const month=(series,m)=>series.find(p=>new Date(p[0]).getUTCDate()===1&&new Date(p[0]).getUTCHours()===12&&new Date(p[0]).getUTCMonth()===m-1)?.[1];
+ assert.deepEqual(values[0].map(p=>p[0]),values[1].map(p=>p[0]));
+ assert.deepEqual(values[0].map(p=>p[0]),values[2].map(p=>p[0]));
+ assert.equal(month(values[0],4),0);assert.equal(month(values[1],4),0);
+ assert.equal(month(values[0],6),78.65);assert.equal(month(values[1],6),110);assert.equal(month(values[2],6),null);
+ assert.equal(month(values[0],7),null); // Starý neúplný měsíc není úplný profil.
+ assert.equal(month(values[0],10),149.56);assert.ok(month(values[2],10)>149.56);
+ assert.equal(month(values[0],11),null);assert.equal(month(values[1],11),300);assert.equal(month(values[2],11),300);
+ assert.equal(month(values[1],12),null);assert.equal(month(values[2],12),null);
+ assert.equal(new Date(values[0].at(-1)[0]).getFullYear(),2027);
+});
 const config={views:[{path:"cez",title:"ČEZ",subview:false},{path:"cez-detaily",subview:true},{path:"cez-zalohy",subview:true}]};
 function server(options={}){
  let value={title:"House",theme:"user-theme",custom:{preserve:true},views:[{path:"home",cards:[{type:"markdown",content:"untouched"}]}]};
@@ -79,6 +173,24 @@ test("fresh installations retain the bundled current template",()=>{
  assert.equal(context.reuseCurrentCezViews(config,{views:[{path:"home"}]}),config);
 });
 
+test("accounting recovery is added once to copied details using generated registry bindings",()=>{
+ const bundled=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ const generated=clone(bundled);
+ generated.views.forEach((view,index)=>{view.path="cez-new"+["","-detaily","-zalohy"][index];});
+ const existing={views:[{path:"cez-dynamic-tariff",cards:[{type:"markdown",content:"místní hlavní karta"}]},
+  {path:"cez-dynamic-tariff-detaily",sections:[{cards:[{type:"markdown",content:"místní detail"}]}]},
+  {path:"cez-dynamic-tariff-zalohy",cards:[{type:"markdown",content:"místní zálohy"}]}]};
+ const before=clone(existing),result=context.reuseCurrentCezViews(generated,existing);
+ assert.deepEqual(existing,before);
+ const cards=result.views[1].sections[0].cards;
+ assert.equal(cards.length,2);assert.equal(cards[0].content,"místní detail");
+ assert.ok(JSON.stringify(cards[1]).includes("button.cez_dynamic_tariff_accounting_backfill"));
+ context.cezAddAccountingRecovery(result.views[1],generated.views[1]);
+ assert.equal(result.views[1].sections[0].cards.length,2);
+ assert.equal(result.views[0].cards[0].content,"místní hlavní karta");
+ assert.equal(result.views[2].cards[0].content,"místní zálohy");
+});
+
 // Převzetí starých pohledů musí opravit stejnou chybu jako přibalená šablona.
 // Úprava se týká jen HDO výrazů; místní sestava a vstupní konfigurace se nemění.
 test("copied HDO templates are guarded in the main view and detail subviews",()=>{
@@ -101,4 +213,17 @@ test("repair preserves guarded bundled templates and unrelated is_state calls",(
  assert.deepEqual(clone(context.cezGuardHdoTemplates(bundled)),bundled);
  const unrelated="{{ is_state('binary_sensor.local_switch','on') }}";
  assert.equal(context.cezGuardHdoTemplates(unrelated),unrelated);
+});
+
+test("pricing upgrade preserves custom cards and adds one registry-resolved selector",()=>{
+ const generated=JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"));
+ const custom={type:"markdown",title:"Moje poznámka",content:"Místní obsah"};
+ const main={path:"cez-dynamic-tariff",sections:[{cards:[
+  {type:"markdown",title:"Pásmo obchodní ceny",content:"Starý procentní semafor"},custom]}]};
+ const result=clone(context.reuseCurrentCezViews(generated,{views:[main]}));
+ const cards=result.views[0].sections[0].cards;
+ assert.deepEqual(cards.find(card=>card.title==="Moje poznámka"),custom);
+ assert.ok(cards.find(card=>card.title==="Pásmo obchodní ceny").content.includes("active_trade_price"));
+ assert.equal(cards.filter(card=>card.title==="Způsob výpočtu dynamického tarifu").length,1);
+ assert.deepEqual(clone(context.reuseCurrentCezViews(generated,result)),result);
 });

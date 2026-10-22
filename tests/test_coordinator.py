@@ -57,6 +57,7 @@ def _load_coordinator_module():
     dt_util.DEFAULT_TIME_ZONE = UTC_TIMEZONE
     dt_util.get_time_zone = lambda zone: PRAGUE_TIMEZONE
     dt_util.now = lambda: datetime.now(UTC_TIMEZONE)
+    dt_util.utcnow = lambda: datetime.now(UTC_TIMEZONE)
     sys.modules[dt_util.__name__] = dt_util
     util.dt = dt_util
 
@@ -66,6 +67,7 @@ def _load_coordinator_module():
         SENSOR = "sensor"
         BINARY_SENSOR = "binary_sensor"
         BUTTON = "button"
+        SELECT = "select"
 
     ha_const.Platform = Platform
     sys.modules[ha_const.__name__] = ha_const

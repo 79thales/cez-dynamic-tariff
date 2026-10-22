@@ -184,3 +184,43 @@ async def test_download_rejects_oversized_pdf(hass, aioclient_mock, mock_dns_res
     aioclient_mock.get(url, content=b"%PDF-" + b"x" * MAX_PDF_BYTES)
     with pytest.raises(PriceListError, match="price_list_too_large"):
         await _download(hass, url)
+
+
+@pytest.mark.parametrize("variant", ["2years", "indefinite"])
+async def test_fixed_upload_is_staged_and_future_activation_is_explicit(hass, tmp_path, freezer, variant):
+    """Nahrání neaktivuje nový produkt ani nepřepíše standardní profil."""
+    freezer.move_to("2026-10-22T01:00:00Z")
+    await hass.config.async_set_time_zone("Europe/Prague")
+    with patch("custom_components.cez_dynamic_tariff.async_reload_entry"):
+        entry, original, result = await start_import(hass)
+        file_id, _ = upload(hass, tmp_path, make_pdf(dynamic=variant, effective="1. 6. 2026"))
+        result = await hass.config_entries.options.async_configure(result["flow_id"], user_input={
+            "price_list_file": file_id, "distribution_rate": "D57d", "breaker_amperes": 25,
+            "breaker_phases": 3, "annual_import_kwh": 5500})
+        assert result["step_id"] == "fixed_price_review"
+        assert entry.options == original
+        assert "03:00–05:00" in result["description_placeholders"]["bands"]
+        values = {key.schema: key.default() for key in result["data_schema"].schema}
+        values["confirm_price_list"] = True
+        result = await hass.config_entries.options.async_configure(result["flow_id"], values)
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        await hass.async_block_till_done()
+        for key, value in original.items():
+            assert entry.options[key] == value
+        assert "pricing_events" not in entry.options
+        profile = entry.options["fixed_price_profiles"][0]
+        assert profile["annual_import_kwh"] == 5500
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {"next_step_id": "tariff_strategy"})
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {
+            "tariff_mode": "fixed_bands", "fixed_profile_id": profile["id"],
+            "activate_at": "2026-10-25T02:30:00"})
+        assert result["errors"] == {"base": "invalid_activation"}
+        result = await hass.config_entries.options.async_configure(result["flow_id"], {
+            "tariff_mode": "fixed_bands", "fixed_profile_id": profile["id"],
+            "activate_at": "2026-10-25T02:30:00+01:00"})
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        event = entry.options["pricing_events"][0]
+        assert event["starts_at"] == "2026-10-25T01:30:00+00:00"
+        assert event["previous"]["tariff_mode"] == "percentage"
+        assert event["settings"]["tariff_mode"] == "fixed_bands"

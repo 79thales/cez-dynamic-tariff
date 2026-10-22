@@ -37,7 +37,8 @@
           "accounting_history": "Zpětný dopočet a počáteční stav",
           "price_list": "Načíst ceník ČEZ z PDF",
           "general": "Tarifní rozvrhy a další nastavení",
-          "dashboard": "Generate dashboard"
+          "dashboard": "Generate dashboard",
+          "tariff_strategy": "Způsob výpočtu dynamického tarifu"
         }
       },
       "thresholds": {
@@ -256,7 +257,10 @@
       },
       "history_auto": {
         "title": "Automatický dopočet z historie",
-        "description": "Použije existující spotřebu a již spočtené náklady. Chybějící náklady dopočítá jen při dostupných tehdejších cenách a HDO. Odeslat vypne použití ručního počátečního odečtu; původní senzory a historie se nemění. Chybějící údaje nejsou nuly."
+        "description": "Použije dostupné statistiky HA a ověřený archiv. Uložený kontrolní základ zůstane zachován. Jeho vyřazení vyžaduje zaškrtnout volbu níže; chybějící historie pak může zneúplnit účetnictví. Dotažení historie spustíte samostatným tlačítkem.",
+        "data": {
+          "disable_reference": "Výslovně vyřadit uložený kontrolní základ"
+        }
       },
       "history_reading": {
         "title": "Počáteční stav podle faktury nebo ČEZ",
@@ -270,6 +274,32 @@
       "dashboard": {
         "title": "Generate dashboard",
         "description": "[Otevřít generátor dashboardu]({url}). Přidá hlavní přehled do horní lišty Overview, se současným složením karet a podstránkami detailů. Grafy vyžadují ApexCharts Card. Odeslat vás vrátí do nabídky nastavení."
+      },
+      "tariff_strategy": {
+        "title": "Způsob výpočtu dynamického tarifu",
+        "description": "Procentní a pevný profil zůstávají uložené odděleně. Nahrání PDF samo režim nemění. Zvolte ceník a začátek smlouvy; prázdný čas znamená nyní. Budoucí čas zadejte s offsetem, například 2028-04-08T00:00:00+02:00. Nová volba nahrazuje dosud nenastalou aktivaci. Volba skutečného ocenění versus modelu na zkoušku zůstane zachována. Cenové senzory vyžadují zapnuté ocenění a nakonfigurované HDO.",
+        "data": {
+          "tariff_mode": "Způsob výpočtu",
+          "fixed_profile_id": "Pevný ceník",
+          "activate_at": "Aktivovat od (čas s offsetem)"
+        }
+      },
+      "fixed_price_review": {
+        "title": "Kontrola pevného dynamického ceníku",
+        "description": "Produkt: {product}\n\nZdroj: {source}\n\nSazba: {rate}, jistič {breaker}. Obchodní ceny od {trade_effective}, distribuce od {distribution_effective}. Všechny částky obsahují DPH.\n\n{bands}\n\nZkontrolujte poplatky níže. Uložení pouze přidá profil; aktivaci vyberte samostatně ve Způsobu výpočtu dynamického tarifu.",
+        "data": {
+          "distribution_vt": "Distribuce VT (Kč/kWh)",
+          "distribution_nt": "Distribuce NT (Kč/kWh)",
+          "electricity_tax": "Daň z elektřiny (Kč/kWh)",
+          "system_services": "Systémové služby (Kč/kWh)",
+          "poze_kwh": "Efektivní POZE (Kč/kWh)",
+          "supplier_monthly": "Stálá platba dodavateli (Kč/měsíc)",
+          "breaker_monthly": "Platba za jistič (Kč/měsíc)",
+          "infrastructure_monthly": "Nesíťová infrastruktura (Kč/měsíc)",
+          "other_kwh": "Ostatní platby podle odběru (Kč/kWh)",
+          "other_monthly": "Ostatní stálé platby (Kč/měsíc)",
+          "confirm_price_list": "Zkontroloval(a) jsem částky a chci je nyní použít"
+        }
       }
     },
     "error": {
@@ -301,7 +331,14 @@
       "invalid_advances": "Zadejte nezápornou zálohu. Zaplaceno nesmí přesáhnout částku zálohy; při společné částce musí být vyplněná společná záloha.",
       "invalid_accounting_history": "Ověřte datum v tomto období, odběr v kWh a náklady v Kč. Neznámé údaje nenahrazujte nulou.",
       "sharing_already_in_energy": "⚠️ Stejný příjem ze sdílení už je v panelu Energie vybraný jako celková kompenzace. Do Energie použijte náklady před odečtením sdílení; čisté náklady by příjem odečetly dvakrát. Přepínač níže odečítá příjem pouze v samostatném účetnictví ČEZ. Nastavení Energie se nemění.",
-      "energy_preferences_unavailable": "⚠️ Nastavení kompenzace v panelu Energie se nepodařilo ověřit. Při použití příjmu v Energii zadávejte náklady před sdílením, aby se příjem neodečetl dvakrát."
+      "energy_preferences_unavailable": "⚠️ Nastavení kompenzace v panelu Energie se nepodařilo ověřit. Při použití příjmu v Energii zadávejte náklady před sdílením, aby se příjem neodečetl dvakrát.",
+      "invalid_activation": "Zadejte ISO datum a čas s offsetem, například 2028-04-08T00:00:00+02:00.",
+      "activation_in_past": "Aktivace nesmí být v minulosti.",
+      "invalid_tariff_mode": "Neplatný způsob výpočtu.",
+      "fixed_profile_missing": "Nejprve nahrajte a vyberte pevný dynamický ceník."
+    },
+    "abort": {
+      "pricing_activation_pending": "Je naplánovaná aktivace ceníku. Před jinou změnou cenového nastavení zvolte okamžitý režim ve Způsobu výpočtu dynamického tarifu; potom plán nastavte znovu."
     }
   },
   "entity": {
@@ -476,6 +513,37 @@
       },
       "accounting_price": {
         "name": "Cena kWh pro účetnictví"
+      },
+      "accounting_backfill_status": {
+        "name": "Dotažení účetní historie",
+        "state": {
+          "idle": "Čeká",
+          "running": "Běží",
+          "paused": "Pozastaveno",
+          "completed": "Dokončeno",
+          "incomplete": "Neúplné",
+          "failed": "Chyba"
+        }
+      },
+      "active_trade_price": {
+        "name": "Aktivní obchodní cena"
+      },
+      "active_price_level": {
+        "name": "Aktivní cenové pásmo",
+        "state": {
+          "super_cheap": "Nejlevnější",
+          "cheap": "Levné",
+          "normal": "Neutrální",
+          "expensive": "Drahé",
+          "very_expensive": "Nejdražší"
+        }
+      },
+      "active_tariff_mode": {
+        "name": "Aktivní cenový režim",
+        "state": {
+          "percentage": "Procenta ze standardního ceníku",
+          "fixed_bands": "Pevné ceny podle časových pásem"
+        }
       }
     },
     "binary_sensor": {
@@ -498,6 +566,18 @@
     "button": {
       "generate_dashboard": {
         "name": "Generate dashboard"
+      },
+      "accounting_backfill": {
+        "name": "Dotáhnout a přepočítat data"
+      }
+    },
+    "select": {
+      "tariff_mode": {
+        "name": "Způsob výpočtu dynamického tarifu",
+        "state": {
+          "percentage": "Procenta ze standardního ceníku",
+          "fixed_bands": "Pevné ceny podle časových pásem"
+        }
       }
     }
   },
@@ -513,6 +593,12 @@
         "unknown": "Smluvní režim zatím neurčen",
         "regular": "Finální Dynamický tarif",
         "trial": "Dynamický tarif na zkoušku"
+      }
+    },
+    "tariff_mode": {
+      "options": {
+        "percentage": "Procenta ze standardního ceníku",
+        "fixed_bands": "Pevné ceny podle časových pásem"
       }
     }
   }

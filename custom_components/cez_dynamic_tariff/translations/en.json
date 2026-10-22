@@ -37,7 +37,8 @@
           "accounting_history": "Backfill and starting totals",
           "price_list": "Import a CEZ price-list PDF",
           "general": "Tariff schedules and other settings",
-          "dashboard": "Generate dashboard"
+          "dashboard": "Generate dashboard",
+          "tariff_strategy": "Dynamic tariff pricing strategy"
         }
       },
       "thresholds": {
@@ -256,7 +257,10 @@
       },
       "history_auto": {
         "title": "Automatic historical backfill",
-        "description": "Reuse existing consumption and calculated costs. Reconstruct missing costs only with valid historical prices and HDO. Submit disables the manual starting checkpoint without changing original sensors or history. Missing data is not zero."
+        "description": "Use available HA statistics and the verified archive. The saved starting checkpoint is preserved. Disabling it requires the checkbox below and may make accounting incomplete. Start the historical scan using the separate backfill button.",
+        "data": {
+          "disable_reference": "Explicitly disable the saved starting checkpoint"
+        }
       },
       "history_reading": {
         "title": "Starting totals from an invoice or CEZ",
@@ -270,6 +274,32 @@
       "dashboard": {
         "title": "Generate dashboard",
         "description": "[Open the dashboard generator]({url}). Adds the main view to the top tab bar of Overview, using the current card layout and detail subviews. Charts require ApexCharts Card. Submit returns to the settings menu."
+      },
+      "tariff_strategy": {
+        "title": "Dynamic tariff pricing strategy",
+        "description": "Percentage and fixed profiles are stored separately. Uploading a PDF does not activate it. Leave activation empty for now, or enter an ISO datetime with an explicit offset. A new selection replaces a pending activation. Actual pricing versus trial simulation is preserved. Price sensors require enabled pricing and configured HDO.",
+        "data": {
+          "tariff_mode": "Pricing strategy",
+          "fixed_profile_id": "Fixed price list",
+          "activate_at": "Activate at (datetime with offset)"
+        }
+      },
+      "fixed_price_review": {
+        "title": "Review fixed band price list",
+        "description": "Product: {product}\n\nSource: {source}\n\nRate: {rate}, breaker {breaker}. Trading prices from {trade_effective}, distribution from {distribution_effective}. All amounts include VAT.\n\n{bands}\n\nSaving adds a profile only. Select its activation separately in the pricing strategy settings.",
+        "data": {
+          "distribution_vt": "Distribution VT (CZK/kWh)",
+          "distribution_nt": "Distribution NT (CZK/kWh)",
+          "electricity_tax": "Electricity tax (CZK/kWh)",
+          "system_services": "System services (CZK/kWh)",
+          "poze_kwh": "Effective POZE (CZK/kWh)",
+          "supplier_monthly": "Supplier standing fee (CZK/month)",
+          "breaker_monthly": "Circuit breaker fee (CZK/month)",
+          "infrastructure_monthly": "Non-grid infrastructure (CZK/month)",
+          "other_kwh": "Other consumption charges (CZK/kWh)",
+          "other_monthly": "Other standing fees (CZK/month)",
+          "confirm_price_list": "I reviewed the rates and want to apply them now"
+        }
       }
     },
     "error": {
@@ -301,7 +331,14 @@
       "invalid_advances": "Enter nonnegative advance amounts. Paid money cannot exceed the advance; common mode requires a common amount.",
       "invalid_accounting_history": "Check the date within this period, imported kWh and costs in CZK. Do not replace unknown amounts with zero.",
       "sharing_already_in_energy": "⚠️ This sharing income is already selected as total compensation in Energy. Use import costs before sharing in Energy; net costs would deduct the income twice. The switch below deducts income only in the separate ČEZ accounting. Energy settings are unchanged.",
-      "energy_preferences_unavailable": "⚠️ Energy compensation settings could not be checked. If Energy uses this income, supply costs before sharing to avoid deducting the income twice."
+      "energy_preferences_unavailable": "⚠️ Energy compensation settings could not be checked. If Energy uses this income, supply costs before sharing to avoid deducting the income twice.",
+      "invalid_activation": "Enter an ISO datetime with an explicit offset.",
+      "activation_in_past": "Activation must not be in the past.",
+      "invalid_tariff_mode": "Invalid pricing strategy.",
+      "fixed_profile_missing": "Upload and select a fixed band price list first."
+    },
+    "abort": {
+      "pricing_activation_pending": "A price activation is pending. Select an immediate pricing strategy before changing other pricing settings, then schedule the activation again."
     }
   },
   "entity": {
@@ -476,6 +513,37 @@
       },
       "accounting_price": {
         "name": "Invoiced kWh accounting price"
+      },
+      "accounting_backfill_status": {
+        "name": "Accounting history backfill",
+        "state": {
+          "idle": "Idle",
+          "running": "Running",
+          "paused": "Paused",
+          "completed": "Completed",
+          "incomplete": "Incomplete",
+          "failed": "Failed"
+        }
+      },
+      "active_trade_price": {
+        "name": "Active trading price"
+      },
+      "active_price_level": {
+        "name": "Active price level",
+        "state": {
+          "super_cheap": "Cheapest",
+          "cheap": "Cheap",
+          "normal": "Neutral",
+          "expensive": "Expensive",
+          "very_expensive": "Most expensive"
+        }
+      },
+      "active_tariff_mode": {
+        "name": "Active pricing strategy",
+        "state": {
+          "percentage": "Percentage of standard prices",
+          "fixed_bands": "Fixed prices by time band"
+        }
       }
     },
     "binary_sensor": {
@@ -498,6 +566,18 @@
     "button": {
       "generate_dashboard": {
         "name": "Generate dashboard"
+      },
+      "accounting_backfill": {
+        "name": "Backfill and recalculate data"
+      }
+    },
+    "select": {
+      "tariff_mode": {
+        "name": "Dynamic tariff pricing strategy",
+        "state": {
+          "percentage": "Percentage of standard prices",
+          "fixed_bands": "Fixed prices by time band"
+        }
       }
     }
   },
@@ -513,6 +593,12 @@
         "unknown": "Contract mode not yet confirmed",
         "regular": "Final Dynamic Tariff",
         "trial": "Dynamic Tariff trial"
+      }
+    },
+    "tariff_mode": {
+      "options": {
+        "percentage": "Percentage of standard prices",
+        "fixed_bands": "Fixed prices by time band"
       }
     }
   }

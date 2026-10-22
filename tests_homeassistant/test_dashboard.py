@@ -16,6 +16,26 @@ from custom_components.cez_dynamic_tariff.dashboard_api import (
 )
 
 
+async def test_backfill_card_renders_czech_reasons_and_missing_progress(hass):
+    from custom_components.cez_dynamic_tariff.dashboard import build_views
+
+    views = build_views("ČEZ", "cez-test", {}, {})["config"]["views"]
+    content = next(child["content"] for section in views[1]["sections"] for card in section["cards"]
+                   if card.get("type") == "vertical-stack" for child in card["cards"]
+                   if child.get("type") == "markdown" and "## Dotažení historie" in child.get("content", ""))
+    rendered = template.Template(content, hass).async_render()
+    assert "Stav není dostupný" in rendered
+    hass.states.async_set("sensor.cez_dynamic_tariff_accounting_backfill_status", "incomplete", {
+        "phase": "finished", "processed_blocks": 1, "total_blocks": 1,
+        "gaps": [{"start": "2026-10-01", "end": "2026-10-01", "reasons": ["historical_hdo_missing"]}],
+    })
+    hass.states.async_set("sensor.cez_dynamic_tariff_accounting_status", "incomplete", {"reason_codes": ["historical_hdo_missing"]})
+    rendered = template.Template(content, hass).async_render()
+    assert "Chybí historické rozvrhy HDO" in rendered
+    assert "historical_hdo_missing" not in rendered
+    assert "Neúplné" in rendered
+
+
 def entry(hass):
     item = MockConfigEntry(
         domain="cez_dynamic_tariff",
@@ -86,6 +106,16 @@ async def test_preview_resolves_renames_and_hdo_device_without_writes(
     assert "sensor.renamed_hdo_expiry" in text and "sensor.renamed_hdo_age" in text
     assert "sensor.cez_dynamic_tariff_accounting_status" not in text
     assert parse_yaml(data["yaml"]) == data["config"]
+    # Komentáře žijí v EVAL řetězci: export přes skutečný websocket a YAML
+    # parser je nesmí ztratit. Null/0 a jednotky tak zůstanou popsané i v HA.
+    charts = [card for view in data["config"]["views"]
+              for section in view.get("sections", []) for card in section["cards"]
+              if card.get("type") == "custom:apexcharts-card"]
+    assert len(charts) == 3
+    for card in charts:
+        formatter = card["apex_config"]["tooltip"]["custom"]
+        assert "// Null/undefined/NaN není měření ani nula." in formatter
+        assert "// Párujeme podle X, nikoli indexu" in formatter
     assert dict(item.options) == before
     assert "lovelace" not in hass.data
 
@@ -197,7 +227,8 @@ async def test_invoice_comparison_template_handles_missing_and_stored_months(
         "sensor.cez_dynamic_tariff_accounting_status", "complete", attributes
     )
     views = build_views("ČEZ", "cez-test", {}, {})["config"]["views"]
-    content = views[1]["sections"][-1]["cards"][-1]["content"]
+    content = next(card["content"] for card in views[1]["sections"][-1]["cards"]
+                   if card.get("type") == "markdown" and "## Srovnávací odhad" in card.get("content", ""))
     result = template.Template(content, hass).async_render()
     assert "1320" in result if has_bill else "není uložené vyúčtování" in result
     assert "Přibližně" in result if has_bill else "Přibližně" not in result

@@ -16,9 +16,11 @@ CONFIG_SCHEMA = vol.Schema({DOMAIN: cv.config_entry_only_config_schema}, extra=v
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up the integration from YAML."""
+    from .accounting_services import register_services as register_accounting_services
     from .advance_payments import register_services
 
     register_services(hass)
+    register_accounting_services(hass)
     return True
 
 

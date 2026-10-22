@@ -73,6 +73,7 @@ def _load_config_flow_module():
         SENSOR = "sensor"
         BINARY_SENSOR = "binary_sensor"
         BUTTON = "button"
+        SELECT = "select"
 
     ha_const.Platform = Platform
     sys.modules[ha_const.__name__] = ha_const
@@ -92,6 +93,7 @@ def _load_config_flow_module():
         "energy_preferences",
         "pricing",
         "settlement",
+        "band_pricing",
         "config_flow",
     ):
         module_name = f"{package_name}.{module_basename}"

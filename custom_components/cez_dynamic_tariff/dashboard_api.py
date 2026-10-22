@@ -13,6 +13,7 @@ from .const import DOMAIN
 from .dashboard import PANEL_PATH, build_views
 
 MODULE_PATH = "/cez_dynamic_tariff/dashboard-generator.js"
+MODULE_FILE = Path(__file__).parent / "frontend/dashboard-generator.js"
 PANEL_ELEMENT = "cez-dynamic-tariff-dashboard-generator"
 
 
@@ -26,7 +27,15 @@ def _panel_exists(hass):
 
 
 async def async_setup_dashboard_generator(hass):
-    """Register a hidden helper without replacing the native options flow."""
+    """Registrovat skrytý generátor s cache podle verze integrace.
+
+    Setup běží po frontend/Lovelace a právě jednou za běh HA. Statická cesta
+    čte přibalený soubor; parametr v přebírá verzi manifestu přes loader HA.
+    Nová verze generátoru se tak načte po aktualizaci, restartu HA a obnovení
+    stránky. Panel zůstává pouze pro správce a nemění nastavení integrace,
+    přehled ani detailní podstránky. Chyba loaderu se propaguje do setupu;
+    neúspěšný setup se neoznačí za registrovaný. Opakovaný setup nic neduplikuje.
+    """
     if (
         "frontend" not in hass.config.components
         or DOMAIN + "_generator_registered" in hass.data
@@ -34,17 +43,18 @@ async def async_setup_dashboard_generator(hass):
         return
     from homeassistant.components.http import StaticPathConfig
     from homeassistant.components.panel_custom import async_register_panel
-    from homeassistant.loader import async_get_integration
+
+    from .frontend import async_module_url
 
     async_register_dashboard_commands(hass)
     if _panel_exists(hass):
         return
-    integration = await async_get_integration(hass, DOMAIN)
+    module_url = await async_module_url(hass, MODULE_PATH)
     await hass.http.async_register_static_paths(
         [
             StaticPathConfig(
                 MODULE_PATH,
-                str(Path(__file__).parent / "frontend/dashboard-generator.js"),
+                str(MODULE_FILE),
                 False,
             )
         ]
@@ -53,7 +63,7 @@ async def async_setup_dashboard_generator(hass):
         hass,
         frontend_url_path=PANEL_PATH,
         webcomponent_name=PANEL_ELEMENT,
-        module_url=f"{MODULE_PATH}?v={integration.manifest['version']}",
+        module_url=module_url,
         require_admin=True,
     )
     hass.data[DOMAIN + "_generator_registered"] = True

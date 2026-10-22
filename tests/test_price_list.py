@@ -17,6 +17,26 @@ spec.loader.exec_module(p)
 
 
 class PriceListTests(unittest.TestCase):
+    def test_fixed_products_parse_all_bands_and_verify_totals(self):
+        """Oba produkty mají vlastní ceny; standardní obchodní sazbu nevyrábíme."""
+        for variant, product, cheapest in (("2years", "fixed_2_years", 1.85),
+                                            ("indefinite", "fixed_indefinite", 1.95)):
+            with self.subTest(product=product):
+                result = p.parse_price_list(make_pdf(dynamic=variant, effective="1. 6. 2026"), "D57d", 25, 3)
+                self.assertEqual(result.product, product)
+                self.assertNotIn("trade_vt", result.rates)
+                self.assertEqual(result.rates["breaker_monthly"], 671.55)
+                self.assertEqual([len(r) for r in result.schedules.values()], [10, 8, 10, 8])
+                self.assertEqual(result.schedules["summer_workday_schedule"][1]["price_kwh"], cheapest)
+                self.assertAlmostEqual(result.schedules["winter_offday_schedule"][3]["price_kwh"], cheapest * 1.8)
+                self.assertEqual(result.trade_effective, "2026-06-01")
+        with self.assertRaisesRegex(p.PriceListError, "inconsistent_price_list"):
+            p.parse_price_list(make_pdf(dynamic="2years", inconsistent=True), "D57d", 25, 3)
+        with self.assertRaisesRegex(p.PriceListError, "unsupported_price_list"):
+            p.parse_price_list(make_pdf(dynamic="2years", bad_bands=True), "D57d", 25, 3)
+        with self.assertRaisesRegex(p.PriceListError, "invalid_price_list_pdf"):
+            p._cells("9" * 400 + ",00")
+
     def test_vat_columns_mwh_conversion_and_breaker(self):
         result = p.parse_price_list(make_pdf(), "D57D", 25, 3)
         self.assertEqual(result.rates["trade_vt"], 3.18)

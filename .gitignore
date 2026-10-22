@@ -18,3 +18,5 @@ build/
 tmp/
 output/screenshots/
 output/analysis/
+# Místní zálohy účetnictví obsahují finanční údaje; nepatří do veřejného vydání.
+output/accounting-*.json

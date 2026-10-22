@@ -25,6 +25,17 @@ TO_REDACT = {
     "historical_profiles",
     "shared_income_entity",
     "historical_cost_entity",
+    "last_complete_forecast",
+    "cost_actual_series",
+    "cost_forecast_series",
+    "known_period_cost",
+    "known_period_energy",
+    "months",
+    "history_months",
+    "advance_paid_series",
+    "advance_planned_series",
+    "source",
+    "price_list_source",
 }
 
 
@@ -39,6 +50,11 @@ async def async_get_config_entry_diagnostics(
     return {
         "entry_data": async_redact_data(dict(entry.data), TO_REDACT),
         "entry_options": async_redact_data(dict(entry.options), TO_REDACT),
+        "accounting_recovery": {
+            "backfill": coordinator.billing.settlement.backfill_state,
+            "runs": coordinator.billing.settlement.archive.data["runs"],
+            "reason_codes": sorted(coordinator.billing.settlement._reasons),
+        } if coordinator.billing and coordinator.billing.settlement else None,
         "coordinator": {
             "last_update_success": coordinator.last_update_success,
             "update_interval_seconds": (

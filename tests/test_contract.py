@@ -71,6 +71,9 @@ class PublicContractTests(unittest.TestCase):
             "next_modifier",
             "today_tariff_map",
             "tomorrow_tariff_map",
+            "active_trade_price",
+            "active_price_level",
+            "active_tariff_mode",
             "total_price",
             "price_without_dynamic",
             "price_with_dynamic",
@@ -107,6 +110,7 @@ class PublicContractTests(unittest.TestCase):
             "consumption_profile",
             "accounting_status",
             "accounting_price",
+            "accounting_backfill_status",
         }
         actual = _description_keys(
             "sensor.py",

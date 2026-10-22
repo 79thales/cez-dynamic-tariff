@@ -1,6 +1,7 @@
 """Synthetic standard-table PDF with out-of-order labels and VAT/net prices."""
 
 from io import BytesIO
+from itertools import pairwise
 
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
@@ -15,6 +16,8 @@ def make_pdf(
     missing=False,
     inconsistent=False,
     effective="30. 1. 2026",
+    dynamic=None,
+    bad_bands=False,
 ):
     """Amounts are test data; no customer PDF is bundled or uploaded by tests."""
     labels = {
@@ -79,6 +82,12 @@ def make_pdf(
         ],
         27: [None, 3423.94, 3143.94],
     }
+    if dynamic:
+        # Veřejná syntetická tabulka: nový produkt má jednu pásmovou dodávku
+        # a ostatní řádky posunuté. Neobsahuje osobní PDF ani adresu odběru.
+        labels = {n - 1: text for n, text in labels.items() if 3 <= n <= 25}
+        labels[1] = "Ceny v časových pásmech v průběhu dne Kč/MWh"
+        values = {n - 1: row for n, row in values.items() if 3 <= n <= 25}
 
     def item(x, y, text):
         encoded = text.encode("cp1250").hex()
@@ -123,10 +132,12 @@ def make_pdf(
     content += item(28, 965, f"Účinnost obchodních cen: od {effective}")
     content += item(28, 950, "Účinnost distribučních cen: od 1. 1. 2026")
     content += item(28, 935, f"Distribuční území: {territory}")
+    if dynamic:
+        content += item(28, 922, "Dynamický tarif" + (" na 2 roky" if dynamic == "2years" else ""))
     content += item(28, 910, "Distribuční sazba D01d D57d D25d")
     for row, label in labels.items():
         y = 880 - row * 25
-        content += item(28, y, str(row)) + item(40, y, label)
+        content += item(28, y, f"{row} {label}") if dynamic else item(28, y, str(row)) + item(40, y, label)
     for row, nums in reversed(list(values.items())):
         if missing and row == 22:
             continue
@@ -147,6 +158,39 @@ def make_pdf(
     stream = DecodedStreamObject()
     stream.set_data(content.encode())
     page[NameObject("/Contents")] = writer._add_object(stream)
+    if dynamic:
+        prices = [1850, 3330, 4070, 4625] if dynamic == "2years" else [1950, 3510, 4290, 4875]
+        schedule_page = writer.add_blank_page(width=1800, height=1000)
+        schedule_page[NameObject("/Resources")] = page["/Resources"]
+        band_text = item(28, 980, "Ceny v časových pásmech v průběhu dne (Kč/MWh)")
+        band_text += item(28, 960, "Duben až září")
+        starts = [[0, 3, 5, 8, 11, 14, 16, 18, 20, 23, 24], [0, 3, 5, 11, 14, 16, 18, 23, 24]]
+        levels = [[1, 0, 3, 2, 0, 2, 1, 3, 2, 1], [1, 0, 2, 0, 2, 1, 2, 1],
+                  [1, 0, 3, 2, 1, 2, 1, 3, 2, 1], [1, 0, 2, 1, 2, 1, 2, 1]]
+        for index, order in enumerate(levels):
+            y = 900 - index * 120
+            if index == 2:
+                band_text += item(28, y + 40, "Říjen až březen")
+            band_text += item(28, y + 20, "Pracovní dny (hodiny)" if index % 2 == 0 or bad_bands else "Víkendy a svátky (hodiny)")
+            hours = starts[index % 2]
+            band_text += item(28, y, " ".join(f"{a}.00–{b}.00" for a, b in pairwise(hours)))
+            band_text += item(28, y - 15, " ".join(f"{prices[i]:.2f}".replace(".", ",") for i in order))
+            band_text += item(28, y - 30, " ".join(f"({prices[i] / 1.21:.2f})".replace(".", ",") for i in order))
+        stream = DecodedStreamObject(); stream.set_data(band_text.encode())
+        schedule_page[NameObject("/Contents")] = writer._add_object(stream)
+        summary = writer.add_blank_page(width=1800, height=1000)
+        summary[NameObject("/Resources")] = page["/Resources"]
+        text = ""
+        for index, price in enumerate(reversed(prices)):
+            for offset, tariff in enumerate(("vt", "nt")):
+                distribution = [3226.66, 913.27, 2725.46] if tariff == "vt" else [None, 140.97, 140.97]
+                amounts = [None if n is None else price + n + 34.24 + 198.73 for n in distribution]
+                if inconsistent:
+                    amounts[1] += 100
+                text += item(28, 900 - index * 50 - offset * 20, " ".join(
+                    "–" if n is None else f"{n:,.2f}".replace(",", " ").replace(".", ",") for n in amounts))
+        stream = DecodedStreamObject(); stream.set_data(text.encode())
+        summary[NameObject("/Contents")] = writer._add_object(stream)
     if duplicate:
         writer.add_page(page)
     out = BytesIO()

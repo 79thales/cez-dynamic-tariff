@@ -30,6 +30,7 @@ SETTLEMENT_DEFAULTS = {
     "reference_period_start": "",
     "reference_energy": 0.0,
     "reference_cost": 0.0,
+    "reference_source": "legacy_unspecified",
     "historical_profiles": "[]",
     "settled_bills": "[]",
 }

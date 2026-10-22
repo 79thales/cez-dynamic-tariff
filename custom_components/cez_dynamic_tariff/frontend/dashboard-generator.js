@@ -30,9 +30,105 @@ function cezGuardHdoTemplates(value) {
   return value;
 }
 
+function cezAddAccountingRecovery(view, generated) {
+  // Vstupy jsou kopie místního detailu a nová šablona s registry entity_id.
+  // Hledáme vlastní složenou kartu podle neměnného nadpisu jejího stavu.
+  // Existující kartu zachováme, jinak přidáme právě jednu do poslední sekce.
+  // Nedotýkáme se faktur, hlavního pohledu ani editoru záloh. Žádné I/O.
+  const find = value => {
+    if (!value || typeof value !== "object") return null;
+    if (value.type === "vertical-stack" && value.cards?.some(card =>
+      card.type === "markdown" && card.content?.includes("## Dotažení historie"))) return value;
+    for (const item of Object.values(value)) {
+      if (Array.isArray(item)) { for (const child of item) { const found = find(child); if (found) return found; } }
+      else { const found = find(item); if (found) return found; }
+    }
+    return null;
+  };
+  const card = find(generated);
+  if (!card || find(view)) return view;
+  const copy = JSON.parse(JSON.stringify(card));
+  if (view.sections?.length) {
+    const section = view.sections[view.sections.length - 1];
+    section.cards = [...(section.cards || []), copy];
+  } else view.cards = [...(view.cards || []), copy];
+  return view;
+}
+
+function cezNeutralCheckpoint(value) {
+  // Starší bod mohl být obnovený výpočet HA. Jeho původ nelze odhadnout
+  // jako fakturu ČEZ. Změníme pouze obecné označení, žádné místní částky.
+  if (typeof value === "string") return value
+    .replace("je převzatý z odečtu dodavatele.", "má původ **{{ {'manual_verified':'ručně ověřený základ','ha_recovery':'obnovený výpočet HA','supplier':'odečet dodavatele'}.get(state_attr(a,'reference_source'),'starší základ s neurčeným původem') }}**.")
+    .replace("Celkový základ z ČEZ je k", "Uložený kontrolní základ je k")
+    .replace("od součtu ČEZ lišit", "od kontrolního součtu lišit");
+  if (Array.isArray(value)) return value.map(cezNeutralCheckpoint);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, cezNeutralCheckpoint(v)]));
+  return value;
+}
+
+function cezRepairChartTooltips(value, generated) {
+  // Vstup: kopie místního pohledu a aktuální přibalené pohledy s entity_id.
+  // Výstup: stejná sestava, pouze tooltip známých účetních Apex grafů je nový.
+  // Šablona je jediný zdroj formatteru; žádný výpočet, série ani rozsah času se
+  // nepřebírá. Párujeme typ a přesný nadpis, jiné uživatelovy grafy neměníme.
+  // Probíhá synchronně při náhledu, bez zápisu do HA. Chybějící protějšek se
+  // ponechá; opakované volání je idempotentní. Komentáře uvnitř EVAL funkce
+  // zůstanou součástí JSON/YAML exportu i konfigurace uložené přes websocket.
+  const tooltips = new Map();
+  const visit = (node, action) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "custom:apexcharts-card") action(node);
+    for (const item of Object.values(node)) {
+      if (Array.isArray(item)) item.forEach(child => visit(child, action));
+      else if (item && typeof item === "object") visit(item, action);
+    }
+  };
+  visit(generated, card => {
+    if (card.apex_config?.tooltip?.custom) tooltips.set(card.header?.title, card.apex_config.tooltip);
+  });
+  visit(value, card => {
+    const tooltip = tooltips.get(card.header?.title);
+    if (tooltip) card.apex_config = { ...card.apex_config, tooltip: JSON.parse(JSON.stringify(tooltip)) };
+  });
+  return value;
+}
+
+function cezUpdatePriceStrategy(view, generated) {
+  // Synchronizujeme pouze známé cenové karty s novou šablonou. Registry ID
+  // už vyřešil server. Ostatní místní karty, navigaci, grafy a data zachováme.
+  // Kopírujeme obsah, nikoli celé pohledy; opakovaný náhled nic neduplikuje.
+  const titles = new Set(["Pásmo obchodní ceny", "Aktuální HDO a cenové pásmo",
+    "Nejbližší levnější odběr", "Ceník odběrného místa", "Celková cena dnes",
+    "Celková cena zítra", "Procentní pásma dnes", "Procentní pásma zítra"]);
+  const managed = new Map();
+  let selector = null, present = false;
+  const walk = (value, fn) => {
+    if (!value || typeof value !== "object") return;
+    fn(value);
+    for (const child of Object.values(value)) {
+      if (Array.isArray(child)) child.forEach(item => walk(item, fn));
+      else if (child && typeof child === "object") walk(child, fn);
+    }
+  };
+  walk(generated, card => {
+    if (card.type === "markdown" && titles.has(card.title)) managed.set(card.title, card.content);
+    if (card.type === "entities" && card.title === "Způsob výpočtu dynamického tarifu") selector = card;
+  });
+  walk(view, card => {
+    if (card.type === "markdown" && managed.has(card.title)) card.content = managed.get(card.title);
+    if (card.type === "entities" && card.title === "Způsob výpočtu dynamického tarifu") present = true;
+  });
+  if (selector && !present) {
+    const cards = view.sections?.[0]?.cards || view.cards;
+    if (Array.isArray(cards)) cards.push(JSON.parse(JSON.stringify(selector)));
+  }
+  return view;
+}
+
 function reuseCurrentCezViews(generated, current) {
   // Převzaté místní složení včetně všech detailů zachováme; opravíme pouze
-  // nebezpečné čtení HDO. Nové instalace používají opravenou přibalenou šablonu.
+  // čtení HDO a tooltipy účetních grafů. Nové instalace používají tutéž šablonu.
   const base = "cez-dynamic-tariff";
   const main = current?.views?.find(view => view.path === base);
   if (!main) return generated;
@@ -41,7 +137,10 @@ function reuseCurrentCezViews(generated, current) {
   const views = generated.views.map((fallback, index) => {
     const source = current.views.find(view => view.path === base + suffixes[index]);
     if (!source) return fallback;
-    const cloned = cezGuardHdoTemplates(JSON.parse(JSON.stringify(source).replaceAll(`/lovelace/${base}`, `/lovelace/${path}`)));
+    const cloned = cezNeutralCheckpoint(cezGuardHdoTemplates(JSON.parse(JSON.stringify(source).replaceAll(`/lovelace/${base}`, `/lovelace/${path}`))));
+    cezRepairChartTooltips(cloned, generated);
+    cezUpdatePriceStrategy(cloned, fallback);
+    if (index === 1) cezAddAccountingRecovery(cloned, fallback);
     cloned.path = path + suffixes[index];
     cloned.subview = index > 0;
     if (!index) cloned.title = generated.views[0].title;

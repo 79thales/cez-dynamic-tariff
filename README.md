@@ -11,6 +11,13 @@
   <img src="https://raw.githubusercontent.com/79thales/cez-dynamic-tariff/master_HA/custom_components/cez_dynamic_tariff/brand/logo.png" alt="ČEZ Dynamic Tariff" width="180">
 </p>
 
+## Nově ve verzi 1.1.0
+
+Nadřazený výběr umožňuje zachovat původní procenta, nebo používat pevné ceny
+časových pásem z PDF nového Dynamického tarifu ČEZ. Profily jsou oddělené;
+import sám nezmění aktivní režim. Semafory, původní procentní entity a historie
+zůstávají zachované. Postup a omezení: [dva cenové režimy](docs/dynamic-pricing-1.1.md).
+
 ## English overview
 
 ČEZ Dynamic Tariff is an independent custom integration for Home Assistant users of the ČEZ Dynamic Tariff product in the Czech Republic. It determines the current tariff period and percentage price modifier from a daily schedule, then exposes the result through sensors, binary sensors, and attributes suitable for Home Assistant dashboards and automations.

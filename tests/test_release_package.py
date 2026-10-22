@@ -88,7 +88,7 @@ class ReleasePackageTest(unittest.TestCase):
                 json.loads(package.read("manifest.json"))["version"], "0.1.0"
             )
         self.assertIn("### Čeština", notes)
-        self.assertIn("### English", notes)
+        self.assertNotIn("### English", notes)
 
     def test_untracked_files_and_uncommitted_edits_are_not_packaged(self) -> None:
         for path in ("cookies.json", "credentials.json", "__pycache__/api.pyc", ".env"):
@@ -156,7 +156,7 @@ class ReleasePackageTest(unittest.TestCase):
 
 
 class ReleaseNotesTest(unittest.TestCase):
-    def test_extracts_only_requested_bilingual_release(self) -> None:
+    def test_extracts_only_czech_notes_of_requested_release(self) -> None:
         changelog = (
             "# Changelog\n\n## Unreleased\n\nFuture work\n\n"
             "## 0.1.1 – next\n\n### Čeština\n\nNové vydání.\n\n"
@@ -165,7 +165,7 @@ class ReleaseNotesTest(unittest.TestCase):
             "### English\n\nOld release.\n"
         )
         notes = extract_release_notes(changelog, "0.1.1")
-        self.assertIn("New release.", notes)
+        self.assertNotIn("New release.", notes)
         self.assertIn("Nové vydání.", notes)
         self.assertNotIn("Old release", notes)
         self.assertNotIn("Future work", notes)
@@ -173,8 +173,17 @@ class ReleaseNotesTest(unittest.TestCase):
             notes, extract_release_notes(changelog.replace("\n", "\r\n"), "0.1.1")
         )
 
+    def test_czech_only_release_is_supported_without_development_instructions(self):
+        """Nová verze nepotřebuje angličtinu ani postup vydávání z README."""
+        source = "## 1.1.0\n\n### Čeština\n\n- Nové cenové režimy.\n\n## 1.0.9\nStarší vydání.\n"
+        notes = extract_release_notes(source, "1.1.0")
+        self.assertIn("Nové cenové režimy.", notes)
+        for forbidden in ("English", "Starší vydání", "Vydání nové verze", "Vývoj a kontrola", "compileall"):
+            self.assertNotIn(forbidden, notes)
+
     def test_missing_release_or_language_is_rejected(self) -> None:
         for changelog in (
+            "## 0.1.0\n\n### Čeština\n\n### English\n\nEnglish only\n",
             "## 0.1.0\n\n### English\n\nEnglish only\n",
             "## 0.1.1\n\n### Čeština\n\nTest\n\n### English\n\nTest\n",
         ):

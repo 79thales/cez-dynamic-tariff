@@ -154,6 +154,21 @@ def _billing_value(key):
 
 
 PRICING_DESCRIPTIONS: tuple[CezDynamicTariffSensorDescription, ...] = (
+    # Nové výstupy patří aktivní strategii. Původní procentní senzory výše
+    # zůstávají beze změny kvůli historii a existujícím automatizacím.
+    CezDynamicTariffSensorDescription(
+        key="active_trade_price", translation_key="active_trade_price",
+        native_unit_of_measurement="CZK/kWh",
+        value_fn=_billing_value("active_trade_price"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="active_price_level", translation_key="active_price_level",
+        value_fn=_billing_value("active_price_level"),
+    ),
+    CezDynamicTariffSensorDescription(
+        key="active_tariff_mode", translation_key="active_tariff_mode",
+        value_fn=_billing_value("active_tariff_mode"),
+    ),
     CezDynamicTariffSensorDescription(
         key="daily_cost",
         translation_key="daily_cost",
@@ -337,6 +352,12 @@ def _invoice_price(data):
 
 ACCOUNTING_DESCRIPTIONS += (
     CezDynamicTariffSensorDescription(
+        key="accounting_backfill_status",
+        translation_key="accounting_backfill_status",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: (data.billing or {}).get("settlement", {}).get("metadata", {}).get("backfill", {}).get("status", "idle"),
+    ),
+    CezDynamicTariffSensorDescription(
         key="accounting_price",
         translation_key="accounting_price",
         native_unit_of_measurement="CZK/kWh",
@@ -388,6 +409,8 @@ class CezDynamicTariffSensor(
     @property
     def native_value(self):
         """Return the sensor value."""
+        if self.entity_description.key == "accounting_backfill_status":
+            return self.coordinator.billing.settlement.backfill_state["status"]
         if self.coordinator.data is None:
             return None
         value = self.entity_description.value_fn(self.coordinator.data)
@@ -421,6 +444,11 @@ class CezDynamicTariffSensor(
 
         data = self.coordinator.data
         key = self.entity_description.key
+
+        if key == "accounting_backfill_status":
+            # Průběh čteme z runtime i mezi aktualizacemi cenového snapshotu.
+            obj = self.coordinator.billing.settlement
+            return obj.backfill_state
 
         if key in {description.key for description in ACCOUNTING_DESCRIPTIONS}:
             attributes = dict(

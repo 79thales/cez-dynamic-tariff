@@ -10,6 +10,7 @@ import pytest
 from homeassistant.core import State
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.cez_dynamic_tariff.band_pricing import BandPricing
 from custom_components.cez_dynamic_tariff.billing import ElectricityBilling
 from custom_components.cez_dynamic_tariff.const import DOMAIN
 from custom_components.cez_dynamic_tariff.pricing import PROFILE_DEFAULTS, PriceProfile
@@ -103,11 +104,19 @@ async def test_enabled_accounting_lifecycle_reads_real_recorder_and_adds_only_ne
         for s in hass.states.async_all()
         if s.entity_id.startswith((f"sensor.{DOMAIN}_", f"binary_sensor.{DOMAIN}_"))
     ]
-    assert len(states) == 58
+    assert len(states) == 62  # Tři nové aktivní cenové senzory, původní zůstávají.
+    assert hass.states.get(f"button.{DOMAIN}_accounting_backfill") is not None
+    assert hass.states.get(f"sensor.{DOMAIN}_accounting_backfill_status").state == "idle"
     assert hass.states.get(f"binary_sensor.{DOMAIN}_advance_editor_available").state == "on"
     assert hass.states.get(f"sensor.{DOMAIN}_accounting_status").state == "incomplete"
     assert hass.states.get(f"sensor.{DOMAIN}_actual_cost").state == "0.0"
     assert hass.states.get(f"sensor.{DOMAIN}_daily_cost_backfilled").state == "unknown"
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    with patch("custom_components.cez_dynamic_tariff.coordinator.holidays.country_holidays", return_value=set()):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+    buttons = [s for s in hass.states.async_all() if s.entity_id.startswith(f"button.{DOMAIN}_accounting_backfill")]
+    assert len(buttons) == 1
     assert await hass.config_entries.async_unload(entry.entry_id)
 
 
@@ -136,6 +145,7 @@ def adapter(hass, options):
         coordinator=coordinator,
         values=values,
         profile=PriceProfile(values),
+        strategy=BandPricing(values, PROFILE_DEFAULTS, TZ, lambda day: False, {}),
         _meter_value=ElectricityBilling._meter_value,
         status="ok",
         timeline=[],
@@ -252,7 +262,7 @@ async def test_trial_reuses_baseline_cost_and_leaves_refund_separate(hass):
         "custom_components.cez_dynamic_tariff.settlement_history.price_timeline",
         return_value=[],
     ) as timeline:
-        obj._timeline(now.date(), [], now)
+        obj._timeline(now.date(), [(midnight, [SimpleNamespace(start=midnight, end=midnight + timedelta(days=1))])], now)
         assert timeline.call_args.args[5] is False
 
 
@@ -350,6 +360,7 @@ async def test_historical_dynamic_date_and_price_validity(hass):
     assert obj._profile_at(date(2026, 3, 31)) is None
     assert obj._profile_at(date(2026, 4, 1)) is obj.billing.profile
     now = datetime(2026, 10, 9, tzinfo=TZ)
+    schedules = [(datetime(2025, 10, 29, tzinfo=TZ), [SimpleNamespace(start=datetime(2025, 10, 29, tzinfo=TZ), end=datetime(2025, 11, 2, tzinfo=TZ))])]
     with (
         patch.object(obj, "_profile_at", return_value=obj.billing.profile),
         patch(
@@ -357,9 +368,9 @@ async def test_historical_dynamic_date_and_price_validity(hass):
             return_value=[],
         ) as timeline,
     ):
-        obj._timeline(date(2025, 10, 31), [], now)
+        obj._timeline(date(2025, 10, 31), schedules, now)
         assert timeline.call_args.args[5] is False
-        obj._timeline(date(2025, 11, 1), [], now)
+        obj._timeline(date(2025, 11, 1), schedules, now)
         assert timeline.call_args.args[5] is True
 
 

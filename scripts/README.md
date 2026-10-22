@@ -20,12 +20,13 @@ python scripts/build_release.py --ref HEAD
 ## Preparing a new release
 
 1. Update `manifest.json` and add a matching version section to `CHANGELOG.md`,
-   preserving both `### Čeština` and `### English`. Commit the changes and pass
+   with a non-empty `### Čeština` section. New release notes are Czech only.
+   Commit the changes and pass
    the **Quality**, **HACS** and **Hassfest** workflows.
 2. Push the corresponding `vX.Y.Z` tag. **Prepare release installer** checks out
    that exact tag, runs tests, verifies the manifest version and builds the ZIP.
 3. The workflow attaches the ZIP to a **draft** release and copies the matching
-   bilingual changelog section into its notes. It does not publish the release.
+   Czech changelog section into its notes. Historical English sections stay in the changelog. It does not publish the release.
 4. Review the draft's notes and ensure `cez_dynamic_tariff.zip` is attached and the
    workflow succeeded. Only then publish the draft. Do not publish an empty
    release first: HACS expects the configured ZIP to be available immediately.

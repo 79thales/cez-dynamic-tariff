@@ -179,7 +179,7 @@ async def test_native_checkpoint_has_no_json_and_rejects_other_period(hass):
     assert entry.options["settled_bills"] == OPTIONS["settled_bills"]
 
 
-async def test_auto_history_only_disables_manual_checkpoint(hass):
+async def test_auto_history_explicitly_disables_manual_checkpoint(hass):
     entry = MockConfigEntry(domain=DOMAIN, data={}, options=OPTIONS)
     entry.add_to_hass(hass)
     manager = hass.config_entries.options
@@ -187,8 +187,8 @@ async def test_auto_history_only_disables_manual_checkpoint(hass):
     form = await manager.async_configure(
         form["flow_id"], {"next_step_id": "history_auto"}
     )
-    assert not form["data_schema"].schema
-    result = await manager.async_configure(form["flow_id"], {})
+    assert "disable_reference" in form["data_schema"].schema
+    result = await manager.async_configure(form["flow_id"], {"disable_reference": True})
     assert result["type"] == "create_entry"
     assert entry.options["reference_date"] == ""
     assert all(

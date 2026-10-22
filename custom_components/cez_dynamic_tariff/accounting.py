@@ -13,6 +13,9 @@ TOTAL_KEYS = (
     "dynamic_cost",
     "potential_savings",
     "fixed_cost",
+    "without_fixed_cost",
+    "dynamic_fixed_cost",
+    "comparison_unpriced_kwh",
 )
 
 
@@ -22,6 +25,15 @@ class CostLedger:
     def __init__(self, saved=None):
         self.totals = {key: float((saved or {}).get(key, 0)) for key in TOTAL_KEYS}
         self.days = dict((saved or {}).get("days", {}))
+        # Starší uložené dny neobsahují stálé platby srovnávacích variant.
+        # Jejich minulou hodnotu nepřepočítáváme; shodný základ ruší rozdíl.
+        for row in self.days.values():
+            for key in ("without_fixed_cost", "dynamic_fixed_cost"):
+                row.setdefault(key, row.get("fixed_cost", 0))
+            row.setdefault("comparison_unpriced_kwh", 0.0)
+        for key in ("without_fixed_cost", "dynamic_fixed_cost"):
+            if key not in (saved or {}):
+                self.totals[key] = self.totals["fixed_cost"]
         self.previous = None
 
     def as_dict(self):
@@ -96,7 +108,10 @@ class CostLedger:
                     ("without_cost", "without_dynamic_kwh"),
                     ("dynamic_cost", "with_dynamic_kwh"),
                 ):
-                    self._add(day, target, kwh * row[source])
+                    if row[source] is not None:
+                        self._add(day, target, kwh * row[source])
+                if row["without_dynamic_kwh"] is None or row["with_dynamic_kwh"] is None:
+                    self._add(day, "comparison_unpriced_kwh", kwh)
                 if best is not None:
                     self._add(
                         day, "potential_savings", kwh * max(0, row["price_kwh"] - best)
@@ -107,7 +122,7 @@ class CostLedger:
             delta * max(0, 1 - covered),
         )
 
-    def accrue_fixed(self, start: datetime, end: datetime, monthly: float, tz):
+    def accrue_fixed(self, start: datetime, end: datetime, monthly: float, tz, key="fixed_cost"):
         """Accrue only the monitored time using actual local calendar months."""
         for day, left, right in self._day_parts(
             start.astimezone(UTC), end.astimezone(UTC), tz
@@ -122,7 +137,7 @@ class CostLedger:
             amount = monthly / monthrange(local.year, local.month)[1]
             self._add(
                 day,
-                "fixed_cost",
+                key,
                 amount
                 * (right - left).total_seconds()
                 / (following - midnight).total_seconds(),

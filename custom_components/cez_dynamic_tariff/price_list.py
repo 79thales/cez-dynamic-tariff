@@ -9,6 +9,7 @@ from datetime import date
 from hashlib import sha256
 from io import BytesIO
 from itertools import pairwise
+from math import isfinite
 from urllib.parse import urlsplit
 
 MAX_PDF_BYTES = 5 * 1024 * 1024
@@ -28,6 +29,8 @@ class ImportedPriceList:
     distribution_effective: str
     digest: str
     poze_estimated: bool
+    product: str = "standard"
+    schedules: dict | None = None
 
 
 def normalize(text: str) -> str:
@@ -71,13 +74,16 @@ def _date(text: str, section: str) -> str:
 def _cells(text: str) -> list[float | None]:
     # Amounts in parentheses are WITHOUT VAT. Do not multiply VAT again.
     text = re.sub(r"\([^)]*\)", "", text).replace("\xa0", " ")
-    return [
+    values = [
         None if token in "–—−-" else float(token.replace(" ", "").replace(",", "."))
         for token in AMOUNT.findall(text)
     ]
+    if any(v is not None and not isfinite(v) for v in values):
+        raise PriceListError("invalid_price_list_pdf")
+    return values
 
 
-def _read_table(page) -> tuple[list[str], dict[int, list[float | None]]]:
+def _read_table(page, dynamic=False) -> tuple[list[str], dict[int, list[float | None]]]:
     """Anchor prices to numbered rows rather than PDF drawing order.
 
     ČEZ draws some numbers after all the labels. Plain text extraction therefore
@@ -102,12 +108,16 @@ def _read_table(page) -> tuple[list[str], dict[int, list[float | None]]]:
     anchors = [
         (x, y, int(t)) for x, y, t in fragments if t.isdigit() and 1 <= int(t) <= 30
     ]
+    if dynamic:
+        anchors = [(x, y, int(match[1])) for x, y, t in fragments
+                   if x < 60 and (match := re.match(r"^(\d{1,2})\s+\D", t))]
     tables = {}
     for x, y, number in anchors:
         if number in tables:
             raise PriceListError("ambiguous_price_list")
         parts = sorted(
-            (fx, t) for fx, fy, t in fragments if fx > x + 60 and y - 1 <= fy <= y + 5
+            (fx, t) for fx, fy, t in fragments
+            if fx > x + 60 and y - (5 if dynamic else 1) <= fy <= y + 5
         )
         cells = _cells(" ".join(t for _, t in parts))
         if len(cells) == len(columns):
@@ -132,12 +142,72 @@ def _read_table(page) -> tuple[list[str], dict[int, list[float | None]]]:
     upper = (10, 16, 20, 25, 32, 40, 50, 63, 80, 100, 125, 160)
     for row, (lower, higher) in enumerate(pairwise(upper), 7):
         expected[row] = f"nad 3× {lower} A do 3× {higher} A včetně Kč/měsíc"
+    if dynamic:
+        # Nový produkt nemá dvě obchodní sazby VT/NT. Ostatní řádky jsou
+        # posunuté o jeden; nejprve ověříme jejich skutečné popisky a jednotky.
+        expected = {n - 1: label for n, label in expected.items() if n >= 3}
     for number, label in expected.items():
         if f"{number} {normalize(label)}" not in plain:
             raise PriceListError("unsupported_price_list")
-    if not re.search(r"23\s+cena za provoz nesitove\s+infrastruktury kc/mesic", plain):
+    infrastructure_row = 22 if dynamic else 23
+    if not re.search(rf"{infrastructure_row}\s+cena za provoz nesitove\s+infrastruktury kc/mesic", plain):
         raise PriceListError("unsupported_price_list")
+    if dynamic:
+        tables = {n + 1: cells for n, cells in tables.items() if n >= 2}
     return columns, tables
+
+
+def _read_bands(pages):
+    """Načte čtyři rozvrhy z podporované tabulky; ceny v závorkách jsou bez DPH.
+
+    Intervaly ukládáme jako [začátek, konec) v minutách místního dne. Proto
+    3–5 znamená 03:00:00 až těsně před 05:00, bez sekundových mezer.
+    """
+    candidates = [t for _, t in pages if "ceny v casovych pasmech v prubehu dne (kc/mwh)" in normalize(t)]
+    if len(candidates) != 1:
+        raise PriceListError("ambiguous_price_list")
+    text = candidates[0]
+    if not all(label in normalize(text) for label in ("duben az zari", "rijen az brezen")):
+        raise PriceListError("unsupported_price_list")
+    keys = ("summer_workday_schedule", "summer_offday_schedule",
+            "winter_workday_schedule", "winter_offday_schedule")
+    pattern = re.compile(r"(\d{1,2})[.:](\d{2})[–−-](\d{1,2})[.:](\d{2})")
+    lines, schedules = text.splitlines(), {}
+    season, day_type = None, None
+    for i, line in enumerate(lines):
+        label = normalize(line.strip())
+        if label == "duben az zari":
+            season = "summer"
+        elif label == "rijen az brezen":
+            season = "winter"
+        elif label == "pracovni dny (hodiny)":
+            day_type = "workday"
+        elif label == "vikendy a svatky (hodiny)":
+            day_type = "offday"
+        matches = pattern.findall(line)
+        if len(matches) < 2:
+            continue
+        if len(schedules) >= 4 or i + 1 >= len(lines):
+            raise PriceListError("unsupported_price_list")
+        if f"{season}_{day_type}_schedule" != keys[len(schedules)]:
+            raise PriceListError("unsupported_price_list")
+        amounts = _cells(lines[i + 1])
+        if len(matches) != len(amounts):
+            raise PriceListError("incomplete_price_list")
+        rows, edge = [], 0
+        for (h, m, eh, em), amount in zip(matches, amounts, strict=True):
+            left, right = int(h) * 60 + int(m), int(eh) * 60 + int(em)
+            if (int(m) > 59 or int(em) > 59 or left != edge
+                    or not left < right <= 1440 or amount is None):
+                raise PriceListError("incomplete_price_list")
+            rows.append({"start_minute": left, "end_minute": right, "price_kwh": amount / 1000})
+            edge = right
+        if edge != 1440:
+            raise PriceListError("incomplete_price_list")
+        schedules[keys[len(schedules)]] = rows
+    if len(schedules) != 4 or len({r["price_kwh"] for rows in schedules.values() for r in rows}) != 4:
+        raise PriceListError("incomplete_price_list")
+    return schedules
 
 
 def parse_price_list(
@@ -177,7 +247,11 @@ def parse_price_list(
         candidates = [p for p, t in pages if "distribucni sazba" in normalize(t)]
         if len(candidates) != 1:
             raise PriceListError("ambiguous_price_list")
-        columns, table = _read_table(candidates[0])
+        cover = normalize(pages[0][1])
+        dynamic = "dynamicky tarif" in cover
+        product = ("fixed_2_years" if "na 2 roky" in cover else "fixed_indefinite") if dynamic else "standard"
+        schedules = _read_bands(pages) if dynamic else None
+        columns, table = _read_table(candidates[0], dynamic)
         rate = distribution_rate.strip().lower()
         if rate not in columns:
             raise PriceListError("rate_not_in_price_list")
@@ -208,8 +282,6 @@ def parse_price_list(
             else 0.0
         )
         rates = {
-            "trade_vt": value(1) / 1000,
-            "trade_nt": value(2) / 1000,
             "supplier_monthly": value(3),
             "distribution_vt": value(4) / 1000,
             "distribution_nt": value(5) / 1000,
@@ -219,9 +291,27 @@ def parse_price_list(
             "infrastructure_monthly": value(23),
             "poze_kwh": poze,
         }
+        if not dynamic:
+            rates.update({"trade_vt": value(1) / 1000, "trade_nt": value(2) / 1000})
         # Cross-check both VAT totals published by ČEZ, allowing 0.05 CZK/MWh
         # component rounding. Reject shifted columns instead of showing a guess.
         for tariff, row in (("vt", 26), ("nt", 27)):
+            if dynamic:
+                # Nová šablona má souhrny pro čtyři pásma na další straně.
+                # Každý souhrnný řádek obsahuje všechny distribuční sazby.
+                totals_page = pages[-1][1]
+                total_rows = [_cells(line) for line in totals_page.splitlines()
+                              if len(_cells(line)) == len(columns)
+                              and not line.lstrip().startswith("(")]
+                if len(total_rows) != 8:
+                    raise PriceListError("incomplete_price_list")
+                prices = sorted({r["price_kwh"] for rows in schedules.values() for r in rows}, reverse=True)
+                regulated = sum(rates[k] for k in (f"distribution_{tariff}", "electricity_tax", "system_services"))
+                for index, price in enumerate(prices):
+                    published = total_rows[index * 2 + (tariff == "nt")][col]
+                    if published is None or abs((price + regulated) * 1000 - published) > 0.05:
+                        raise PriceListError("inconsistent_price_list")
+                continue
             total = sum(
                 rates[k]
                 for k in (
@@ -239,6 +329,8 @@ def parse_price_list(
             _date(all_text, "distribucnich"),
             sha256(pdf).hexdigest(),
             capacity > 0,
+            product,
+            schedules,
         )
     except PriceListError:
         raise

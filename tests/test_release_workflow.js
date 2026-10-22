@@ -8,7 +8,7 @@ const asset = (buffer = data) => ({ name: "cez_dynamic_tariff.zip", state: "uplo
 function fixture(t, releases, options = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "cez-workflow-test-"));
   fs.writeFileSync(path.join(directory, "cez_dynamic_tariff.zip"), data);
-  fs.writeFileSync(path.join(directory, "release-notes.md"), "Czech and English notes");
+  fs.writeFileSync(path.join(directory, "release-notes.md"), "České poznámky k vydání");
   t.after(() => {
     for (const name of ["cez_dynamic_tariff.zip", "release-notes.md"]) fs.unlinkSync(path.join(directory, name));
     fs.rmdirSync(directory);
@@ -63,6 +63,7 @@ test("new release creates only a draft and verifies the uploaded digest", async 
   const s = fixture(t, []); const result = await attachInstaller(s.args);
   assert.equal(result.published, false); assert.equal(s.writes().length, 2);
   const created = s.calls.find(call => call[0] === "create")[1]; assert.equal(created.draft, true);
+  assert.equal(created.body, "České poznámky k vydání");
   assert.match(s.headings[0], /still a draft/);
 });
 test("existing draft without installer receives a verified upload", async t => {

@@ -72,6 +72,8 @@ class PriceProfile:
     @property
     def monthly(self) -> float:
         """Standing fees cannot be reduced by shifting consumption."""
+        if "_monthly_override" in self.values:
+            return self.values["_monthly_override"]
         return sum(
             self.values[k]
             for k in (
@@ -142,7 +144,8 @@ def tariff_at(intervals: list[HdoInterval], when: datetime) -> str | None:
 
 
 def price_timeline(
-    start: datetime, end: datetime, intervals, profile, modifier_at, dynamic
+    start: datetime, end: datetime, intervals, profile, modifier_at, dynamic,
+    strategy=None,
 ):
     """Combine HDO and local-clock bands using real elapsed UTC minutes.
 
@@ -151,6 +154,8 @@ def price_timeline(
     """
     start, end = start.astimezone(UTC), end.astimezone(UTC)
     edges = {start, end}
+    if strategy is not None:
+        edges.update(strategy.edges(start, end))
     cursor = start.replace(second=0, microsecond=0) + timedelta(minutes=1)
     while cursor < end:
         edges.add(cursor)
@@ -165,7 +170,12 @@ def price_timeline(
         price = profile.price(tariff, modifier, dynamic) if tariff else None
         baseline = profile.price(tariff, modifier, False) if tariff else None
         simulated = profile.price(tariff, modifier, True) if tariff else None
-        values = (tariff, modifier, price, baseline, simulated)
+        quote = strategy.quote(left, tariff, modifier, dynamic) if strategy is not None else {}
+        if quote:
+            price, baseline, simulated = (quote[k] for k in (
+                "price_kwh", "without_dynamic_kwh", "with_dynamic_kwh"))
+            modifier = quote["modifier_percent"]
+        values = (tariff, modifier, price, baseline, simulated, repr(quote))
         if result and result[-1]["_values"] == values:
             result[-1]["end"] = right
         else:
@@ -178,6 +188,7 @@ def price_timeline(
                     "price_kwh": price,
                     "without_dynamic_kwh": baseline,
                     "with_dynamic_kwh": simulated,
+                    **quote,
                     "_values": values,
                 }
             )

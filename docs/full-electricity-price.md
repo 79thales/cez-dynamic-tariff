@@ -45,6 +45,13 @@ rozdíl 0,00001 Kč/kWh vzniká zaokrouhlením jednotlivých řádků ceníku.
 Procentní změna se používá **pouze na dodávku**, podle smluvních dynamických
 pásem, která lze stále upravovat v původním nastavení.
 
+## Dva cenové režimy od 1.1.0
+
+Vedle dosavadních procent lze používat přímé ceny pásem z PDF nového Dynamického
+tarifu. Profily zůstávají oddělené; nahrání nic samo neaktivuje. Podrobný postup,
+časové revize, zachování semaforů a omezení popisuje
+[dokumentace dvou cenových režimů](dynamic-pricing-1.1.md).
+
 ## Nastavení
 
 1. Po instalaci upravené integrace otevřít **Konfigurovat**.
@@ -84,7 +91,8 @@ na území ČEZ Distribuce s jedním cenovým obdobím, cenami včetně 21 % DPH
 Limit je 5 MB / 6 stran. Skeny, odlišné šablony, více cenových období,
 chybějící částky a neodpovídající součty odmítáme; použít ruční zadání.
 Import se použije od uložení a nepřepočítává minulou spotřebu.
-Ceníky s budoucí účinností je nutné importovat až od účinnosti.
+Standardní ceníky s budoucí účinností je nutné importovat až od účinnosti.
+Nové pevné pásmové profily lze nahrát předem a aktivovat samostatně později.
 Nenulové POZE podle jističe vyžaduje kladný odhad ročního odběru;
 efektivní sazba je nižší z kapacitního limitu přepočteného na odhad odběru
 a sazby podle spotřeby. Není konečným vyúčtováním a vyžaduje roční vyrovnání.
