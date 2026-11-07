@@ -23,7 +23,10 @@ jobs:
           python-version: "3.13"
       - name: Resolve stable HA and matching test plugin from PyPI
         id: resolve
-        run: echo "environment=$(python scripts/resolve_latest_ha.py)" >> "$GITHUB_OUTPUT"
+        # Samostatné přiřazení předá selhání Pythonu shellu; echo by jej skrylo.
+        run: |
+          environment=$(python scripts/resolve_latest_ha.py)
+          printf 'environment=%s\n' "$environment" >> "$GITHUB_OUTPUT"
 
   python:
     runs-on: ubuntu-latest
@@ -61,7 +64,7 @@ jobs:
 
   home-assistant:
     name: Home Assistant ${{ matrix.homeassistant }}
-    needs: latest-home-assistant
+    # Podporované pevné verze běží i při chybě zjišťování nejnovější verze.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -75,6 +78,52 @@ jobs:
             test_plugin: "0.13.357"
             python: "3.14"
             holidays: "holidays==0.106"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install matching Home Assistant test environment
+        run: >-
+          python -m pip install
+          homeassistant==${{ matrix.homeassistant }}
+          pytest-homeassistant-custom-component==${{ matrix.test_plugin }}
+          pytest-cov
+          "${{ matrix.holidays }}"
+          "pypdf==6.19.0"
+
+      - name: Install frontend required by this Home Assistant version
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+          import homeassistant.components.frontend as frontend
+
+          manifest = json.loads(Path(frontend.__file__).with_name("manifest.json").read_text())
+          subprocess.check_call([sys.executable, "-m", "pip", "install", *manifest["requirements"]])
+          PY
+
+      - name: Run real Home Assistant lifecycle tests
+        run: >-
+          pytest tests_homeassistant -q
+          --cov=custom_components.cez_dynamic_tariff
+          --cov-report=term-missing
+
+  home-assistant-latest:
+    name: Latest Home Assistant ${{ matrix.homeassistant }}
+    # Nejnovější stabilní HA nesmí být tiše nahrazen starší verzí ani přeskočen.
+    needs: latest-home-assistant
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - homeassistant: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).homeassistant }}
             test_plugin: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).test_plugin }}
             python: ${{ fromJSON(needs.latest-home-assistant.outputs.environment).python }}

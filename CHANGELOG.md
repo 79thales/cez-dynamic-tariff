@@ -11,6 +11,8 @@
 - Dříve uložený zaokrouhlovací artefakt se automaticky nemaže. Bez ověřených
   historických podkladů jej nelze bezpečně odlišit od skutečné mezery, a může
   proto ponechat úspory ve stavu `unknown` i po aktualizaci.
+- CI nově správně hlásí chybu při nedostupném testovacím pluginu pro nejnovější
+  Home Assistant; pevně podporované verze se testují nezávisle na tomto kroku.
 
 - Při úplném náhradním ocenění se v hlavním přehledu a detailech zobrazují
   **Náklady dosud – orientačně** se symbolem ≈. Přesná částka má přednost;
