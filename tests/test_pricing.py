@@ -4,6 +4,7 @@ import importlib.util
 import sys
 import unittest
 from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -138,6 +139,79 @@ class AccountingTests(unittest.TestCase):
                 "with_dynamic_kwh": 5,
             },
         ]
+
+    def test_issue_3_fragmented_full_coverage_has_no_false_gap(self):
+        """Navazující časové úseky musí pokrýt celý pětiminutový odběr."""
+        boundaries = (0, 1, 61, 121, 181, 241, 300)
+        rows = [
+            {
+                **self.rows[0],
+                "start": self.start + timedelta(seconds=left),
+                "end": self.start + timedelta(seconds=right),
+            }
+            for left, right in pairwise(boundaries)
+        ]
+        ledger = a.CostLedger()
+        ledger.sample(self.start, 17000, rows)
+        ledger.sample(self.start + timedelta(seconds=300), 17001, rows)
+        self.assertEqual(ledger.totals["unpriced_kwh"], 0)
+        self.assertAlmostEqual(ledger.totals["actual_cost"], 2)
+        self.assertAlmostEqual(ledger.totals["without_cost"], 4)
+        self.assertAlmostEqual(ledger.totals["dynamic_cost"], 2)
+        self.assertEqual(ledger.totals["comparison_unpriced_kwh"], 0)
+
+    def test_issue_3_microsecond_gap_remains_unpriced(self):
+        """Skutečná mezera trvající 1 µs zůstane neoceněna i po uložení."""
+        split = self.start + timedelta(seconds=120)
+        after = split + timedelta(microseconds=1)
+        left = {**self.rows[0], "end": split}
+        right = {**self.rows[0], "start": after}
+        unknown = {**self.rows[0], "start": split, "end": after, "price_kwh": None}
+        for rows in ([left, right], [left, unknown, right]):
+            with self.subTest(explicit_unknown=len(rows) == 3):
+                ledger = a.CostLedger()
+                ledger.sample(self.start, 17000, rows)
+                ledger.sample(self.start + timedelta(seconds=300), 17001, rows)
+                # 1 kWh rovnoměrně za 300 s: za 1 µs jde o 1/300 000 000 kWh.
+                expected = 1 / 300_000_000
+                self.assertAlmostEqual(
+                    ledger.totals["unpriced_kwh"], expected, places=20
+                )
+                restored = a.CostLedger(ledger.as_dict())
+                self.assertEqual(
+                    restored.totals["unpriced_kwh"], ledger.totals["unpriced_kwh"]
+                )
+
+    def test_issue_3_fragmented_coverage_across_local_midnight(self):
+        """Dělení půlnocí zachová plné pokrytí a částku obou kalendářních dnů."""
+        start = datetime(2026, 10, 9, 23, 57, 30, tzinfo=TZ).astimezone(UTC)
+        boundaries = (0, 1, 61, 121, 181, 241, 300)
+        rows = [
+            {
+                **self.rows[0],
+                "start": start + timedelta(seconds=left),
+                "end": start + timedelta(seconds=right),
+            }
+            for left, right in pairwise(boundaries)
+        ]
+        ledger = a.CostLedger()
+        ledger.sample(start, 100, rows, tz=TZ)
+        ledger.sample(start + timedelta(seconds=300), 101, rows, tz=TZ)
+        self.assertEqual(ledger.totals["unpriced_kwh"], 0)
+        self.assertAlmostEqual(ledger.days["2026-10-09"]["energy_kwh"], 0.5)
+        self.assertAlmostEqual(ledger.days["2026-10-10"]["energy_kwh"], 0.5)
+        self.assertAlmostEqual(ledger.totals["actual_cost"], 2)
+
+    def test_issue_3_preexisting_unpriced_amount_is_preserved(self):
+        """Ze starého součtu nelze bezpečně určit, zda jde o skutečnou mezeru."""
+        artifact_or_gap = 1.1102230246251565e-16
+        ledger = a.CostLedger({"unpriced_kwh": artifact_or_gap})
+        ledger.sample(self.start, 100, self.rows)
+        ledger.sample(self.start + timedelta(seconds=300), 101, self.rows)
+        self.assertEqual(ledger.totals["unpriced_kwh"], artifact_or_gap)
+        self.assertEqual(
+            a.CostLedger(ledger.as_dict()).totals["unpriced_kwh"], artifact_or_gap
+        )
 
     def test_lifetime_baseline_then_split_and_signed_savings(self):
         ledger = a.CostLedger()

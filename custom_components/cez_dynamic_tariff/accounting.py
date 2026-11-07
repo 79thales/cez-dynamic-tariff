@@ -91,7 +91,11 @@ class CostLedger:
                 for key, amount in known_costs.items():
                     self._add(day, key, amount * fraction)
             return
-        covered = 0.0
+        # Pokrytí počítáme jako přesný čas (rozlišení datetime je mikrosekunda),
+        # nikoli součtem zlomků float: zaokrouhlení mnoha navazujících cenových
+        # úseků by jinak vytvořilo neexistující neocenovanou spotřebu. Řádky
+        # časové osy jsou stejně jako dosud očekávány bez vzájemného překryvu.
+        covered = timedelta(0)
         for row in rows:
             overlap = (min(when, row["end"]) - max(start, row["start"])).total_seconds()
             if overlap <= 0 or row["price_kwh"] is None:
@@ -101,7 +105,7 @@ class CostLedger:
             ):
                 fraction = (right - left).total_seconds() / seconds
                 kwh = delta * fraction
-                covered += fraction
+                covered += right - left
                 self._add(day, "energy_kwh", kwh)
                 for target, source in (
                     ("actual_cost", "price_kwh"),
@@ -110,7 +114,10 @@ class CostLedger:
                 ):
                     if row[source] is not None:
                         self._add(day, target, kwh * row[source])
-                if row["without_dynamic_kwh"] is None or row["with_dynamic_kwh"] is None:
+                if (
+                    row["without_dynamic_kwh"] is None
+                    or row["with_dynamic_kwh"] is None
+                ):
                     self._add(day, "comparison_unpriced_kwh", kwh)
                 if best is not None:
                     self._add(
@@ -119,10 +126,14 @@ class CostLedger:
         self._add(
             when.astimezone(tz).date().isoformat(),
             "unpriced_kwh",
-            delta * max(0, 1 - covered),
+            # Skutečnou mezeru, i jedinou mikrosekundu, ponecháme neoceněnou.
+            # Převod na zlomek až po odečtení přesných časů zachová jednotky kWh.
+            delta * (max(timedelta(0), when - start - covered) / (when - start)),
         )
 
-    def accrue_fixed(self, start: datetime, end: datetime, monthly: float, tz, key="fixed_cost"):
+    def accrue_fixed(
+        self, start: datetime, end: datetime, monthly: float, tz, key="fixed_cost"
+    ):
         """Accrue only the monitored time using actual local calendar months."""
         for day, left, right in self._day_parts(
             start.astimezone(UTC), end.astimezone(UTC), tz

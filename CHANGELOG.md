@@ -1,6 +1,16 @@
 # Changelog
 
-## Připravované změny
+## 1.1.1 – 2026-11-07
+
+### Čeština
+
+- Opravena chyba, která při úplném cenovém pokrytí mohla po opakovaných
+  aktualizacích cen zobrazit úspory jako `unknown` (issue #3). Pokrytí se nyní
+  počítá přesnými časovými úseky; skutečná neoceněná mezera zůstane zachována
+  i při délce jediné mikrosekundy.
+- Dříve uložený zaokrouhlovací artefakt se automaticky nemaže. Bez ověřených
+  historických podkladů jej nelze bezpečně odlišit od skutečné mezery, a může
+  proto ponechat úspory ve stavu `unknown` i po aktualizaci.
 
 - Při úplném náhradním ocenění se v hlavním přehledu a detailech zobrazují
   **Náklady dosud – orientačně** se symbolem ≈. Přesná částka má přednost;
