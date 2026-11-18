@@ -34,6 +34,7 @@ def build_views(
     view_path: str,
     entities: Mapping[str, str],
     hdo_sources: Mapping[str, str],
+    language: str = "cs",
 ) -> dict[str, Any]:
     """Return three views, never a replacement for the user's whole dashboard.
 
@@ -46,6 +47,10 @@ def build_views(
     """
     validate_view_name(title, view_path)
     raw = TEMPLATE_PATH.read_text(encoding="utf-8")
+    # Jazyk nového bloku volí uživatel generátoru. Přímý export šablony
+    # a starší volání API zachovávají výchozí češtinu.
+    if language == "en":
+        raw = raw.replace("set cez_meter_language = 'cs'", "set cez_meter_language = 'en'")
     keys = sorted({match[1] for match in ENTITY_PATTERN.finditer(raw)})
 
     def entity(match: re.Match) -> str:

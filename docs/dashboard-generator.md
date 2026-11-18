@@ -22,6 +22,16 @@ Grafy používají **ApexCharts Card**, stejně jako současný přehled;
 generátor tuto kartu neinstaluje. Pokud chybí, nainstalujte ji přes HACS sami.
 Pomocný editor záloh je součástí integrace.
 
+Pokud připravené pohledy obsahují ApexCharts, náhled ověří registraci karty
+v prohlížeči. Při přímém otevření panelu zkusí načíst již nastavený modul
+`apexcharts-card.js`. Po třech sekundách bez registrace zobrazí upozornění
+u náhledu. Jakmile se modul zaregistruje, upozornění zmizí. Ovládání pro
+přidání pohledu nebo stažení YAML je dostupné i během kontroly.
+
+Při převzetí starší sestavy generátor do rozpoznaných karet **Dnes od
+půlnoci** a **Jak číst úspory** doplní blok výpadků živého měření. Použije
+aktuální ID senzoru a jazyk náhledu. Vlastní text karet zachová.
+
 Editor záloh se registruje také jako **JavaScript module** mezi zdroji
 dashboardů. Jeho URL má tvar `/cez_dynamic_tariff/advances-card.js?v=<verze>`;
 hodnota pochází z `manifest.json` načteného loaderem Home Assistantu.

@@ -57,6 +57,15 @@ nikoli vypočtenou úsporu.
    energii ji nezaznamená. Dosavadní součty a `comparison_complete` tedy mohou
    nadále vypadat úplné i přes tento výpadek.
 
+Denní senzor `daily_savings` uvádí v atributu `daily_meter_gaps` mezery živého
+měření zasahující do dne podle časového pásma Home Assistantu. Začátek je čas
+posledního platného odečtu před ztrátou návaznosti. Konec je čas prvního
+platného vzorku po návratu, u probíhající mezery má hodnotu `null`. Šablona
+ukazuje tyto časy v kartách **Dnes od půlnoci** a **Jak číst úspory**. Otevřená
+mezera se ukládá s účetnictvím a obnoví se při spuštění. Uzavřená mezera po
+skončení posledního dotčeného dne z denního přehledu zmizí. Historické
+dopočítání může mít pro stejný interval jiné podklady.
+
 Číselná nula úspory může znamenat dosud žádný zaúčtovaný přírůstek nebo
 skutečnou nulovou úsporu v evidovaném období; sama nepotvrzuje úplné historické
 pokrytí. `unknown` znamená, že pro danou hodnotu nejsou splněny její podmínky;

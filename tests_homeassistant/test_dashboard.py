@@ -16,6 +16,41 @@ from custom_components.cez_dynamic_tariff.dashboard_api import (
 )
 
 
+@pytest.mark.parametrize(
+    ("language", "active", "closed"),
+    [
+        ("cs", "Výpadek měření trvá", "Výpadek měření:"),
+        ("en", "Meter readings are still interrupted", "Meter readings interrupted:"),
+    ],
+)
+async def test_meter_gap_card_renders_local_time(hass, language, active, closed):
+    """Skutečný renderer HA čte přejmenovaný senzor včetně data přes půlnoc."""
+    from homeassistant.util import dt
+
+    from custom_components.cez_dynamic_tariff.dashboard import build_views
+
+    entity = "sensor.example_savings"
+    views = build_views("ČEZ", "cez-test", {"daily_savings": entity}, {}, language)
+    content = next(
+        card["content"]
+        for section in views["config"]["views"][1]["sections"]
+        for card in section["cards"]
+        if card.get("title") == "Jak číst úspory"
+    )
+    rendered = template.Template(content, hass)
+    assert active not in rendered.async_render(parse_result=False)
+    hass.states.async_set(entity, "0", {"daily_meter_gaps": [
+        {"start": "2026-10-09T21:55:00+00:00", "end": "2026-10-09T22:02:00+00:00"},
+        {"start": "2026-10-10T00:05:00+00:00", "end": None},
+    ]})
+    with patch.object(dt, "DEFAULT_TIME_ZONE", dt.get_time_zone("Europe/Prague")):
+        result = rendered.async_render(parse_result=False)
+    assert closed in result
+    assert active in result
+    assert "09. 10. 2026 23:55" in result
+    assert "10. 10. 2026 00:02" in result
+
+
 async def test_backfill_card_renders_czech_reasons_and_missing_progress(hass):
     from custom_components.cez_dynamic_tariff.dashboard import build_views
 

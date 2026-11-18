@@ -476,6 +476,10 @@ class CezDynamicTariffSensor(
         if key in {description.key for description in PRICING_DESCRIPTIONS}:
             billing = data.billing or {}
             attributes = dict(billing.get("metadata", {}))
+            if key == "daily_savings":
+                # Jen denní živé úspory nesou intervaly z výchozího odečtu.
+                # Historické dopočítání může pro stejné období využít jiné podklady.
+                attributes["daily_meter_gaps"] = billing.get("daily_meter_gaps", [])
             if key in ("total_price", "price_forecast"):
                 attributes["forecast"] = billing.get("forecast", [])
             return attributes

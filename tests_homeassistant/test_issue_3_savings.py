@@ -247,3 +247,53 @@ async def test_zero_reading_is_valid_and_long_interval_stays_unpriced(hass, free
     for name in SAVINGS:
         assert hass.states.get(PREFIX + name).state == "unknown"
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_meter_gap_survives_reload_and_expires_at_local_midnight(hass, freezer):
+    """Otevřená mezera přežije reload a návrat elektroměru nezapočte skok."""
+    entry = await setup_pricing(hass, freezer)
+    entity = PREFIX + "daily_savings"
+    start = datetime.now(UTC).isoformat()
+
+    for state in ("unavailable", "unknown"):
+        freezer.tick(timedelta(minutes=1))
+        hass.states.async_set(METER, state, {"unit_of_measurement": "kWh"})
+        await hass.async_block_till_done()
+    await refresh(hass, entry)
+    assert hass.states.get(entity).attributes["daily_meter_gaps"] == [
+        {"start": start, "end": None}
+    ]
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await refresh(hass, entry)
+    assert hass.states.get(entity).attributes["daily_meter_gaps"] == [
+        {"start": start, "end": None}
+    ]
+
+    for value in ("17020", "17021"):
+        freezer.tick(timedelta(minutes=1))
+        hass.states.async_set(METER, value, {"unit_of_measurement": "kWh"})
+        await hass.async_block_till_done()
+        if value == "17020":
+            end = datetime.now(UTC).isoformat()
+    await refresh(hass, entry)
+    attrs = hass.states.get(entity).attributes
+    assert attrs["daily_meter_gaps"] == [{"start": start, "end": end}]
+    assert attrs["comparison_complete"] is True
+    assert entry.runtime_data.billing.ledger.totals["energy_kwh"] == pytest.approx(1)
+
+    freezer.move_to("2026-10-09T22:00:00+00:00")
+    await refresh(hass, entry)
+    assert hass.states.get(entity).attributes["daily_meter_gaps"] == []
+    assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_initial_invalid_meter_loads_legacy_billing_store(hass, freezer, hass_storage):
+    """Starší úložiště bez seznamu mezer se načte i před prvním platným vzorkem."""
+    entry = await setup_pricing(hass, freezer, meter="unavailable")
+    key = entry.runtime_data.billing.store.key
+    assert await hass.config_entries.async_unload(entry.entry_id)
+    del hass_storage[key]["data"]["meter_gaps"]
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await refresh(hass, entry)
+    assert hass.states.get(PREFIX + "daily_savings").attributes["daily_meter_gaps"] == []
+    assert await hass.config_entries.async_unload(entry.entry_id)

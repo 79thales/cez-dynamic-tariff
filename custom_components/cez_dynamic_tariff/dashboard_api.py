@@ -122,6 +122,7 @@ async def websocket_dashboard_entries(hass, connection, msg):
         vol.Required("entry_id"): str,
         vol.Required("title"): vol.All(str, vol.Length(min=1, max=120)),
         vol.Required("view_path"): vol.All(str, vol.Length(min=1, max=60)),
+        vol.Optional("language", default="cs"): vol.In(("cs", "en")),
     }
 )
 @websocket_api.async_response
@@ -135,7 +136,7 @@ async def websocket_dashboard_preview(hass, connection, msg):
     entities, hdo = _sources(hass, entry)
     try:
         result = await hass.async_add_executor_job(
-            build_views, msg["title"], msg["view_path"], entities, hdo
+            build_views, msg["title"], msg["view_path"], entities, hdo, msg["language"]
         )
     except ValueError as err:
         connection.send_error(msg["id"], str(err), "Invalid view name or path")

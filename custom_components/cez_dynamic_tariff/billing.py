@@ -48,6 +48,7 @@ class ElectricityBilling:
             self.hass, 1, f"{DOMAIN}.billing_{coordinator.entry.entry_id}"
         )
         self.ledger = CostLedger()
+        self.meter_gaps: list[tuple[datetime, datetime | None]] = []
         self.last_fixed = None
         self.last_pricing_refresh = None
         self.timeline = []
@@ -66,10 +67,17 @@ class ElectricityBilling:
         # Rozpracovaný interval se obnoví pouze se všemi časovými hranicemi.
         # Delší výpadek dál označí CostLedger jako neoceněnou energii (>15 min).
         pending = (saved or {}).get("pending_sample")
-        if pending and (saved or {}).get("meter_source") == self.values["import_energy_entity"]:
-            rows = [{**r, "start": instant(r["start"]), "end": instant(r["end"])}
-                    for r in pending["rows"]]
-            self.ledger.previous = (instant(pending["at"]), pending["energy"], rows, pending["minimum"])
+        if (saved or {}).get("meter_source") == self.values["import_energy_entity"]:
+            if pending:
+                rows = [{**r, "start": instant(r["start"]), "end": instant(r["end"])}
+                        for r in pending["rows"]]
+                self.ledger.previous = (instant(pending["at"]), pending["energy"], rows, pending["minimum"])
+            # Starší úložiště seznam nemá. Při změně elektroměru se mezery
+            # původního zdroje nepřenášejí na nový zdroj.
+            self.meter_gaps = [
+                (instant(start), instant(end) if end else None)
+                for start, end in (saved or {}).get("meter_gaps", [])
+            ]
         if (saved or {}).get("last_fixed"):
             self.last_fixed = instant(saved["last_fixed"])
         if (saved or {}).get("last_pricing_refresh"):
@@ -96,15 +104,23 @@ class ElectricityBilling:
         if event.data["entity_id"] == self.values["import_energy_entity"]:
             state = event.data.get("new_state")
             energy = self._meter_value(state)
-            self.ledger.sample(
-                event.time_fired,
-                energy,
-                self.timeline,
-                self.minimum,
-                self.coordinator._local_tz(),
-            )
+            self._sample_meter(event.time_fired, energy, self.coordinator._local_tz())
             self._save()
         self.hass.async_create_task(self.coordinator.async_request_refresh())
+
+    def _sample_meter(self, when, energy, tz):
+        """Eviduje ztracenou návaznost živých odečtů a předá vzorek účetnictví.
+
+        Hranice jsou okamžiky v UTC, vstupní energie je v kWh. Opakovaný
+        neplatný stav bez výchozího odečtu další mezeru neotevře. První platný
+        vzorek ji uzavře a současně založí nový odečet pro další přírůstek.
+        """
+        if energy is None and self.ledger.previous is not None:
+            self.meter_gaps.append((self.ledger.previous[0], None))
+        elif energy is not None and self.meter_gaps and self.meter_gaps[-1][1] is None:
+            start, _ = self.meter_gaps[-1]
+            self.meter_gaps[-1] = (start, when)
+        self.ledger.sample(when, energy, self.timeline, self.minimum, tz)
 
     @staticmethod
     def _meter_value(state):
@@ -125,6 +141,10 @@ class ElectricityBilling:
         """Uloží cenu předchozího měření; reload nesmí zpětně změnit jeho cenu."""
         result = self.ledger.as_dict()
         result["meter_source"] = self.values["import_energy_entity"]
+        result["meter_gaps"] = [
+            [start.isoformat(), end.isoformat() if end else None]
+            for start, end in self.meter_gaps
+        ]
         result["last_fixed"] = self.last_fixed.isoformat() if self.last_fixed else None
         result["last_pricing_refresh"] = self.last_pricing_refresh.isoformat() if self.last_pricing_refresh else None
         if self.ledger.previous:
@@ -252,7 +272,7 @@ class ElectricityBilling:
         self.last_pricing_refresh = utc
         energy = self._meter_value(self._state("import_energy_entity"))
         if self.ledger.previous is None:
-            self.ledger.sample(utc, energy, self.timeline, self.minimum, tz)
+            self._sample_meter(utc, energy, tz)
         if self.last_fixed is not None and utc > self.last_fixed:
             edges = sorted({self.last_fixed, utc, *self.strategy.edges(self.last_fixed, utc)})
             for left, right in pairwise(edges):
@@ -268,6 +288,16 @@ class ElectricityBilling:
         today = self.ledger.days.get(now.date().isoformat(), {})
         day_end = datetime.combine(now.date() + timedelta(days=1), time.min, tzinfo=tz).astimezone(UTC)
         day_start = start.astimezone(UTC)
+        # Evidence slouží dennímu přehledu. Uzavřené mezery odložíme po
+        # místní půlnoci; otevřená zůstane i přes půlnoc a restart.
+        self.meter_gaps = [
+            (left, right) for left, right in self.meter_gaps
+            if right is None or right > day_start
+        ]
+        daily_meter_gaps = [
+            {"start": left.isoformat(), "end": right.isoformat() if right else None}
+            for left, right in self.meter_gaps if left < day_end
+        ]
         daily_fixed = self.strategy.daily_fee(day_start, day_end, None)
         baseline_daily = self.strategy.daily_fee(day_start, day_end, False)
         monthly = self.strategy.monthly(utc, dynamic)
@@ -337,6 +367,7 @@ class ElectricityBilling:
             if meter_configured
             else None,
             "unpriced_energy": totals["unpriced_kwh"] if meter_configured else None,
+            "daily_meter_gaps": daily_meter_gaps,
             "metadata": {
                 **quote,
                 "hdo_tariff": live_tariff,

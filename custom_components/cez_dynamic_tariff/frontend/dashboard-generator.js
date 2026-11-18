@@ -67,6 +67,14 @@ function cezNeutralCheckpoint(value) {
   return value;
 }
 
+function cezFindCards(node, predicate) {
+  // Projde uložené i vnořené karty ve stromu Lovelace bez změny konfigurace.
+  if (!node || typeof node !== "object") return [];
+  const matches = predicate(node) ? [node] : [];
+  for (const item of Object.values(node)) matches.push(...cezFindCards(item, predicate));
+  return matches;
+}
+
 function cezRepairChartTooltips(value, generated) {
   // Vstup: kopie místního pohledu a aktuální přibalené pohledy s entity_id.
   // Výstup: stejná sestava, pouze tooltip známých účetních Apex grafů je nový.
@@ -76,22 +84,30 @@ function cezRepairChartTooltips(value, generated) {
   // ponechá; opakované volání je idempotentní. Komentáře uvnitř EVAL funkce
   // zůstanou součástí JSON/YAML exportu i konfigurace uložené přes websocket.
   const tooltips = new Map();
-  const visit = (node, action) => {
-    if (!node || typeof node !== "object") return;
-    if (node.type === "custom:apexcharts-card") action(node);
-    for (const item of Object.values(node)) {
-      if (Array.isArray(item)) item.forEach(child => visit(child, action));
-      else if (item && typeof item === "object") visit(item, action);
-    }
-  };
-  visit(generated, card => {
+  const isChart = node => node.type === "custom:apexcharts-card";
+  for (const card of cezFindCards(generated, isChart)) {
     if (card.apex_config?.tooltip?.custom) tooltips.set(card.header?.title, card.apex_config.tooltip);
-  });
-  visit(value, card => {
+  }
+  for (const card of cezFindCards(value, isChart)) {
     const tooltip = tooltips.get(card.header?.title);
     if (tooltip) card.apex_config = { ...card.apex_config, tooltip: JSON.parse(JSON.stringify(tooltip)) };
-  });
+  }
   return value;
+}
+
+function cezUpdateMeterGaps(view, generated) {
+  // Z náhledu serveru přeneseme jen označený blok s aktuálním ID senzoru
+  // a jazykem. Zachováme vlastní obsah, umístění i další nastavení karty.
+  const isSavings = card => card.type === "markdown" && typeof card.content === "string"
+    && (card.title === "Jak číst úspory" || card.content.includes("## Dnes od půlnoci")
+      || card.content.includes("{# cez_meter_gaps:"));
+  const block = /\{# cez_meter_gaps:[\s\S]*?\{# \/cez_meter_gaps #\}/;
+  const source = cezFindCards(generated, isSavings)[0]?.content.match(block)?.[0];
+  if (!source) return;
+  for (const card of cezFindCards(view, isSavings)) {
+    card.content = block.test(card.content) ? card.content.replace(block, () => source)
+      : card.content.trimEnd() + "\n\n" + source;
+  }
 }
 
 function cezUpdatePriceStrategy(view, generated) {
@@ -193,6 +209,7 @@ function reuseCurrentCezViews(generated, current) {
     cezRepairChartTooltips(cloned, generated);
     cezUpdatePriceStrategy(cloned, fallback);
     cezUpdateAccountingDocuments(cloned, fallback);
+    cezUpdateMeterGaps(cloned, fallback);
     if (index === 1) cezAddAccountingRecovery(cloned, fallback);
     cloned.path = path + suffixes[index];
     cloned.subview = index > 0;
@@ -247,7 +264,11 @@ class CezDashboardGenerator extends HTMLElement {
     const menu = this.shadowRoot.querySelector("ha-menu-button"); if (menu) menu.hass = value;
   }
   set narrow(value) { this._narrow = value; }
-  connectedCallback() { if (this._hass && !this._initialized) this._initialize(); }
+  connectedCallback() {
+    if (this._hass && !this._initialized) this._initialize();
+    if (this._preview) this._checkApexCharts(this._preview.config);
+  }
+  disconnectedCallback() { clearTimeout(this._apexTimer); }
   _get(id) { return this.shadowRoot.getElementById(id); }
   _initialize() {
     this._initialized = true;
@@ -270,7 +291,8 @@ class CezDashboardGenerator extends HTMLElement {
       <button id="preview" disabled>${t("Generate dashboard · náhled","Generate dashboard · preview")}</button>
     </div><div class="card" id="result" hidden><h2>${t("Připravené pohledy","Prepared views")}</h2>
       <p>${t("Hlavní přehled · Detaily · Pomocný editor záloh. Existující pohledy se zachovají.","Main overview · Details · Auxiliary advances editor. Existing views are preserved.")}</p>
-      <p id="warning" hidden></p><label>${t("YAML tří pohledů (views)","YAML for three views")}<textarea id="yaml" readonly spellcheck="false"></textarea></label>
+      <p id="warning" hidden></p><p id="apex-warning" role="status" hidden></p>
+      <label>${t("YAML tří pohledů (views)","YAML for three views")}<textarea id="yaml" readonly spellcheck="false"></textarea></label>
       <div class="actions"><button id="create">${t("Přidat do horní lišty","Add to the top tab bar")}</button><button id="copy">${t("Kopírovat YAML","Copy YAML")}</button><button id="download">${t("Stáhnout YAML","Download YAML")}</button></div>
     </div><div class="card" id="status-box" hidden><p id="status" role="status" aria-live="polite"></p><a id="open" hidden>${t("Otevřít pohled","Open view")}</a></div></main>`;
     const menu = this.shadowRoot.querySelector("ha-menu-button"); menu.hass = this._hass; menu.narrow = this._narrow;
@@ -310,7 +332,8 @@ class CezDashboardGenerator extends HTMLElement {
     this._setBusy(true); this._preview = null; this._get("result").hidden = true;
     try {
       const result = await this._hass.callWS({type:"cez_dynamic_tariff/dashboard/preview",entry_id:this._entryId,
-        title:this._get("title").value.trim(),view_path:this._get("path").value.trim()});
+        title:this._get("title").value.trim(),view_path:this._get("path").value.trim(),
+        language:this._cs ? "cs" : "en"});
       try {
         const current = await this._hass.callWS({ type: "lovelace/config" });
         const config = reuseCurrentCezViews(result.config, current);
@@ -325,9 +348,51 @@ class CezDashboardGenerator extends HTMLElement {
       this._get("warning").hidden = !missing.length;
       this._get("warning").textContent = `${this._cs ? "Zatím nedostupné entity:" : "Currently unavailable entities:"} ${missing.join(", ")}`;
       this._get("result").hidden = false;
+      this._checkApexCharts(result.config);
       this._status(this._cs ? "Náhled připraven. Do dashboardu se zatím nic nezapsalo." : "Preview ready. No dashboard changes have been saved.");
     } catch { this._status(this._cs ? "Náhled se nepodařilo vytvořit. Ověřte název, adresu a připojení." : "Preview failed. Check the title, path and connection."); }
     finally { this._setBusy(false); }
+  }
+  _checkApexCharts(config) {
+    // Kontrola běží vedle náhledu. Po třech sekundách ukáže stav modulu,
+    // registrace po tomto čase varování také skryje. Nový náhled ruší starý
+    // časovač a pozdní výsledek se nepromítne do jiné konfigurace.
+    clearTimeout(this._apexTimer);
+    const warning = this._get("apex-warning");
+    warning.hidden = true;
+    const tag = "apexcharts-card";
+    if (customElements.get(tag)
+        || !cezFindCards(config, card => card.type === "custom:" + tag).length) return;
+    if (!this._watchingApex) {
+      this._watchingApex = true;
+      customElements.whenDefined(tag).then(() => {
+        clearTimeout(this._apexTimer);
+        warning.hidden = true;
+      });
+    }
+    this._apexTimer = setTimeout(() => {
+      if (this._preview?.config !== config || customElements.get(tag)) return;
+      warning.textContent = this._cs
+        ? "ApexCharts Card se v náhledu zatím nenačetla. Zkontrolujte její zdroj v nastavení dashboardů."
+        : "ApexCharts Card has not loaded in the preview yet. Check its resource in dashboard settings.";
+      warning.hidden = false;
+    }, 3000);
+    this._loadApexCharts(config);
+  }
+  async _loadApexCharts(config) {
+    // HA načítá Lovelace moduly při otevření dashboardu; generátor může být
+    // první otevřený panel. Zkusíme pouze existující modul ApexCharts uvedený
+    // mezi zdroji HA. Jinak čekáme na registraci a případně zobrazíme radu.
+    try {
+      const resources = await this._hass.callWS({ type: "lovelace/resources" });
+      if (!this.isConnected || this._preview?.config !== config || customElements.get("apexcharts-card")) return;
+      for (const resource of resources) {
+        if (resource.type !== "module") continue;
+        const url = new URL(resource.url, this._hass.auth.data.hassUrl);
+        if (/\/apexcharts-card(?:\.min)?\.js$/i.test(url.pathname)) await import(url.href);
+        if (customElements.get("apexcharts-card")) break;
+      }
+    } catch { /* Nedostupný zdroj zaznamená kontrola registrace. */ }
   }
   async _create() {
     if (this._busy || !this._preview) return;

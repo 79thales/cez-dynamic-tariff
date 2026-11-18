@@ -6,6 +6,64 @@ const clone=value=>JSON.parse(JSON.stringify(value));
 const bundledCharts=()=>JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json","utf8"))
   .views.flatMap(view=>view.sections||[]).flatMap(section=>section.cards||[]).filter(card=>card.type==="custom:apexcharts-card");
 
+test("copied savings details keep custom content and use the resolved meter-gap sensor", () => {
+  const generated = JSON.parse(fs.readFileSync("custom_components/cez_dynamic_tariff/dashboard_template.json", "utf8"));
+  const savingsCard = config => config.views[1].sections.flatMap(section => section.cards)
+    .find(card => card.title === "Jak číst úspory");
+  const current = clone(generated);
+  savingsCard(current).content = "Moje vlastní vysvětlení úspor.";
+  savingsCard(generated).content = savingsCard(generated).content
+    .replace("sensor.cez_dynamic_tariff_daily_savings", "sensor.renamed_savings");
+  const copy = context.reuseCurrentCezViews(generated, current);
+  assert.match(savingsCard(copy).content, /^Moje vlastní vysvětlení úspor\./);
+  assert.match(savingsCard(copy).content, /state_attr\('sensor\.renamed_savings'/);
+  assert.equal(savingsCard(context.reuseCurrentCezViews(generated, copy)).content, savingsCard(copy).content);
+});
+
+test("ApexCharts warning follows registration and only runs for previews with ApexCharts", async () => {
+  const timers = new Map();
+  let timerId = 0;
+  let registered = false;
+  let register;
+  const definition = new Promise(resolve => { register = resolve; });
+  const sandbox = vm.createContext({
+    HTMLElement: class {},
+    customElements: { get: () => registered, define() {}, whenDefined: () => definition },
+    setTimeout: (fn, delay) => {
+      assert.equal(delay, 3000);
+      timers.set(++timerId, fn);
+      return timerId;
+    },
+    clearTimeout: id => timers.delete(id),
+  });
+  vm.runInContext(fs.readFileSync("custom_components/cez_dynamic_tariff/frontend/dashboard-generator.js", "utf8"), sandbox);
+  const check = vm.runInContext("CezDashboardGenerator.prototype._checkApexCharts", sandbox);
+  const warning = {};
+  let loadRequests = 0;
+  const panel = { _cs: true, _get: () => warning, _loadApexCharts: () => loadRequests++ };
+  const plain = { views: [{ cards: [{ type: "markdown" }] }] };
+  const charts = { views: [{ cards: [{ type: "custom:apexcharts-card" }] }] };
+  panel._preview = { config: plain };
+  check.call(panel, plain);
+  assert.equal(timers.size, 0);
+  assert.equal(loadRequests, 0);
+
+  panel._preview = { config: charts };
+  check.call(panel, charts);
+  assert.equal(warning.hidden, true);
+  assert.equal(loadRequests, 1);
+  timers.get(timerId)();
+  assert.equal(warning.hidden, false);
+  assert.match(warning.textContent, /ApexCharts Card/);
+
+  registered = true;
+  register();
+  await definition;
+  assert.equal(warning.hidden, true);
+  check.call(panel, charts);
+  assert.equal(timers.size, 0);
+});
+
 // Spouštíme skutečné EVAL funkce šablony. Ověřujeme význam dat, ne jen volbu
 // konfigurace: komplementární null není nula, ani hodnota jiného času/období.
 test("accounting tooltips omit null while retaining zero, coverage and exact X",()=>{

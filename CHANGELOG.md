@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2 – 2026-11-18
+
+### Čeština
+
+- Denní přehled úspor ukazuje mezery živého měření a časy jejich hranic.
+  Probíhající výpadek se obnoví po restartu Home Assistantu.
+- Náhled Generate dashboard ověřuje načtení ApexCharts Card. Upozornění
+  zmizí po načtení karty a náhled lze mezitím uložit.
+
 ## 1.1.1 – 2026-11-07
 
 ### Čeština
